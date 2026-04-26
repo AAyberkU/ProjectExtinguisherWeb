@@ -1,0 +1,25 @@
+{
+  "name": "@project-extinguisher/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "pixi.js": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "sass": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "latest"
+  }
+}
