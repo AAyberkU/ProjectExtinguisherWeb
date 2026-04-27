@@ -228,6 +228,65 @@ select {
   outline: 3px solid rgba(43, 13, 79, 0.22);
 }
 
+.completion-overlay {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(9, 8, 18, 0.18);
+}
+
+.completion-panel {
+  width: min(34rem, calc(100vw - 2rem));
+  padding: clamp(1.8rem, 3vw, 3rem);
+  background: rgba(20, 28, 42, 0.84);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+  color: #fff7fb;
+  font-family: "Comic Sans MS", "Trebuchet MS", cursive;
+  text-align: center;
+  backdrop-filter: blur(3px);
+}
+
+.completion-title,
+.completion-copy {
+  margin: 0;
+  font-weight: 900;
+  text-shadow: 0 3px 0 rgba(255, 255, 255, 0.08);
+}
+
+.completion-title {
+  font-size: clamp(2.35rem, 4vw, 4.4rem);
+  line-height: 1;
+}
+
+.completion-copy {
+  margin-top: 0.85rem;
+  color: #ffdce9;
+  font-size: clamp(1.2rem, 2vw, 2rem);
+}
+
+.completion-button {
+  min-width: min(20rem, 100%);
+  margin-top: clamp(1.6rem, 3vh, 2.4rem);
+  padding: 0.85rem 1.35rem 1rem;
+  border: 0;
+  background: rgba(255, 247, 251, 0.95);
+  color: #2b0d4f;
+  cursor: pointer;
+  font-family: "Comic Sans MS", "Trebuchet MS", cursive;
+  font-size: clamp(1.25rem, 2vw, 2rem);
+  font-weight: 900;
+}
+
+.completion-button:hover,
+.completion-button:focus-visible {
+  background: #ffffff;
+  outline: 4px solid rgba(242, 178, 26, 0.55);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 860px) {
   .main-menu {
     justify-content: center;

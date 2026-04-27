@@ -81,9 +81,10 @@ Example level format:
 - The app starts on the main menu, not directly in gameplay.
 - Pressing Start Game runs a short background zoom-out transition, then mounts Level 1 gameplay.
 - `App` owns the active `GameState` and listens for `level-won` events from `game/core`.
-- A win immediately creates fresh state for the next level through `createNextLevelGameState()`.
+- A win stores the completed `GameState` and opens a completion overlay instead of immediately advancing.
+- The completion overlay advances through `createNextLevelGameState()` only after the Next Level button is clicked.
 - Reset dispatches `reset-level`, which restarts only the currently active level.
-- Level 5 completion returns to the main menu and prepares Level 1 for the next run.
+- Level 5 completion shows a final overlay and returns to the main menu only after Return to Main Menu is clicked.
 
 ## UI Layer
 
@@ -92,6 +93,14 @@ Example level format:
 - HUD is a DOM overlay with Moves Left on the top-left, current level centered at the top, and an `R Reset` button on the top-right.
 - The `R` key also resets only the current level while gameplay is active.
 - Main menu credits match the Unity prototype roles, names, and color grouping.
+- Completion overlays show win/final-run messaging plus the `Press R to Reset` reminder.
+
+## Animation Pipeline
+
+- Larry's web movement mirrors Unity's `LarryController`: 220 ms horizontal interpolation with a hop-height curve.
+- Catapult movement uses the ordered `larry-moved` event path so Larry first hops onto the catapult tile, then hops from that tile to the landing tile.
+- Level loads mirror Unity's `LevelLoader` intro: tiles start above the board, drop by diagonal lines using a faster web-tuned fall/line delay, then Larry appears.
+- `PixiStage` receives an `introKey` from `App` so fresh level loads and resets can replay the tile drop-in animation.
 
 ## Coordinate Mapping
 

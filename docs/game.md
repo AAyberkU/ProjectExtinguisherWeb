@@ -31,9 +31,8 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 - The level is won when Larry reaches the goal.
 - The level is lost when moves reach 0 and Larry is not on the goal.
 - Reset restarts the current level.
-- Completing a level automatically loads the next level.
-- Completing Level 5 loops back to Level 1.
-- Completing Level 5 returns to the main menu before a new run starts.
+- Completing a level opens a win panel; Next Level must be clicked to load the next level.
+- Completing Level 5 opens a final panel; Return to Main Menu must be clicked before a new run starts.
 
 ## Special Tiles
 
@@ -72,6 +71,8 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 - The game opens on the Unity-style main menu with Start Game and credits.
 - Starting the game removes the menu overlay, clears the dark background filter, zooms the background out, and then shows Level 1.
 - Returning to the main menu zooms the background in and restores the dark filter.
+- Level loading drops tiles in from above using a diagonal line cascade.
+- Larry moves between tiles with a short hop instead of instant teleporting.
 - Input should feel immediate and clear.
 - Valid next choices should be visually readable.
 - Movement should feel toy-like and satisfying.

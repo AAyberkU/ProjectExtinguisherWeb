@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { applyCommand } from './game/core';
-import type { AxialCoord, GameCommand } from './game/core';
+import type { AxialCoord, GameCommand, GameEvent } from './game/core';
 import { createFirstLevelGameState, createNextLevelGameState, getLevelIndex, LEVELS } from './game/levels';
 import { PixiStage } from './game/renderer/PixiStage';
 
@@ -18,6 +18,8 @@ const GAME_SHELL_STYLE: GameShellStyle = {
 const MENU_TRANSITION_MS = 900;
 
 type AppPhase = 'menu' | 'starting' | 'playing';
+type CompletionState = 'level' | 'game' | null;
+type LarryMovedEvent = Extract<GameEvent, Readonly<{ type: 'larry-moved' }>>;
 
 function resetLevelState(currentState: ReturnType<typeof createFirstLevelGameState>) {
   return applyCommand(currentState, { type: 'reset-level' }).state;
@@ -27,12 +29,26 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
 }
 
+function createMovementPath(events: readonly GameEvent[]): readonly AxialCoord[] | null {
+  const movementEvents = events.filter((event): event is LarryMovedEvent => event.type === 'larry-moved');
+
+  if (movementEvents.length === 0) {
+    return null;
+  }
+
+  return [movementEvents[0].from, ...movementEvents.map((event) => event.to)];
+}
+
 export function App() {
   const [phase, setPhase] = useState<AppPhase>('menu');
   const [gameState, setGameState] = useState(createFirstLevelGameState);
+  const [movementPath, setMovementPath] = useState<readonly AxialCoord[] | null>(null);
+  const [completion, setCompletion] = useState<CompletionState>(null);
+  const [stageIntroKey, setStageIntroKey] = useState(0);
   const transitionTimeoutRef = useRef<number | null>(null);
   const currentLevelNumber = getLevelIndex(gameState.level.id) + 1;
   const movesLeftLabel = String(gameState.movesRemaining).padStart(2, '0');
+  const completedFinalLevel = completion === 'game';
 
   function clearTransitionTimeout() {
     if (transitionTimeoutRef.current === null) {
@@ -60,6 +76,9 @@ export function App() {
       }
 
       event.preventDefault();
+      setCompletion(null);
+      setMovementPath(null);
+      setStageIntroKey((currentKey) => currentKey + 1);
       setGameState(resetLevelState);
     }
 
@@ -70,6 +89,9 @@ export function App() {
 
   function handleStartGame() {
     clearTransitionTimeout();
+    setCompletion(null);
+    setMovementPath(null);
+    setStageIntroKey((currentKey) => currentKey + 1);
     setGameState(createFirstLevelGameState());
     setPhase('starting');
 
@@ -82,23 +104,21 @@ export function App() {
   function dispatchGameCommand(command: GameCommand) {
     const result = applyCommand(gameState, command);
     const completedLevel = result.events.some((event) => event.type === 'level-won');
+    const nextMovementPath = createMovementPath(result.events);
 
     if (!completedLevel) {
+      setMovementPath(nextMovementPath);
       setGameState(result.state);
       return;
     }
 
-    if (currentLevelNumber === LEVELS.length) {
-      setGameState(createFirstLevelGameState());
-      setPhase('menu');
-      return;
-    }
-
-    setGameState(createNextLevelGameState(gameState.level.id));
+    setMovementPath(nextMovementPath);
+    setGameState(result.state);
+    setCompletion(currentLevelNumber === LEVELS.length ? 'game' : 'level');
   }
 
   function handleActivateCell(coord: AxialCoord) {
-    if (phase !== 'playing') {
+    if (phase !== 'playing' || completion !== null) {
       return;
     }
 
@@ -110,14 +130,40 @@ export function App() {
       return;
     }
 
+    setCompletion(null);
+    setMovementPath(null);
+    setStageIntroKey((currentKey) => currentKey + 1);
     setGameState(resetLevelState);
+  }
+
+  function handleContinueAfterWin() {
+    if (completion === 'level') {
+      setCompletion(null);
+      setMovementPath(null);
+      setStageIntroKey((currentKey) => currentKey + 1);
+      setGameState(createNextLevelGameState(gameState.level.id));
+      return;
+    }
+
+    if (completion === 'game') {
+      clearTransitionTimeout();
+      setCompletion(null);
+      setMovementPath(null);
+      setGameState(createFirstLevelGameState());
+      setPhase('menu');
+    }
   }
 
   return (
     <main className={`app-shell app-shell--${phase}`} style={GAME_SHELL_STYLE}>
       {phase === 'playing' ? (
         <section className="game-panel" aria-label="Playable Project Extinguisher board">
-          <PixiStage gameState={gameState} onActivateCell={handleActivateCell} />
+          <PixiStage
+            gameState={gameState}
+            introKey={stageIntroKey}
+            movementPath={movementPath}
+            onActivateCell={handleActivateCell}
+          />
         </section>
       ) : null}
 
@@ -150,6 +196,18 @@ export function App() {
             R Reset
           </button>
         </header>
+      ) : null}
+
+      {phase === 'playing' && completion !== null ? (
+        <section className="completion-overlay" aria-label="Level complete">
+          <div className="completion-panel">
+            <p className="completion-title">{completedFinalLevel ? 'You Finished The Game' : 'You Won'}</p>
+            <p className="completion-copy">Press R to Reset</p>
+            <button className="completion-button" type="button" onClick={handleContinueAfterWin}>
+              {completedFinalLevel ? 'Return to Main Menu' : 'Next Level'}
+            </button>
+          </div>
+        </section>
       ) : null}
     </main>
   );

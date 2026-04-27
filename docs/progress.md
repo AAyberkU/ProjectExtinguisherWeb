@@ -60,12 +60,21 @@
 - Updated final-level progression so completing Level 5 returns to the main menu instead of immediately looping into Level 1 gameplay.
 - Added gameplay HUD with top-left moves, top-center level text, top-right `R Reset` button, and `R` keyboard reset.
 - Re-ran `npm run build`; it passes after the main menu and HUD update.
+- Changed level completion flow so wins open an overlay instead of advancing immediately.
+- Added regular win overlay with `You Won`, `Press R to Reset`, and Next Level button.
+- Added final-level overlay with final-run messaging and Return to Main Menu button.
+- Added Larry tile-to-tile hop animation in Pixi using Unity `LarryController` timing/curve intent.
+- Added level/reset tile drop-in animation in Pixi using Unity `LevelLoader` intro line-delay and fall-duration settings from `GridRoot`.
+- Re-ran `npm run build`; it passes after completion overlays and animations.
+- Tuned the level tile drop-in animation to run much faster by shortening the web fall duration and line-delay cascade.
+- Fixed catapult movement animation to use the full `larry-moved` event path, so Larry hops to the catapult tile first and then hops to the catapult destination.
+- Re-ran `npm run build`; it passes after the animation fixes.
 
 ## Immediate Next Steps
 
-1. Add Larry movement animation instead of instant sprite repositioning.
-2. Add lightweight level transition feedback so automatic progression does not feel abrupt.
-3. Add gameplay sound effects and music wiring from Unity assets.
+1. Add gameplay sound effects and music wiring from Unity assets.
+2. Add lightweight polish for win/final overlay copy and visual treatment after manual play review.
+3. Tune remaining animation timing if browser feel differs from Unity after manual play review.
 4. Optimize imported PNG assets or move to a more explicit web asset pipeline if bundle size becomes a problem.
 5. Add focused unit tests for level validation and core movement rules.
 
@@ -74,4 +83,4 @@
 - Backend remains out of scope until a specific feature requires it.
 - Keep docs compact and update them when the real project state changes.
 - Use root commands: `npm run dev`, `npm run typecheck`, `npm run build`, and `npm run preview`.
-- Levels 1-5 are now imported and playable from a Unity-style main menu with full-screen background, HUD, Unity-exported tile art, and Larry sprite rendering; animation and audio are still pending.
+- Levels 1-5 are now imported and playable from a Unity-style main menu with full-screen background, HUD, completion overlays, Unity-exported tile art, Larry hop movement, and tile intro animation; audio is still pending.

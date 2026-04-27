@@ -5,6 +5,8 @@ import type { AxialCoord, CatapultDirection, CellState, GameState, TileType } fr
 
 type PixiStageProps = Readonly<{
   gameState: GameState;
+  introKey: number;
+  movementPath: readonly AxialCoord[] | null;
   onActivateCell: (coord: AxialCoord) => void;
 }>;
 
@@ -12,6 +14,22 @@ const TILE_RADIUS = 42;
 const TILE_SPRITE_WIDTH = TILE_RADIUS * 2.1;
 const TILE_SPRITE_HEIGHT = TILE_RADIUS * 1.86;
 const LARRY_SPRITE_HEIGHT = TILE_RADIUS * 1.55;
+const LARRY_MOVE_DURATION_MS = 220;
+const LARRY_HOP_HEIGHT = TILE_RADIUS * 0.52;
+const TILE_INTRO_DROP_OFFSET = TILE_RADIUS * 9;
+const TILE_INTRO_FALL_DURATION_MS = 34;
+const TILE_INTRO_LINE_DELAY_MS = 5;
+
+type AnimationCleanup = () => void;
+
+type RenderBoardOptions = Readonly<{
+  app: Application;
+  previousLarryPosition: AxialCoord | null;
+  larryPath: readonly AxialCoord[] | null;
+  animateLarry: boolean;
+  playTileIntro: boolean;
+  registerAnimation: (cleanup: AnimationCleanup) => void;
+}>;
 
 const PATH_TILE_TEXTURE_URLS = [
   new URL('../../../../../Art/Tiles/Hex/HexTile_Path_01.png', import.meta.url).href,
@@ -89,6 +107,33 @@ function positiveModulo(value: number, divisor: number): number {
   return ((value % divisor) + divisor) % divisor;
 }
 
+function lerp(start: number, end: number, amount: number): number {
+  return start + (end - start) * amount;
+}
+
+function easeOutCubic(t: number): number {
+  return 1 - (1 - t) ** 3;
+}
+
+function easeIntroDrop(t: number): number {
+  return 1 - (1 - t) ** 2.6;
+}
+
+function resolveIntroLineSpacing(projections: readonly number[]): number {
+  const sorted = [...projections].sort((a, b) => a - b);
+  let smallestSpacing = Number.POSITIVE_INFINITY;
+
+  for (let index = 1; index < sorted.length; index += 1) {
+    const spacing = sorted[index] - sorted[index - 1];
+
+    if (spacing > 0.01) {
+      smallestSpacing = Math.min(smallestSpacing, spacing);
+    }
+  }
+
+  return Number.isFinite(smallestSpacing) ? smallestSpacing : 1;
+}
+
 function resolveVariantIndex(cell: CellState, fallbackIndex: number, variantCount: number): number {
   return positiveModulo(cell.variant ?? fallbackIndex, variantCount);
 }
@@ -157,20 +202,134 @@ function createTileSprite(textureUrl: string) {
   return sprite;
 }
 
-function drawLarry(board: Container, gameState: GameState) {
+function registerTickerAnimation(
+  app: Application,
+  update: (elapsedMs: number) => boolean,
+  registerAnimation: (cleanup: AnimationCleanup) => void,
+) {
+  const startTime = performance.now();
+
+  function tick() {
+    const shouldContinue = update(performance.now() - startTime);
+
+    if (!shouldContinue) {
+      app.ticker.remove(tick);
+    }
+  }
+
+  app.ticker.add(tick);
+  registerAnimation(() => app.ticker.remove(tick));
+}
+
+function animateTileIntro(
+  app: Application,
+  tile: Container,
+  targetY: number,
+  targetAlpha: number,
+  delayMs: number,
+  registerAnimation: (cleanup: AnimationCleanup) => void,
+) {
+  const startY = targetY - TILE_INTRO_DROP_OFFSET;
+
+  tile.y = startY;
+  tile.alpha = 0;
+
+  registerTickerAnimation(app, (elapsedMs) => {
+    if (tile.parent === null) {
+      return false;
+    }
+
+    const animationElapsed = elapsedMs - delayMs;
+
+    if (animationElapsed < 0) {
+      return true;
+    }
+
+    const progress = Math.min(animationElapsed / TILE_INTRO_FALL_DURATION_MS, 1);
+    const easedProgress = easeIntroDrop(progress);
+
+    tile.y = lerp(startY, targetY, easedProgress);
+    tile.alpha = targetAlpha * easedProgress;
+
+    return progress < 1;
+  }, registerAnimation);
+}
+
+function resolveLarrySpritePosition(coord: AxialCoord) {
+  const position = axialToPixel(coord, TILE_RADIUS);
+
+  return {
+    x: position.x,
+    y: position.y + TILE_RADIUS * 0.48,
+  };
+}
+
+function drawLarry(board: Container, gameState: GameState, options: RenderBoardOptions, introLarryDelayMs: number) {
   const larry = Sprite.from(LARRY_TEXTURE_URL);
-  const position = axialToPixel(gameState.larryPosition, TILE_RADIUS);
+  const targetPosition = resolveLarrySpritePosition(gameState.larryPosition);
   const scale = LARRY_SPRITE_HEIGHT / larry.texture.height;
+  const larryPath = options.larryPath;
 
   larry.anchor.set(0.5, 0.95);
   larry.scale.set(scale);
-  larry.x = position.x;
-  larry.y = position.y + TILE_RADIUS * 0.48;
+  larry.x = targetPosition.x;
+  larry.y = targetPosition.y;
   larry.label = 'Larry';
   board.addChild(larry);
+
+  if (options.playTileIntro) {
+    larry.alpha = 0;
+    registerTickerAnimation(options.app, (elapsedMs) => {
+      if (larry.parent === null) {
+        return false;
+      }
+
+      const animationElapsed = elapsedMs - introLarryDelayMs;
+
+      if (animationElapsed < 0) {
+        return true;
+      }
+
+      const progress = Math.min(animationElapsed / 120, 1);
+      larry.alpha = easeOutCubic(progress);
+
+      return progress < 1;
+    }, options.registerAnimation);
+    return;
+  }
+
+  if (options.animateLarry && larryPath !== null && larryPath.length > 1) {
+    const pathPositions = larryPath.map(resolveLarrySpritePosition);
+    const segmentCount = pathPositions.length - 1;
+    const totalDurationMs = segmentCount * LARRY_MOVE_DURATION_MS;
+    const firstPosition = pathPositions[0];
+
+    larry.x = firstPosition.x;
+    larry.y = firstPosition.y;
+
+    registerTickerAnimation(options.app, (elapsedMs) => {
+      if (larry.parent === null) {
+        return false;
+      }
+
+      const clampedElapsed = Math.min(elapsedMs, totalDurationMs);
+      const segmentIndex = Math.min(Math.floor(clampedElapsed / LARRY_MOVE_DURATION_MS), segmentCount - 1);
+      const segmentElapsed = clampedElapsed - segmentIndex * LARRY_MOVE_DURATION_MS;
+      const progress = Math.min(segmentElapsed / LARRY_MOVE_DURATION_MS, 1);
+      const startPosition = pathPositions[segmentIndex];
+      const endPosition = pathPositions[segmentIndex + 1];
+      const horizontalProgress = easeOutCubic(progress);
+      const verticalLift = Math.sin(progress * Math.PI) * LARRY_HOP_HEIGHT;
+
+      larry.x = lerp(startPosition.x, endPosition.x, horizontalProgress);
+      larry.y = lerp(startPosition.y, endPosition.y, horizontalProgress) - verticalLift;
+
+      return elapsedMs < totalDurationMs;
+    }, options.registerAnimation);
+  }
 }
 
-function renderBoard(gameState: GameState, board: Container, onActivateCell: (coord: AxialCoord) => void) {
+function renderBoard(gameState: GameState, board: Container, onActivateCell: (coord: AxialCoord) => void, options: RenderBoardOptions) {
   const children = board.removeChildren();
 
   for (const child of children) {
@@ -181,28 +340,46 @@ function renderBoard(gameState: GameState, board: Container, onActivateCell: (co
     .map((cell) => ({
       cell,
       position: axialToPixel(cell.coord, TILE_RADIUS),
+      projection: 0,
+    }))
+    .map((entry) => ({
+      ...entry,
+      projection: entry.position.x - entry.position.y,
     }))
     .sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
+  const projections = orderedCells.map((entry) => entry.projection);
+  const minimumProjection = Math.min(...projections);
+  const lineSpacing = resolveIntroLineSpacing(projections);
+  let maxIntroDelay = 0;
   let pathIndex = 0;
   let blockedIndex = 0;
 
-  for (const { cell, position } of orderedCells) {
+  for (const { cell, position, projection } of orderedCells) {
     const tile = new Container();
     const textureUrl = resolveTileTextureUrl(cell, pathIndex, blockedIndex);
     const sprite = createTileSprite(textureUrl);
     const stroke = resolveTileStroke(gameState, cell);
     const outline = new Graphics();
+    const targetAlpha = cell.active || canActivateCell(gameState, cell.coord).allowed || coordsEqual(cell.coord, gameState.larryPosition) ? 1 : 0.62;
 
     drawFlatTopHex(outline, TILE_RADIUS, stroke.color, stroke.alpha, stroke.width);
     tile.addChild(sprite, createTileHitArea(), outline);
     tile.x = position.x;
     tile.y = position.y;
-    tile.alpha = cell.active || canActivateCell(gameState, cell.coord).allowed || coordsEqual(cell.coord, gameState.larryPosition) ? 1 : 0.62;
+    tile.alpha = targetAlpha;
     tile.eventMode = 'static';
     tile.cursor = 'pointer';
     tile.label = `Hex ${cell.coord.q},${cell.coord.r}`;
     tile.on('pointertap', () => onActivateCell(cell.coord));
     board.addChild(tile);
+
+    if (options.playTileIntro) {
+      const lineIndex = Math.max(0, Math.round((projection - minimumProjection) / lineSpacing));
+      const delayMs = lineIndex * TILE_INTRO_LINE_DELAY_MS;
+
+      maxIntroDelay = Math.max(maxIntroDelay, delayMs);
+      animateTileIntro(options.app, tile, position.y, targetAlpha, delayMs, options.registerAnimation);
+    }
 
     if (cell.tileType === 'path') {
       pathIndex += 1;
@@ -213,15 +390,30 @@ function renderBoard(gameState: GameState, board: Container, onActivateCell: (co
     }
   }
 
-  drawLarry(board, gameState);
+  drawLarry(board, gameState, options, maxIntroDelay + TILE_INTRO_FALL_DURATION_MS);
 }
 
-export function PixiStage({ gameState, onActivateCell }: PixiStageProps) {
+export function PixiStage({ gameState, introKey, movementPath, onActivateCell }: PixiStageProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<Application | null>(null);
   const boardRef = useRef<Container | null>(null);
   const gameStateRef = useRef(gameState);
   const onActivateCellRef = useRef(onActivateCell);
+  const previousLarryPositionRef = useRef<AxialCoord | null>(null);
+  const lastIntroKeyRef = useRef<number | null>(null);
+  const animationCleanupsRef = useRef<AnimationCleanup[]>([]);
+
+  function stopAnimations() {
+    for (const cleanup of animationCleanupsRef.current) {
+      cleanup();
+    }
+
+    animationCleanupsRef.current = [];
+  }
+
+  function registerAnimation(cleanup: AnimationCleanup) {
+    animationCleanupsRef.current.push(cleanup);
+  }
 
   useEffect(() => {
     gameStateRef.current = gameState;
@@ -272,7 +464,16 @@ export function PixiStage({ gameState, onActivateCell }: PixiStageProps) {
       boardRef.current = board;
       nextApp.stage.addChild(board);
 
-      renderBoard(gameStateRef.current, board, (coord) => onActivateCellRef.current(coord));
+      renderBoard(gameStateRef.current, board, (coord) => onActivateCellRef.current(coord), {
+        app: nextApp,
+        previousLarryPosition: null,
+        larryPath: null,
+        animateLarry: false,
+        playTileIntro: true,
+        registerAnimation,
+      });
+      previousLarryPositionRef.current = gameStateRef.current.larryPosition;
+      lastIntroKeyRef.current = introKey;
       centerBoard(nextApp, board);
 
       resizeObserver = new ResizeObserver(() => centerBoard(nextApp, board));
@@ -284,6 +485,7 @@ export function PixiStage({ gameState, onActivateCell }: PixiStageProps) {
     return () => {
       disposed = true;
       resizeObserver?.disconnect();
+      stopAnimations();
       boardRef.current = null;
       appRef.current = null;
 
@@ -301,9 +503,27 @@ export function PixiStage({ gameState, onActivateCell }: PixiStageProps) {
       return;
     }
 
-    renderBoard(gameState, board, (coord) => onActivateCellRef.current(coord));
+    stopAnimations();
+
+    const previousLarryPosition = previousLarryPositionRef.current;
+    const playTileIntro = lastIntroKeyRef.current !== introKey;
+    const hasMovementPath = movementPath !== null && movementPath.length > 1;
+    const fallbackMovementPath = previousLarryPosition === null ? null : [previousLarryPosition, gameState.larryPosition];
+    const larryPath = hasMovementPath ? movementPath : fallbackMovementPath;
+    const animateLarry = !playTileIntro && previousLarryPosition !== null && !coordsEqual(previousLarryPosition, gameState.larryPosition);
+
+    renderBoard(gameState, board, (coord) => onActivateCellRef.current(coord), {
+      app,
+      previousLarryPosition,
+      larryPath,
+      animateLarry,
+      playTileIntro,
+      registerAnimation,
+    });
+    previousLarryPositionRef.current = gameState.larryPosition;
+    lastIntroKeyRef.current = introKey;
     centerBoard(app, board);
-  }, [gameState]);
+  }, [gameState, introKey, movementPath]);
 
   return <div ref={hostRef} className="pixi-stage" />;
 }
