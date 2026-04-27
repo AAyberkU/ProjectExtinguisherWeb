@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { gameAudio } from './game/audio';
 import { applyCommand } from './game/core';
 import type { AxialCoord, GameCommand, GameEvent } from './game/core';
 import { createFirstLevelGameState, createNextLevelGameState, getLevelIndex, LEVELS } from './game/levels';
@@ -62,6 +63,23 @@ export function App() {
   useEffect(() => clearTransitionTimeout, []);
 
   useEffect(() => {
+    gameAudio.startMusic();
+
+    function unlockMusic() {
+      gameAudio.startMusic();
+    }
+
+    window.addEventListener('pointerdown', unlockMusic);
+    window.addEventListener('keydown', unlockMusic);
+
+    return () => {
+      window.removeEventListener('pointerdown', unlockMusic);
+      window.removeEventListener('keydown', unlockMusic);
+      gameAudio.cancelScheduledSfx();
+    };
+  }, []);
+
+  useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (phase !== 'playing') {
         return;
@@ -76,6 +94,9 @@ export function App() {
       }
 
       event.preventDefault();
+      gameAudio.cancelScheduledSfx();
+      gameAudio.play('restart');
+      gameAudio.schedule('levelIntro', 80);
       setCompletion(null);
       setMovementPath(null);
       setStageIntroKey((currentKey) => currentKey + 1);
@@ -97,6 +118,7 @@ export function App() {
 
     transitionTimeoutRef.current = window.setTimeout(() => {
       transitionTimeoutRef.current = null;
+      gameAudio.play('levelIntro');
       setPhase('playing');
     }, MENU_TRANSITION_MS);
   }
@@ -105,6 +127,11 @@ export function App() {
     const result = applyCommand(gameState, command);
     const completedLevel = result.events.some((event) => event.type === 'level-won');
     const nextMovementPath = createMovementPath(result.events);
+
+    if (result.accepted) {
+      gameAudio.cancelScheduledSfx();
+      gameAudio.scheduleGameplayEvents(result.events);
+    }
 
     if (!completedLevel) {
       setMovementPath(nextMovementPath);
@@ -131,6 +158,9 @@ export function App() {
     }
 
     setCompletion(null);
+    gameAudio.cancelScheduledSfx();
+    gameAudio.play('restart');
+    gameAudio.schedule('levelIntro', 80);
     setMovementPath(null);
     setStageIntroKey((currentKey) => currentKey + 1);
     setGameState(resetLevelState);
@@ -139,6 +169,8 @@ export function App() {
   function handleContinueAfterWin() {
     if (completion === 'level') {
       setCompletion(null);
+      gameAudio.cancelScheduledSfx();
+      gameAudio.play('levelIntro');
       setMovementPath(null);
       setStageIntroKey((currentKey) => currentKey + 1);
       setGameState(createNextLevelGameState(gameState.level.id));
@@ -147,6 +179,7 @@ export function App() {
 
     if (completion === 'game') {
       clearTransitionTimeout();
+      gameAudio.cancelScheduledSfx();
       setCompletion(null);
       setMovementPath(null);
       setGameState(createFirstLevelGameState());

@@ -69,18 +69,23 @@
 - Tuned the level tile drop-in animation to run much faster by shortening the web fall duration and line-delay cascade.
 - Fixed catapult movement animation to use the full `larry-moved` event path, so Larry hops to the catapult tile first and then hops to the catapult destination.
 - Re-ran `npm run build`; it passes after the animation fixes.
+- Added `game/audio.ts` with looping music and scheduled one-shot SFX playback from files under root `sound/`.
+- Wired `music.wav` to start on app mount and loop continuously, with pointer/key retry for browser autoplay restrictions.
+- Wired `jump.wav`, `catapult.wav`, and `heal.wav` according to movement event order so catapult/health sounds happen after Larry lands on the triggering tile.
+- Wired `passed.mp3`, `lose.wav`, `restart.wav`, and `levelIntro.wav` to level completion, loss, reset, and tile-intro flows.
+- Re-ran `npm run build`; it passes after audio integration.
 
 ## Immediate Next Steps
 
-1. Add gameplay sound effects and music wiring from Unity assets.
-2. Add lightweight polish for win/final overlay copy and visual treatment after manual play review.
-3. Tune remaining animation timing if browser feel differs from Unity after manual play review.
-4. Optimize imported PNG assets or move to a more explicit web asset pipeline if bundle size becomes a problem.
-5. Add focused unit tests for level validation and core movement rules.
+1. Add lightweight polish for win/final overlay copy and visual treatment after manual play review.
+2. Tune remaining animation/audio timing if browser feel differs from Unity after manual play review.
+3. Optimize imported PNG/audio assets or move to a more explicit web asset pipeline if bundle size becomes a problem.
+4. Add focused unit tests for level validation and core movement rules.
+5. Prepare deployment settings once manual play review is complete.
 
 ## Notes
 
 - Backend remains out of scope until a specific feature requires it.
 - Keep docs compact and update them when the real project state changes.
 - Use root commands: `npm run dev`, `npm run typecheck`, `npm run build`, and `npm run preview`.
-- Levels 1-5 are now imported and playable from a Unity-style main menu with full-screen background, HUD, completion overlays, Unity-exported tile art, Larry hop movement, and tile intro animation; audio is still pending.
+- Levels 1-5 are now imported and playable from a Unity-style main menu with full-screen background, HUD, completion overlays, Unity-exported tile art, Larry hop movement, tile intro animation, music, and gameplay SFX.

@@ -7,8 +7,10 @@
 ## Open Technical Risks
 
 - Web asset optimization strategy is not defined yet; imported PNG tiles are large and should be compressed or atlased later.
+- Audio optimization strategy is not defined yet; `music.wav` is currently large and should likely be compressed for web delivery.
+- Browser autoplay policy may block `music.wav` until first user interaction despite the app attempting playback on initial mount.
 - Mobile layout, main menu sizing, completion overlays, and touch input have not been validated yet.
-- Pixi rendering scale, camera framing, responsive board fit, Unity-matched vertical map orientation, HUD overlap, and animation feel are still untested in browser.
+- Pixi rendering scale, camera framing, responsive board fit, Unity-matched vertical map orientation, HUD overlap, animation feel, and audio timing are still untested in browser.
 - Core reducer is implemented but not yet covered by automated unit tests; add focused tests once the first JSON level is introduced.
 - Five-level interactive state is wired, but manual browser gameplay parity still needs validation for click movement, win/loss, reset, manual next-level, and return-to-menu flow.
 - Catapult directional art is selected from `catapultDirection`, but launch direction versus visual art still needs manual validation in Levels 3-5.
@@ -24,3 +26,4 @@
 - Replaced the temporary two-column bootstrap UI with a full-screen background, main menu, and gameplay HUD.
 - Added manual completion overlays, Larry hop animation, and tile drop-in level intro animation.
 - Sped up the web tile drop-in intro animation and fixed catapult movement to animate through the catapult tile instead of lerping directly to the final landing tile.
+- Added looping music plus jump, catapult, heal, pass, lose, restart, and level-intro SFX wiring.

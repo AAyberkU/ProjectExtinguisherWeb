@@ -102,6 +102,16 @@ Example level format:
 - Level loads mirror Unity's `LevelLoader` intro: tiles start above the board, drop by diagonal lines using a faster web-tuned fall/line delay, then Larry appears.
 - `PixiStage` receives an `introKey` from `App` so fresh level loads and resets can replay the tile drop-in animation.
 
+## Audio Pipeline
+
+- `game/audio.ts` imports all files from root `sound/` and owns HTMLAudio playback.
+- `music.wav` starts when the app mounts, loops forever, and retries on the first pointer/key interaction if browser autoplay blocks the first attempt.
+- Gameplay SFX are scheduled from ordered `GameEvent` output so audio follows movement/catapult/health timing.
+- Manual movement plays `jump.wav` at hop start.
+- Catapult launch movement plays `catapult.wav` after Larry has first hopped onto the catapult tile.
+- Health pickup plays `heal.wav` after Larry lands on the health tile.
+- `passed.mp3`, `lose.wav`, `restart.wav`, and `levelIntro.wav` are bound to level pass, lose, reset, and tile intro flows.
+
 ## Coordinate Mapping
 
 - Web axial coordinates use the same `GridIndex` values as Unity `HexCell` objects.

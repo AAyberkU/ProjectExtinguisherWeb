@@ -69,10 +69,12 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 ## UX Goals
 
 - The game opens on the Unity-style main menu with Start Game and credits.
+- Main menu music starts on page load and loops continuously during menu and gameplay.
 - Starting the game removes the menu overlay, clears the dark background filter, zooms the background out, and then shows Level 1.
 - Returning to the main menu zooms the background in and restores the dark filter.
 - Level loading drops tiles in from above using a diagonal line cascade.
 - Larry moves between tiles with a short hop instead of instant teleporting.
+- Movement, catapult launches, health pickups, level pass, lose, restart, and level intro each have dedicated SFX.
 - Input should feel immediate and clear.
 - Valid next choices should be visually readable.
 - Movement should feel toy-like and satisfying.
