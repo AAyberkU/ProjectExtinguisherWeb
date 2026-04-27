@@ -345,3 +345,41 @@ select {
     display: flex;
   }
 }
+
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  .main-menu {
+    flex-direction: row;
+    padding-top: 2rem;
+    gap: 3rem;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .credits-card {
+    margin-top: 0;
+    width: auto;
+    padding: 1rem 2rem;
+  }
+
+  .menu-start-button {
+    font-size: clamp(1.5rem, 4vh, 2rem);
+    padding: 1rem 2rem;
+  }
+  
+  .credit-role { font-size: 1.2rem; }
+  .credit-name { font-size: 1rem; }
+  .credit-name + .credit-role { margin-top: 0.75rem; }
+
+  .game-hud {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 0.2rem;
+  }
+  
+  .hud-level {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    padding-top: 0;
+  }
+}

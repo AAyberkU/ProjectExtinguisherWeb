@@ -41,6 +41,18 @@ class GameAudioController {
       audio.preload = 'auto';
       this.fallbackAudio.set(name, audio);
     }
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          this.music.pause();
+        } else if (this.isPrimed) {
+          void this.music.play().catch(() => {
+            // Autoplay might be blocked if unlocked state was lost
+          });
+        }
+      });
+    }
   }
 
   public prime() {

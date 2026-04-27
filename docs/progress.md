@@ -89,6 +89,12 @@
 - Eliminated the initial game board rendering delay by preloading PixiJS textures globally when `App.tsx` first mounts.
 - Slowed down the initial "tile drop" board intro animation to synchronize perfectly with the startup sound effect.
 - Set 'passed' goal audio sequence delay to zero to provide an immediate auditory reward completely synced with the final user input.
+- Configured Vite for relative base paths (`base: './'`).
+- Added PWA support with `manifest.json`, theme colors, and icons.
+- Added CSS media query to force landscape on mobile by displaying a portrait-warning.
+- Switched to 'Comic Neue' Google Font for better cross-device consistency.
+- Integrated game bundle into an Astro portfolio site as a sub-directory.
+- Updated high-DPI scaling for mobile screens in PixiStage (added resolution and autoDensity).
 
 ## Immediate Next Steps
 

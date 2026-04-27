@@ -2,7 +2,7 @@
 
 ## Goal
 
-Project Extinguisher'ın Unity jam prototipini web-native, hızlı açılan, mobil uyumlu ve portfolio değerine sahip bir tarayıcı oyununa portlamak.
+Project Extinguisher'ın Unity jam prototipini web-native, hızlı açılan, mobil uyumlu, PWA (Progressive Web App) destekli ve portfolio değerine sahip bir tarayıcı oyununa portlamak.
 
 ## Recommended Stack
 
@@ -12,7 +12,8 @@ Project Extinguisher'ın Unity jam prototipini web-native, hızlı açılan, mob
 - React: Menü, HUD, progression, win/lose ekranı ve settings gibi canvas dışı UI katmanı.
 - SCSS: UI styling için seçilen ilk stil katmanı.
 - JSON: Unity `LevelData.asset` sisteminin web karşılığı level data formatı.
-- Cloudflare Pages veya Vercel: İlk public web deploy hedefi.
+- Cloudflare Pages, Vercel veya doğrudan alt-dizin hosting (ör. Astro tabanlı bir portfolio sitesinde).
+- PWA: "Install as App" özelliği için manifest.json ve mobil cihazlar için landscape oryantasyon kilidi.
 
 ## Initial Architecture
 
@@ -149,12 +150,14 @@ Example level format:
 - Start menu, level intro, HUD, audio, and outcome overlay are ported.
 - Desktop browser version is polished.
 
-### Milestone 3: Mobile Portfolio Polish
+### Milestone 3: Mobile Portfolio Polish (Completed)
 
 - Touch input feels good.
-- Portrait and landscape layouts are supported.
+- PWA desteği (Install as App, manifest.json).
+- Mobil cihazlarda portrait mod uyarı ekranı (Landscape force).
 - Assets are optimized for fast loading.
-- Game can be shared with a public web URL.
+- Google Fonts (Comic Neue) kullanılarak mobil cihazlarda font tutarlılığı sağlandı.
+- Astro portfolio projesinde alt dizin olarak host edilecek şekilde (`base: './'`) build pipeline hazırlandı.
 
 ### Milestone 4: Optional Backend
 
@@ -172,6 +175,11 @@ Recommended backend if needed:
 - Node.js for API server.
 - PostgreSQL for persistent data.
 - Redis only if real-time cache or leaderboard speed becomes necessary.
+
+## PWA & Deployment
+
+Web portu, PWA standartlarına uygun olarak `manifest.json`, `theme-color` meta etiketleri ve dokunmatik cihazlarda sadece landscape oynamayı zorunlu kılan CSS uyarıları (`#portrait-warning`) içerir. 
+Ayrıca, build pipeline (Vite) projenin herhangi bir portfolio sitesinde alt dizin (sub-directory) olarak host edilebilmesi için `base: './'` ayarıyla yapılandırılmıştır. Böylece `dist/` klasörü doğrudan başka bir projenin `public/` klasörüne (örneğin Astro) taşınabilir.
 
 ## Technical Principles
 
