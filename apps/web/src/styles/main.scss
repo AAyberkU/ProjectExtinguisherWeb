@@ -208,17 +208,17 @@ select {
 .hud-level {
   justify-self: center;
   padding-top: 0.15rem;
-  font-size: clamp(1.05rem, 1.9vw, 1.75rem);
+  font-size: clamp(1.4rem, 2.7vw, 2.3rem);
 }
 
 .hud-reset {
   justify-self: end;
-  padding: 0.2rem 0.5rem 0.35rem;
+  padding: 0.35rem 0.8rem 0.5rem;
   border: 0;
   border-radius: 14px;
   background: rgba(255, 219, 235, 0.08);
   cursor: pointer;
-  font-size: clamp(1rem, 1.8vw, 1.65rem);
+  font-size: clamp(1.75rem, 3.2vw, 3rem);
   pointer-events: auto;
 }
 

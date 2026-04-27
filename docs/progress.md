@@ -77,7 +77,6 @@
 - Reworked SFX playback from per-play `new Audio()` creation to Web Audio preload/decode buffers to reduce intermittent sound latency.
 - Kept `music.wav` on looping HTMLAudio and retained pointer/key unlock retry for autoplay policy.
 - Fixed background music continually resetting on every pointer/keyboard interaction.
-- Fixed background music continually resetting on every pointer/keyboard interaction.
 - Added 'Out of Moves' overlay panel with 'Try Again' button when a level is lost.
 - Adjusted default music volume down to 0.4.
 - Reworked tile rendering: disabled dimming transparency across all tiles. Replaced with a gray tint specifically for unvisited path tiles so that special tiles (catapult, health, blocked) always render vividly.
@@ -85,8 +84,11 @@
 - Removed all colored tile outlines for a cleaner aesthetic.
 - Implemented a synchronous fake 3D hover animation: the currently active tile, along with Larry, smoothly scales up and floats upwards (negative Y) in an endless sine wave cycle.
 - Added a minimal outline back (adjusted to 85% opacity, color changed to bright green `0x00ff88` for contrast) exclusively for accessible destination tiles to guide UX subtly.
+- Remapped the HUD to be fully scalable for any future number of levels. HUD text now displays as "Level: X" instead of a hardcoded fraction, and the "Return to Main Menu" game-completion logic dynamically detects the final level size via `LEVELS.length`.
+- Enlarged HUD text (Level display and R-to-Reset button) for better readability.
 - Eliminated the initial game board rendering delay by preloading PixiJS textures globally when `App.tsx` first mounts.
 - Slowed down the initial "tile drop" board intro animation to synchronize perfectly with the startup sound effect.
+- Set 'passed' goal audio sequence delay to zero to provide an immediate auditory reward completely synced with the final user input.
 
 ## Immediate Next Steps
 

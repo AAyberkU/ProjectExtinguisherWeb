@@ -233,7 +233,7 @@ export function App() {
         <header className="game-hud" aria-label="Game HUD">
           <p className="hud-moves">Moves Left: {movesLeftLabel}</p>
           <p className="hud-level">
-            {gameState.level.name} / {LEVELS.length}
+            {gameState.level.name}
           </p>
           <button className="hud-reset" type="button" onClick={handleResetLevel} aria-label="Reset current level">
             R Reset
