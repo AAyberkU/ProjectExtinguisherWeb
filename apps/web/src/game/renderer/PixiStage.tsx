@@ -10,13 +10,14 @@ type PixiStageProps = Readonly<{
   onActivateCell: (coord: AxialCoord) => void;
 }>;
 
-const TILE_RADIUS = 42;
-const TILE_SPRITE_WIDTH = TILE_RADIUS * 2.1;
-const TILE_SPRITE_HEIGHT = TILE_RADIUS * 1.86;
-const LARRY_SPRITE_HEIGHT = TILE_RADIUS * 1.55;
+const TILE_LAYOUT_RADIUS = 42;
+const TILE_VISUAL_RADIUS = 36.5;
+const TILE_SPRITE_WIDTH = TILE_VISUAL_RADIUS * 2.1;
+const TILE_SPRITE_HEIGHT = TILE_VISUAL_RADIUS * 1.86;
+const LARRY_SPRITE_HEIGHT = TILE_VISUAL_RADIUS * 1.55;
 const LARRY_MOVE_DURATION_MS = 220;
-const LARRY_HOP_HEIGHT = TILE_RADIUS * 0.52;
-const TILE_INTRO_DROP_OFFSET = TILE_RADIUS * 9;
+const LARRY_HOP_HEIGHT = TILE_VISUAL_RADIUS * 0.52;
+const TILE_INTRO_DROP_OFFSET = TILE_VISUAL_RADIUS * 9;
 const TILE_INTRO_FALL_DURATION_MS = 34;
 const TILE_INTRO_LINE_DELAY_MS = 5;
 
@@ -182,8 +183,8 @@ function createTileHitArea() {
     Array.from({ length: 6 }, (_, index) => {
       const angle = (Math.PI / 180) * (60 * index);
       return {
-        x: Math.cos(angle) * TILE_RADIUS,
-        y: Math.sin(angle) * TILE_RADIUS,
+        x: Math.cos(angle) * TILE_VISUAL_RADIUS,
+        y: Math.sin(angle) * TILE_VISUAL_RADIUS,
       };
     }).flatMap((point) => [point.x, point.y]),
   );
@@ -256,11 +257,11 @@ function animateTileIntro(
 }
 
 function resolveLarrySpritePosition(coord: AxialCoord) {
-  const position = axialToPixel(coord, TILE_RADIUS);
+  const position = axialToPixel(coord, TILE_LAYOUT_RADIUS);
 
   return {
     x: position.x,
-    y: position.y + TILE_RADIUS * 0.48,
+    y: position.y + TILE_VISUAL_RADIUS * 0.48,
   };
 }
 
@@ -339,7 +340,7 @@ function renderBoard(gameState: GameState, board: Container, onActivateCell: (co
   const orderedCells = getOrderedCells(gameState)
     .map((cell) => ({
       cell,
-      position: axialToPixel(cell.coord, TILE_RADIUS),
+      position: axialToPixel(cell.coord, TILE_LAYOUT_RADIUS),
       projection: 0,
     }))
     .map((entry) => ({
@@ -360,9 +361,13 @@ function renderBoard(gameState: GameState, board: Container, onActivateCell: (co
     const sprite = createTileSprite(textureUrl);
     const stroke = resolveTileStroke(gameState, cell);
     const outline = new Graphics();
-    const targetAlpha = cell.active || canActivateCell(gameState, cell.coord).allowed || coordsEqual(cell.coord, gameState.larryPosition) ? 1 : 0.62;
+    const targetAlpha = 1;
 
-    drawFlatTopHex(outline, TILE_RADIUS, stroke.color, stroke.alpha, stroke.width);
+    if (cell.tileType === 'path' && !cell.active) {
+      sprite.tint = 0x888888;
+    }
+
+    drawFlatTopHex(outline, TILE_VISUAL_RADIUS, stroke.color, stroke.alpha, stroke.width);
     tile.addChild(sprite, createTileHitArea(), outline);
     tile.x = position.x;
     tile.y = position.y;

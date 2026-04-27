@@ -19,7 +19,7 @@ const GAME_SHELL_STYLE: GameShellStyle = {
 const MENU_TRANSITION_MS = 900;
 
 type AppPhase = 'menu' | 'starting' | 'playing';
-type CompletionState = 'level' | 'game' | null;
+type CompletionState = 'level' | 'game' | 'lost' | null;
 type LarryMovedEvent = Extract<GameEvent, Readonly<{ type: 'larry-moved' }>>;
 
 function resetLevelState(currentState: ReturnType<typeof createFirstLevelGameState>) {
@@ -65,16 +65,16 @@ export function App() {
   useEffect(() => {
     gameAudio.startMusic();
 
-    function unlockMusic() {
+    function unlockAudio() {
       gameAudio.startMusic();
     }
 
-    window.addEventListener('pointerdown', unlockMusic);
-    window.addEventListener('keydown', unlockMusic);
+    window.addEventListener('pointerdown', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
 
     return () => {
-      window.removeEventListener('pointerdown', unlockMusic);
-      window.removeEventListener('keydown', unlockMusic);
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
       gameAudio.cancelScheduledSfx();
     };
   }, []);
@@ -126,6 +126,7 @@ export function App() {
   function dispatchGameCommand(command: GameCommand) {
     const result = applyCommand(gameState, command);
     const completedLevel = result.events.some((event) => event.type === 'level-won');
+    const lostLevel = result.events.some((event) => event.type === 'level-lost');
     const nextMovementPath = createMovementPath(result.events);
 
     if (result.accepted) {
@@ -133,7 +134,7 @@ export function App() {
       gameAudio.scheduleGameplayEvents(result.events);
     }
 
-    if (!completedLevel) {
+    if (!completedLevel && !lostLevel) {
       setMovementPath(nextMovementPath);
       setGameState(result.state);
       return;
@@ -141,7 +142,12 @@ export function App() {
 
     setMovementPath(nextMovementPath);
     setGameState(result.state);
-    setCompletion(currentLevelNumber === LEVELS.length ? 'game' : 'level');
+    
+    if (completedLevel) {
+      setCompletion(currentLevelNumber === LEVELS.length ? 'game' : 'level');
+    } else if (lostLevel) {
+      setCompletion('lost');
+    }
   }
 
   function handleActivateCell(coord: AxialCoord) {
@@ -232,13 +238,21 @@ export function App() {
       ) : null}
 
       {phase === 'playing' && completion !== null ? (
-        <section className="completion-overlay" aria-label="Level complete">
+        <section className="completion-overlay" aria-label={completion === 'lost' ? 'Level failed' : 'Level complete'}>
           <div className="completion-panel">
-            <p className="completion-title">{completedFinalLevel ? 'You Finished The Game' : 'You Won'}</p>
+            <p className="completion-title">
+              {completion === 'lost' ? 'Out of Moves' : completedFinalLevel ? 'You Finished The Game' : 'You Won'}
+            </p>
             <p className="completion-copy">Press R to Reset</p>
-            <button className="completion-button" type="button" onClick={handleContinueAfterWin}>
-              {completedFinalLevel ? 'Return to Main Menu' : 'Next Level'}
-            </button>
+            {completion === 'lost' ? (
+              <button className="completion-button" type="button" onClick={handleResetLevel}>
+                Try Again
+              </button>
+            ) : (
+              <button className="completion-button" type="button" onClick={handleContinueAfterWin}>
+                {completedFinalLevel ? 'Return to Main Menu' : 'Next Level'}
+              </button>
+            )}
           </div>
         </section>
       ) : null}

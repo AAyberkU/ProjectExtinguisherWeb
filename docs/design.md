@@ -104,9 +104,10 @@ Example level format:
 
 ## Audio Pipeline
 
-- `game/audio.ts` imports all files from root `sound/` and owns HTMLAudio playback.
-- `music.wav` starts when the app mounts, loops forever, and retries on the first pointer/key interaction if browser autoplay blocks the first attempt.
-- Gameplay SFX are scheduled from ordered `GameEvent` output so audio follows movement/catapult/health timing.
+- `game/audio.ts` imports all files from root `sound/` and owns music/SFX playback.
+- `music.wav` uses a looping `HTMLAudioElement`, starts when the app mounts, and retries on pointer/key interaction if browser autoplay blocks the first attempt.
+- Short SFX use Web Audio: files are fetched and decoded into `AudioBuffer`s up front, with preloaded `HTMLAudioElement` fallback for unsupported browsers.
+- Gameplay SFX are scheduled from ordered `GameEvent` output so audio follows movement/catapult/health timing with minimal play-time decode delay.
 - Manual movement plays `jump.wav` at hop start.
 - Catapult launch movement plays `catapult.wav` after Larry has first hopped onto the catapult tile.
 - Health pickup plays `heal.wav` after Larry lands on the health tile.

@@ -74,12 +74,19 @@
 - Wired `jump.wav`, `catapult.wav`, and `heal.wav` according to movement event order so catapult/health sounds happen after Larry lands on the triggering tile.
 - Wired `passed.mp3`, `lose.wav`, `restart.wav`, and `levelIntro.wav` to level completion, loss, reset, and tile-intro flows.
 - Re-ran `npm run build`; it passes after audio integration.
+- Reworked SFX playback from per-play `new Audio()` creation to Web Audio preload/decode buffers to reduce intermittent sound latency.
+- Kept `music.wav` on looping HTMLAudio and retained pointer/key unlock retry for autoplay policy.
+- Fixed background music continually resetting on every pointer/keyboard interaction.
+- Added 'Out of Moves' overlay panel with 'Try Again' button when a level is lost.
+- Adjusted default music volume down to 0.4.
+- Reworked tile rendering: disabled dimming transparency across all tiles. Replaced with a gray tint specifically for unvisited path tiles so that special tiles (catapult, health, blocked) always render vividly.
+- Separated `TILE_LAYOUT_RADIUS` and `TILE_VISUAL_RADIUS` to introduce a margin between tiles on the grid while maintaining coordinate accuracy.
 
 ## Immediate Next Steps
 
 1. Add lightweight polish for win/final overlay copy and visual treatment after manual play review.
 2. Tune remaining animation/audio timing if browser feel differs from Unity after manual play review.
-3. Optimize imported PNG/audio assets or move to a more explicit web asset pipeline if bundle size becomes a problem.
+3. Compress `music.wav` and large PNG assets or move to a more explicit web asset pipeline if bundle size becomes a problem.
 4. Add focused unit tests for level validation and core movement rules.
 5. Prepare deployment settings once manual play review is complete.
 

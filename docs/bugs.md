@@ -7,7 +7,7 @@
 ## Open Technical Risks
 
 - Web asset optimization strategy is not defined yet; imported PNG tiles are large and should be compressed or atlased later.
-- Audio optimization strategy is not defined yet; `music.wav` is currently large and should likely be compressed for web delivery.
+- `music.wav` is currently large and should likely be compressed for web delivery, but SFX playback now uses pre-decoded Web Audio buffers to avoid per-play decode latency.
 - Browser autoplay policy may block `music.wav` until first user interaction despite the app attempting playback on initial mount.
 - Mobile layout, main menu sizing, completion overlays, and touch input have not been validated yet.
 - Pixi rendering scale, camera framing, responsive board fit, Unity-matched vertical map orientation, HUD overlap, animation feel, and audio timing are still untested in browser.
@@ -27,3 +27,5 @@
 - Added manual completion overlays, Larry hop animation, and tile drop-in level intro animation.
 - Sped up the web tile drop-in intro animation and fixed catapult movement to animate through the catapult tile instead of lerping directly to the final landing tile.
 - Added looping music plus jump, catapult, heal, pass, lose, restart, and level-intro SFX wiring.
+- Replaced per-play SFX `new Audio()` creation with Web Audio preload/decode playback to reduce intermittent sound delay.
+- Fixed background music continually resetting to the beginning on every pointer/keyboard interaction.
