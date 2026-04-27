@@ -1,14 +1,20 @@
 import { useState } from 'react';
 import { applyCommand } from './game/core';
 import type { AxialCoord, GameCommand } from './game/core';
-import { createFirstLevelGameState } from './game/levels';
+import { createFirstLevelGameState, createNextLevelGameState, getLevelIndex, LEVELS } from './game/levels';
 import { PixiStage } from './game/renderer/PixiStage';
 
 export function App() {
   const [gameState, setGameState] = useState(createFirstLevelGameState);
+  const currentLevelNumber = getLevelIndex(gameState.level.id) + 1;
 
   function dispatchGameCommand(command: GameCommand) {
-    setGameState((currentState) => applyCommand(currentState, command).state);
+    setGameState((currentState) => {
+      const result = applyCommand(currentState, command);
+      const completedLevel = result.events.some((event) => event.type === 'level-won');
+
+      return completedLevel ? createNextLevelGameState(currentState.level.id) : result.state;
+    });
   }
 
   function handleActivateCell(coord: AxialCoord) {
@@ -25,12 +31,14 @@ export function App() {
         <p className="eyebrow">Playable Slice Bootstrap</p>
         <h1>Project Extinguisher</h1>
         <p className="hero-copy">
-          Level 1 now runs through a React-owned game state. Click a neighboring tile to spend a move and guide Larry
-          toward the goal.
+          Clear each Unity-authored level to advance automatically. Reset restarts only the current level.
         </p>
 
         <div className="state-strip" aria-label="Current level state">
-          <span>{gameState.level.name}</span>
+          <span>
+            {gameState.level.name} / {LEVELS.length}
+          </span>
+          <span>Stage: {currentLevelNumber}</span>
           <span>Moves: {gameState.movesRemaining}</span>
           <span>Status: {gameState.status}</span>
         </div>

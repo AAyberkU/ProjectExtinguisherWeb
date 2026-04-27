@@ -2,7 +2,7 @@
 
 ## Status
 
-- Project has completed the initial web bootstrap, first pure TypeScript game-core pass, first Unity-to-JSON level import, first interactive Level 1 state wiring, and first Unity art integration for the web-native port.
+- Project has completed the initial web bootstrap, first pure TypeScript game-core pass, Unity-to-JSON import for Levels 1-5, interactive state wiring, automatic level progression, and first Unity art integration for the web-native port.
 - Current target stack is TypeScript, Pixi.js, Vite, React, SCSS, and JSON levels.
 - First milestone remains a static playable web slice with no backend.
 
@@ -43,18 +43,28 @@
 - Replaced the Larry placeholder marker with `Art/Characters/Larry/LarrySprite.png`.
 - Added validation that level cell `variant` values must be non-negative integers.
 - Re-ran `npm run build`; it passes after art integration and variant validation.
+- Converted Unity `Level_002.asset` through `Level_005.asset` into JSON web levels.
+- Simplified path-only visual overrides so normal path and blocked art variants use the renderer's deterministic even distribution.
+- Registered all five JSON levels in `LEVELS` and added `getLevelIndex()` plus `createNextLevelGameState()`.
+- Updated React game-state dispatch so `level-won` immediately advances to the next level, and Level 5 loops back to Level 1.
+- Kept reset scoped to the current level via the existing `reset-level` command.
+- Added runtime validation for `catapultDirection` values.
+- Re-ran `npm run build`; it passes after the Level 1-5 import and progression change.
+- Connected to the Unity scene through MCP and sampled all 61 `HexCell` `GridIndex`/world-position pairs from `GameplayScene`.
+- Updated web `axialToPixel()` to match Unity's `x = q * columnSpacing`, `y = (r + q / 2) * rowSpacing` layout, including browser canvas y-axis inversion.
+- Re-ran `npm run build`; it passes after the Unity coordinate mapping correction.
 
 ## Immediate Next Steps
 
-1. Manually browser-test Level 1 click movement, invalid clicks, win, loss, reset, board orientation, and tile art readability.
-2. Replace the temporary state strip with the first real React HUD layer.
-3. Add Larry movement animation instead of instant sprite repositioning.
+1. Replace the temporary state strip with the first real React HUD layer for the five-level run.
+2. Add Larry movement animation instead of instant sprite repositioning.
+3. Add lightweight level transition feedback so automatic progression does not feel abrupt.
 4. Optimize imported PNG assets or move to a more explicit web asset pipeline if bundle size becomes a problem.
-5. Add focused unit tests for Level 1 validation and core movement rules.
+5. Add focused unit tests for level validation and core movement rules.
 
 ## Notes
 
 - Backend remains out of scope until a specific feature requires it.
 - Keep docs compact and update them when the real project state changes.
 - Use root commands: `npm run dev`, `npm run typecheck`, `npm run build`, and `npm run preview`.
-- Level 1 is now interactive with Unity-exported tile and Larry sprite rendering; animation is still pending.
+- Levels 1-5 are now imported and playable through automatic progression with Unity-exported tile and Larry sprite rendering; animation is still pending.

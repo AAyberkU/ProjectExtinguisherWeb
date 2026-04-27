@@ -1,0 +1,25 @@
+{
+  "id": "level_003",
+  "name": "Level 3",
+  "radius": 4,
+  "moveLimit": 7,
+  "start": { "q": 1, "r": 3 },
+  "goal": { "q": 2, "r": -4 },
+  "defaultInitialActive": false,
+  "cells": [
+    { "q": 2, "r": 2, "blocked": true },
+    { "q": -1, "r": 2, "blocked": true },
+    { "q": -3, "r": 2, "blocked": true },
+    { "q": -2, "r": 0, "blocked": true },
+    { "q": 1, "r": -1, "blocked": true },
+    { "q": 2, "r": -3, "blocked": true },
+    { "q": -2, "r": 3, "catapultDirection": "NE" },
+    { "q": -2, "r": 1, "catapultDirection": "NW" },
+    { "q": 0, "r": 0, "catapultDirection": "E" },
+    { "q": 0, "r": 2, "catapultDirection": "W" },
+    { "q": -1, "r": -2, "catapultDirection": "NE" },
+    { "q": 2, "r": -1, "catapultDirection": "W" },
+    { "q": 3, "r": 0, "catapultDirection": "NW" },
+    { "q": 3, "r": -3, "catapultDirection": "W" }
+  ]
+}

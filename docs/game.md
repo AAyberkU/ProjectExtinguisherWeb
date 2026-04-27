@@ -30,6 +30,8 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 - The level is won when Larry reaches the goal.
 - The level is lost when moves reach 0 and Larry is not on the goal.
 - Reset restarts the current level.
+- Completing a level automatically loads the next level.
+- Completing Level 5 loops back to Level 1.
 
 ## Special Tiles
 
@@ -51,7 +53,7 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 
 - The current Unity prototype has 5 playable levels.
 - The shared board has 61 hex cells.
-- Levels are data-driven and should become JSON in the web port.
+- Levels 1-5 are data-driven JSON ports of the Unity `LevelData.asset` files.
 - Current mechanics include adjacency movement, move limit, reset, win/fail, blocked tiles, catapults, health tiles, start menu, level intro, HUD, and audio feedback.
 
 ## Level Design Intent

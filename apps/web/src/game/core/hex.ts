@@ -2,6 +2,9 @@ import type { AxialCoord, CatapultDirection } from './types';
 
 export const BOARD_RADIUS = 4;
 
+const UNITY_COLUMN_SPACING_RATIO = 1.5;
+const UNITY_ROW_SPACING_RATIO = 1.639843;
+
 export const AXIAL_DIRECTIONS: Readonly<Record<CatapultDirection, AxialCoord>> = {
   E: { q: 1, r: 0 },
   NE: { q: 1, r: -1 },
@@ -27,8 +30,8 @@ export function createBoardCoordinates(radius = BOARD_RADIUS): AxialCoord[] {
 }
 
 export function axialToPixel(coord: AxialCoord, size: number): { x: number; y: number } {
-  const x = size * 1.5 * coord.q;
-  const y = size * Math.sqrt(3) * (coord.r + coord.q / 2);
+  const x = size * UNITY_COLUMN_SPACING_RATIO * coord.q;
+  const y = -size * UNITY_ROW_SPACING_RATIO * (coord.r + coord.q / 2);
 
   return { x, y };
 }

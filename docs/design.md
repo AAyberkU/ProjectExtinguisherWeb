@@ -9,7 +9,7 @@ Project Extinguisher'ın Unity jam prototipini web-native, hızlı açılan, mob
 - TypeScript: Web portun ana dili. JavaScript'in tip güvenliği olan hali.
 - Pixi.js: Hex board, tile sprite'ları, Larry, background ve animasyonları çizecek 2D render katmanı.
 - Vite: Development server ve production build aracı.
-- React: Menü, HUD, level select, win/lose ekranı ve settings gibi canvas dışı UI katmanı.
+- React: Menü, HUD, progression, win/lose ekranı ve settings gibi canvas dışı UI katmanı.
 - SCSS: UI styling için seçilen ilk stil katmanı.
 - JSON: Unity `LevelData.asset` sisteminin web karşılığı level data formatı.
 - Cloudflare Pages veya Vercel: İlk public web deploy hedefi.
@@ -43,6 +43,8 @@ ProjectExtinguisherWeb/
 
 Unity tarafındaki `LevelData.asset` dosyaları web tarafında JSON'a çevrilecek.
 
+Current web build includes `Level_001.asset` through `Level_005.asset` as JSON files under `apps/web/src/game/levels`.
+
 Example level format:
 
 ```json
@@ -73,6 +75,21 @@ Example level format:
 - Path and blocked tile variants are resolved deterministically so unspecified variants still distribute evenly.
 - Catapult art is selected from the same `catapultDirection` value used by gameplay logic.
 
+## Progression Pipeline
+
+- The web version does not use a level-select flow for the current playable slice.
+- `App` owns the active `GameState` and listens for `level-won` events from `game/core`.
+- A win immediately creates fresh state for the next level through `createNextLevelGameState()`.
+- Reset dispatches `reset-level`, which restarts only the currently active level.
+- Level 5 completion wraps back to Level 1.
+
+## Coordinate Mapping
+
+- Web axial coordinates use the same `GridIndex` values as Unity `HexCell` objects.
+- Unity scene sampling confirmed the layout as `x = q * columnSpacing` and `y = (r + q / 2) * rowSpacing`.
+- Browser canvas y increases downward, so web rendering inverts the Unity y projection while keeping gameplay offsets unchanged.
+- The web projection is implemented in `game/core/hex.ts` and uses Unity-derived spacing ratios rather than idealized hex math.
+
 ## Development Pipeline
 
 1. Setup web project with TypeScript, Vite, Pixi.js, React, and SCSS.
@@ -90,7 +107,7 @@ Example level format:
 
 ### Milestone 1: Playable Web Slice
 
-- Level 1 loads from JSON.
+- Levels 1-5 load from JSON.
 - Board renders in Pixi.js.
 - Larry can move by clicking valid neighboring tiles.
 - Moves counter, reset, win, and fail work.
