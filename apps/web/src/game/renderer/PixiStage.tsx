@@ -18,8 +18,8 @@ const LARRY_SPRITE_HEIGHT = TILE_VISUAL_RADIUS * 1.55;
 const LARRY_MOVE_DURATION_MS = 220;
 const LARRY_HOP_HEIGHT = TILE_VISUAL_RADIUS * 0.52;
 const TILE_INTRO_DROP_OFFSET = TILE_VISUAL_RADIUS * 9;
-const TILE_INTRO_FALL_DURATION_MS = 34;
-const TILE_INTRO_LINE_DELAY_MS = 5;
+const TILE_INTRO_FALL_DURATION_MS = 150;
+const TILE_INTRO_LINE_DELAY_MS = 6;
 
 type AnimationCleanup = () => void;
 
@@ -75,11 +75,11 @@ const TILE_TEXTURE_URLS = [
   LARRY_TEXTURE_URL,
 ];
 
-const VALID_STROKE = 0xffcf7a;
-const ACTIVE_STROKE = 0xfff2d6;
-const CURRENT_STROKE = 0x35d0ba;
+export async function preloadPixiAssets() {
+  await Assets.load(TILE_TEXTURE_URLS);
+}
 
-function drawFlatTopHex(graphics: Graphics, radius: number, stroke: number, alpha: number, width = 3) {
+function drawHexOutline(graphics: Graphics, radius: number, color: number, alpha: number, width: number) {
   graphics.clear();
   graphics.poly(
     Array.from({ length: 6 }, (_, index) => {
@@ -92,7 +92,7 @@ function drawFlatTopHex(graphics: Graphics, radius: number, stroke: number, alph
   );
 
   if (alpha > 0) {
-    graphics.stroke({ color: stroke, width, alpha });
+    graphics.stroke({ color, width, alpha });
   }
 }
 
@@ -158,23 +158,7 @@ function resolveTileTextureUrl(cell: CellState, pathIndex: number, blockedIndex:
   }
 }
 
-function resolveTileStroke(gameState: GameState, cell: CellState) {
-  const activation = canActivateCell(gameState, cell.coord);
 
-  if (coordsEqual(cell.coord, gameState.larryPosition)) {
-    return { color: CURRENT_STROKE, alpha: 0.95, width: 4 };
-  }
-
-  if (activation.allowed) {
-    return { color: VALID_STROKE, alpha: 0.9, width: 4 };
-  }
-
-  if (cell.active) {
-    return { color: ACTIVE_STROKE, alpha: 0.58, width: 2 };
-  }
-
-  return { color: ACTIVE_STROKE, alpha: 0, width: 0 };
-}
 
 function createTileHitArea() {
   const hitArea = new Graphics();
@@ -296,7 +280,6 @@ function drawLarry(board: Container, gameState: GameState, options: RenderBoardO
 
       return progress < 1;
     }, options.registerAnimation);
-    return;
   }
 
   if (options.animateLarry && larryPath !== null && larryPath.length > 1) {
@@ -313,19 +296,41 @@ function drawLarry(board: Container, gameState: GameState, options: RenderBoardO
         return false;
       }
 
-      const clampedElapsed = Math.min(elapsedMs, totalDurationMs);
-      const segmentIndex = Math.min(Math.floor(clampedElapsed / LARRY_MOVE_DURATION_MS), segmentCount - 1);
-      const segmentElapsed = clampedElapsed - segmentIndex * LARRY_MOVE_DURATION_MS;
-      const progress = Math.min(segmentElapsed / LARRY_MOVE_DURATION_MS, 1);
-      const startPosition = pathPositions[segmentIndex];
-      const endPosition = pathPositions[segmentIndex + 1];
-      const horizontalProgress = easeOutCubic(progress);
-      const verticalLift = Math.sin(progress * Math.PI) * LARRY_HOP_HEIGHT;
+      if (elapsedMs < totalDurationMs) {
+        const clampedElapsed = elapsedMs;
+        const segmentIndex = Math.min(Math.floor(clampedElapsed / LARRY_MOVE_DURATION_MS), segmentCount - 1);
+        const segmentElapsed = clampedElapsed - segmentIndex * LARRY_MOVE_DURATION_MS;
+        const progress = Math.min(segmentElapsed / LARRY_MOVE_DURATION_MS, 1);
+        const startPosition = pathPositions[segmentIndex];
+        const endPosition = pathPositions[segmentIndex + 1];
+        const horizontalProgress = easeOutCubic(progress);
+        const verticalLift = Math.sin(progress * Math.PI) * LARRY_HOP_HEIGHT;
 
-      larry.x = lerp(startPosition.x, endPosition.x, horizontalProgress);
-      larry.y = lerp(startPosition.y, endPosition.y, horizontalProgress) - verticalLift;
+        larry.x = lerp(startPosition.x, endPosition.x, horizontalProgress);
+        larry.y = lerp(startPosition.y, endPosition.y, horizontalProgress) - verticalLift;
+      } else {
+        const targetPos = pathPositions[pathPositions.length - 1];
+        larry.x = targetPos.x;
+        
+        const cycle = Math.sin((elapsedMs * Math.PI * 2) / 1200);
+        larry.y = targetPos.y + (cycle - 1) * 1.5;
+        larry.scale.set(scale * (1.0 + (cycle + 1) * 0.01));
+      }
 
-      return elapsedMs < totalDurationMs;
+      return true;
+    }, options.registerAnimation);
+  } else {
+    // Idle 3D hover animation matching the tile underneath
+    const baseY = targetPosition.y;
+    
+    registerTickerAnimation(options.app, (elapsedMs) => {
+      if (larry.parent === null) return false;
+      
+      const cycle = Math.sin((elapsedMs * Math.PI * 2) / 1200);
+      larry.y = baseY + (cycle - 1) * 1.5;
+      larry.scale.set(scale * (1.0 + (cycle + 1) * 0.01));
+      
+      return true;
     }, options.registerAnimation);
   }
 }
@@ -359,15 +364,34 @@ function renderBoard(gameState: GameState, board: Container, onActivateCell: (co
     const tile = new Container();
     const textureUrl = resolveTileTextureUrl(cell, pathIndex, blockedIndex);
     const sprite = createTileSprite(textureUrl);
-    const stroke = resolveTileStroke(gameState, cell);
-    const outline = new Graphics();
     const targetAlpha = 1;
+    const isLarryTile = coordsEqual(cell.coord, gameState.larryPosition);
+    const activation = canActivateCell(gameState, cell.coord);
 
     if (cell.tileType === 'path' && !cell.active) {
       sprite.tint = 0x888888;
     }
 
-    drawFlatTopHex(outline, TILE_VISUAL_RADIUS, stroke.color, stroke.alpha, stroke.width);
+    const outline = new Graphics();
+    if (activation.allowed && !isLarryTile) {
+      drawHexOutline(outline, TILE_VISUAL_RADIUS, 0x00ff88, 0.85, 2.5);
+    }
+
+    if (isLarryTile) {
+      registerTickerAnimation(options.app, (elapsedMs) => {
+        if (sprite.parent === null) return false;
+        
+        const cycle = Math.sin((elapsedMs * Math.PI * 2) / 1200);
+        sprite.y = (cycle - 1) * 1.5;
+        
+        const scaleMod = 1.0 + (cycle + 1) * 0.01;
+        sprite.width = TILE_SPRITE_WIDTH * scaleMod;
+        sprite.height = TILE_SPRITE_HEIGHT * scaleMod;
+        
+        return true;
+      }, options.registerAnimation);
+    }
+
     tile.addChild(sprite, createTileHitArea(), outline);
     tile.x = position.x;
     tile.y = position.y;

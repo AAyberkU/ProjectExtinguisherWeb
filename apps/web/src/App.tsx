@@ -4,7 +4,7 @@ import { gameAudio } from './game/audio';
 import { applyCommand } from './game/core';
 import type { AxialCoord, GameCommand, GameEvent } from './game/core';
 import { createFirstLevelGameState, createNextLevelGameState, getLevelIndex, LEVELS } from './game/levels';
-import { PixiStage } from './game/renderer/PixiStage';
+import { PixiStage, preloadPixiAssets } from './game/renderer/PixiStage';
 
 const BACKGROUND_IMAGE_URL = new URL('../../../Art/Background/Background.png', import.meta.url).href;
 
@@ -61,6 +61,10 @@ export function App() {
   }
 
   useEffect(() => clearTransitionTimeout, []);
+
+  useEffect(() => {
+    preloadPixiAssets().catch(console.error);
+  }, []);
 
   useEffect(() => {
     gameAudio.startMusic();

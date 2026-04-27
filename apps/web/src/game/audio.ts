@@ -125,7 +125,7 @@ class GameAudioController {
           this.schedule('heal', delayMs);
           break;
         case 'level-won':
-          this.schedule('passed', delayMs);
+          this.schedule('passed', Math.max(0, delayMs - 220));
           break;
         case 'level-lost':
           this.schedule('lose', delayMs);
