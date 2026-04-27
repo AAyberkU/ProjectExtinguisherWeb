@@ -20,6 +20,8 @@ const LARRY_HOP_HEIGHT = TILE_VISUAL_RADIUS * 0.52;
 const TILE_INTRO_DROP_OFFSET = TILE_VISUAL_RADIUS * 9;
 const TILE_INTRO_FALL_DURATION_MS = 180;
 const TILE_INTRO_LINE_DELAY_MS = 8;
+const MIN_RENDER_RESOLUTION = 2;
+const MAX_RENDER_RESOLUTION = 3;
 
 type AnimationCleanup = () => void;
 
@@ -102,6 +104,17 @@ function centerBoard(app: Application, board: Container) {
 
   const fit = Math.min(app.renderer.width / 920, app.renderer.height / 760, 1.45);
   board.scale.set(Math.max(0.52, fit));
+}
+
+function getRenderResolution(): number {
+  return Math.min(Math.max(window.devicePixelRatio || 1, MIN_RENDER_RESOLUTION), MAX_RENDER_RESOLUTION);
+}
+
+function syncRendererSize(app: Application, host: HTMLElement, board: Container) {
+  const { width, height } = host.getBoundingClientRect();
+
+  app.renderer.resize(Math.max(1, Math.round(width)), Math.max(1, Math.round(height)), getRenderResolution());
+  centerBoard(app, board);
 }
 
 function positiveModulo(value: number, divisor: number): number {
@@ -464,6 +477,10 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell }:
     let disposed = false;
     let app: Application | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    let resizeFrame: number | null = null;
+    let scheduleResizeSync: (() => void) | null = null;
+
+    const handleViewportResize = () => scheduleResizeSync?.();
 
     async function mount() {
       await Assets.load(TILE_TEXTURE_URLS);
@@ -477,6 +494,8 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell }:
         antialias: true,
         backgroundAlpha: 0,
         resizeTo: mountHost,
+        resolution: getRenderResolution(),
+        autoDensity: true,
       });
 
       if (disposed) {
@@ -503,10 +522,27 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell }:
       });
       previousLarryPositionRef.current = gameStateRef.current.larryPosition;
       lastIntroKeyRef.current = introKey;
-      centerBoard(nextApp, board);
+      syncRendererSize(nextApp, mountHost, board);
 
-      resizeObserver = new ResizeObserver(() => centerBoard(nextApp, board));
+      scheduleResizeSync = () => {
+        if (resizeFrame !== null) {
+          window.cancelAnimationFrame(resizeFrame);
+        }
+
+        resizeFrame = window.requestAnimationFrame(() => {
+          resizeFrame = null;
+
+          if (!disposed) {
+            syncRendererSize(nextApp, mountHost, board);
+          }
+        });
+      };
+
+      resizeObserver = new ResizeObserver(handleViewportResize);
       resizeObserver.observe(mountHost);
+      window.addEventListener('resize', handleViewportResize);
+      window.addEventListener('orientationchange', handleViewportResize);
+      scheduleResizeSync();
     }
 
     void mount();
@@ -514,6 +550,13 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell }:
     return () => {
       disposed = true;
       resizeObserver?.disconnect();
+      window.removeEventListener('resize', handleViewportResize);
+      window.removeEventListener('orientationchange', handleViewportResize);
+
+      if (resizeFrame !== null) {
+        window.cancelAnimationFrame(resizeFrame);
+      }
+
       stopAnimations();
       boardRef.current = null;
       appRef.current = null;

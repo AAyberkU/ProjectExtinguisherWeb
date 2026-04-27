@@ -2,11 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="Project Extinguisher web-native puzzle game prototype." />
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="theme-color" content="#121212" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700;900&display=swap" rel="stylesheet">
     <title>Project Extinguisher Web</title>
   </head>
   <body>
+    <div id="portrait-warning">Please rotate your phone<br/>to play in landscape mode.</div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
