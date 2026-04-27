@@ -53,12 +53,19 @@
 - Connected to the Unity scene through MCP and sampled all 61 `HexCell` `GridIndex`/world-position pairs from `GameplayScene`.
 - Updated web `axialToPixel()` to match Unity's `x = q * columnSpacing`, `y = (r + q / 2) * rowSpacing` layout, including browser canvas y-axis inversion.
 - Re-ran `npm run build`; it passes after the Unity coordinate mapping correction.
+- Removed the temporary two-column bootstrap UI and made the game full-screen.
+- Added the Unity background art as the page background with menu zoom/filter states.
+- Added a Unity-style main menu with Start Game and credits.
+- Added Start Game transition: menu content disappears, dark filter fades out, background zooms out, then Level 1 gameplay mounts.
+- Updated final-level progression so completing Level 5 returns to the main menu instead of immediately looping into Level 1 gameplay.
+- Added gameplay HUD with top-left moves, top-center level text, top-right `R Reset` button, and `R` keyboard reset.
+- Re-ran `npm run build`; it passes after the main menu and HUD update.
 
 ## Immediate Next Steps
 
-1. Replace the temporary state strip with the first real React HUD layer for the five-level run.
-2. Add Larry movement animation instead of instant sprite repositioning.
-3. Add lightweight level transition feedback so automatic progression does not feel abrupt.
+1. Add Larry movement animation instead of instant sprite repositioning.
+2. Add lightweight level transition feedback so automatic progression does not feel abrupt.
+3. Add gameplay sound effects and music wiring from Unity assets.
 4. Optimize imported PNG assets or move to a more explicit web asset pipeline if bundle size becomes a problem.
 5. Add focused unit tests for level validation and core movement rules.
 
@@ -67,4 +74,4 @@
 - Backend remains out of scope until a specific feature requires it.
 - Keep docs compact and update them when the real project state changes.
 - Use root commands: `npm run dev`, `npm run typecheck`, `npm run build`, and `npm run preview`.
-- Levels 1-5 are now imported and playable through automatic progression with Unity-exported tile and Larry sprite rendering; animation is still pending.
+- Levels 1-5 are now imported and playable from a Unity-style main menu with full-screen background, HUD, Unity-exported tile art, and Larry sprite rendering; animation and audio are still pending.

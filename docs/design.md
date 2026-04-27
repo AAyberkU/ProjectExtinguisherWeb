@@ -78,10 +78,20 @@ Example level format:
 ## Progression Pipeline
 
 - The web version does not use a level-select flow for the current playable slice.
+- The app starts on the main menu, not directly in gameplay.
+- Pressing Start Game runs a short background zoom-out transition, then mounts Level 1 gameplay.
 - `App` owns the active `GameState` and listens for `level-won` events from `game/core`.
 - A win immediately creates fresh state for the next level through `createNextLevelGameState()`.
 - Reset dispatches `reset-level`, which restarts only the currently active level.
-- Level 5 completion wraps back to Level 1.
+- Level 5 completion returns to the main menu and prepares Level 1 for the next run.
+
+## UI Layer
+
+- The old two-column bootstrap layout has been removed.
+- Gameplay now uses a full-screen Pixi stage over the Unity background art.
+- HUD is a DOM overlay with Moves Left on the top-left, current level centered at the top, and an `R Reset` button on the top-right.
+- The `R` key also resets only the current level while gameplay is active.
+- Main menu credits match the Unity prototype roles, names, and color grouping.
 
 ## Coordinate Mapping
 

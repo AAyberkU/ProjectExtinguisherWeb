@@ -1,8 +1,8 @@
 :root {
-  color: #f7efe3;
-  background: #141017;
+  color: #2b0d4f;
+  background: #f4bad1;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    "Trebuchet MS", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -32,93 +32,49 @@ select {
 }
 
 .app-shell {
-  display: grid;
-  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
-  gap: clamp(1rem, 3vw, 2rem);
-  min-height: 100vh;
-  padding: clamp(1rem, 4vw, 3rem);
-  background:
-    radial-gradient(circle at 20% 10%, rgba(255, 125, 77, 0.22), transparent 32rem),
-    radial-gradient(circle at 90% 80%, rgba(103, 66, 255, 0.2), transparent 36rem),
-    #141017;
-}
-
-.hero-panel,
-.game-panel {
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(18px);
-}
-
-.hero-panel {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(1.25rem, 4vw, 2.25rem);
-}
-
-.eyebrow {
-  margin: 0 0 0.75rem;
-  color: #ffbf74;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(2.5rem, 8vw, 5.5rem);
-  line-height: 0.92;
-}
-
-.hero-copy {
-  max-width: 34rem;
-  margin: 1.25rem 0 0;
-  color: rgba(247, 239, 227, 0.78);
-  font-size: clamp(1rem, 2vw, 1.15rem);
-  line-height: 1.6;
-}
-
-.state-strip {
-  display: grid;
-  gap: 0.65rem;
-  margin-top: 1.5rem;
-  color: rgba(247, 239, 227, 0.84);
-  font-size: 0.96rem;
-  font-weight: 700;
-}
-
-.state-strip span {
-  width: fit-content;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  background: rgba(20, 16, 23, 0.42);
-}
-
-.reset-button {
-  width: fit-content;
-  margin-top: 1.2rem;
-  padding: 0.72rem 1rem;
-  border: 0;
-  border-radius: 999px;
-  color: #21142b;
-  background: #ffcf7a;
-  cursor: pointer;
-  font-weight: 900;
-  box-shadow: 0 12px 30px rgba(255, 207, 122, 0.22);
-}
-
-.reset-button:hover {
-  background: #ffe2a8;
-}
-
-.game-panel {
   position: relative;
-  min-height: 420px;
+  min-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  background: #f4bad1;
+}
+
+.app-shell::before,
+.app-shell::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.app-shell::before {
+  z-index: -2;
+  background-image: var(--game-background-image);
+  background-position: center;
+  background-size: cover;
+  transform: scale(1);
+  transition: transform 900ms cubic-bezier(0.2, 0.78, 0.2, 1);
+}
+
+.app-shell::after {
+  z-index: -1;
+  background: rgba(8, 10, 16, 0.52);
+  opacity: 0;
+  transition: opacity 680ms ease;
+}
+
+.app-shell--menu::before {
+  transform: scale(1.075);
+}
+
+.app-shell--menu::after {
+  opacity: 1;
+}
+
+.game-panel {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
   overflow: hidden;
 }
 
@@ -133,16 +89,173 @@ h1 {
   height: 100%;
 }
 
+.main-menu {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: clamp(9rem, 26vh, 20rem);
+  pointer-events: none;
+}
+
+.menu-start-button,
+.credits-card {
+  background: rgba(20, 28, 42, 0.78);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(2px);
+}
+
+.menu-start-button {
+  min-width: clamp(16rem, 22vw, 24rem);
+  padding: clamp(1rem, 2vw, 1.45rem) clamp(2rem, 4vw, 4rem);
+  border: 0;
+  color: #fff7fb;
+  cursor: pointer;
+  font-family: "Comic Sans MS", "Trebuchet MS", cursive;
+  font-size: clamp(2rem, 3vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: auto;
+  text-shadow: 0 3px 0 rgba(255, 255, 255, 0.1);
+}
+
+.menu-start-button:hover,
+.menu-start-button:focus-visible {
+  background: rgba(25, 34, 50, 0.92);
+  outline: 4px solid rgba(255, 247, 251, 0.28);
+  transform: translateY(-1px);
+}
+
+.credits-card {
+  width: min(36rem, calc(100vw - 2rem));
+  margin-top: clamp(2rem, 4vh, 3.1rem);
+  padding: clamp(1.45rem, 2.2vw, 2rem) 1.5rem clamp(1.35rem, 2vw, 1.9rem);
+  color: #fff7fb;
+  font-family: "Comic Sans MS", "Trebuchet MS", cursive;
+  text-align: center;
+}
+
+.credit-role,
+.credit-name {
+  margin: 0;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.credit-role {
+  color: #fff7fb;
+  font-size: clamp(1.25rem, 1.9vw, 2rem);
+}
+
+.credit-name {
+  margin-top: 0.35rem;
+  font-size: clamp(1.25rem, 1.8vw, 1.85rem);
+}
+
+.credit-name + .credit-role {
+  margin-top: clamp(1.45rem, 2.8vh, 2.25rem);
+}
+
+.credit-name--artist {
+  color: #f2b21a;
+}
+
+.credit-name--designer {
+  color: #326fe8;
+}
+
+.credit-name--developer {
+  color: #e238a6;
+}
+
+.credit-name--music {
+  color: #83cbbb;
+}
+
+.game-hud {
+  position: absolute;
+  z-index: 2;
+  top: clamp(0.9rem, 2.4vw, 2rem);
+  right: clamp(1rem, 2.8vw, 2.4rem);
+  left: clamp(1rem, 2.8vw, 2.4rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  pointer-events: none;
+}
+
+.hud-moves,
+.hud-level,
+.hud-reset {
+  margin: 0;
+  color: #2b0d4f;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-shadow:
+    0 2px 0 rgba(255, 222, 237, 0.85),
+    0 0 16px rgba(255, 255, 255, 0.42);
+}
+
+.hud-moves {
+  justify-self: start;
+  font-size: clamp(1.55rem, 3.2vw, 3rem);
+}
+
+.hud-level {
+  justify-self: center;
+  padding-top: 0.15rem;
+  font-size: clamp(1.05rem, 1.9vw, 1.75rem);
+}
+
+.hud-reset {
+  justify-self: end;
+  padding: 0.2rem 0.5rem 0.35rem;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 219, 235, 0.08);
+  cursor: pointer;
+  font-size: clamp(1rem, 1.8vw, 1.65rem);
+  pointer-events: auto;
+}
+
+.hud-reset:hover,
+.hud-reset:focus-visible {
+  background: rgba(255, 219, 235, 0.5);
+  outline: 3px solid rgba(43, 13, 79, 0.22);
+}
+
 @media (max-width: 860px) {
-  body {
-    overflow: auto;
+  .main-menu {
+    justify-content: center;
+    padding: 5rem 1rem 2rem;
   }
 
-  .app-shell {
-    grid-template-columns: 1fr;
+  .credits-card {
+    margin-top: 1.4rem;
   }
 
-  .game-panel {
-    min-height: min(70vh, 520px);
+  .game-hud {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .hud-moves {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .hud-level {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+  }
+
+  .hud-reset {
+    grid-column: 2;
+    grid-row: 1;
   }
 }

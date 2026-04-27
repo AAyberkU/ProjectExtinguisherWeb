@@ -79,9 +79,9 @@ function drawFlatTopHex(graphics: Graphics, radius: number, stroke: number, alph
 
 function centerBoard(app: Application, board: Container) {
   board.x = app.renderer.width / 2;
-  board.y = app.renderer.height / 2;
+  board.y = app.renderer.height / 2 + app.renderer.height * 0.03;
 
-  const fit = Math.min(app.renderer.width / 720, app.renderer.height / 720, 1.08);
+  const fit = Math.min(app.renderer.width / 920, app.renderer.height / 760, 1.45);
   board.scale.set(Math.max(0.52, fit));
 }
 

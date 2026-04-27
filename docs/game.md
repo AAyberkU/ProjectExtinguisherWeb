@@ -12,12 +12,13 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 
 ## Core Loop
 
-1. Start a level.
-2. Read the board, move limit, start, goal, and special tiles.
-3. Click a valid neighboring tile.
-4. Larry hops to that tile and spends a move.
-5. Resolve special tile effects.
-6. Repeat until Larry reaches the goal or moves run out.
+1. Open on the main menu.
+2. Press Start Game.
+3. Read the board, move limit, start, goal, and special tiles.
+4. Click a valid neighboring tile.
+5. Larry hops to that tile and spends a move.
+6. Resolve special tile effects.
+7. Repeat until Larry reaches the goal or moves run out.
 
 ## Core Rules
 
@@ -32,6 +33,7 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 - Reset restarts the current level.
 - Completing a level automatically loads the next level.
 - Completing Level 5 loops back to Level 1.
+- Completing Level 5 returns to the main menu before a new run starts.
 
 ## Special Tiles
 
@@ -67,6 +69,9 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 
 ## UX Goals
 
+- The game opens on the Unity-style main menu with Start Game and credits.
+- Starting the game removes the menu overlay, clears the dark background filter, zooms the background out, and then shows Level 1.
+- Returning to the main menu zooms the background in and restores the dark filter.
 - Input should feel immediate and clear.
 - Valid next choices should be visually readable.
 - Movement should feel toy-like and satisfying.
