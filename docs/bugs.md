@@ -6,15 +6,18 @@
 
 ## Open Technical Risks
 
-- Unity `LevelData.asset` to JSON conversion has not been implemented yet.
-- Web asset optimization strategy is not defined yet.
+- Only `Level_001` has been converted to JSON; `Level_002` through `Level_005` are still pending.
+- Web asset optimization strategy is not defined yet; imported PNG tiles are large and should be compressed or atlased later.
 - Mobile layout and touch input have not been validated yet.
-- Pixi rendering scale, camera framing, and responsive board fit are still untested.
+- Pixi rendering scale, camera framing, responsive board fit, and new vertical map orientation are still untested in browser.
 - Core reducer is implemented but not yet covered by automated unit tests; add focused tests once the first JSON level is introduced.
-- Core reducer is not yet wired into React/Pixi interactive state, so browser gameplay parity still needs validation.
+- Level 1 interactive state is wired, but manual browser gameplay parity still needs validation for click movement, win/loss, and reset.
+- Larry now uses the artist sprite, but hop animation is still pending and movement is instant.
+- Catapult directional art is selected from `catapultDirection`, but launch direction versus visual art still needs manual validation once levels include catapult cells.
 - Initial production build passes, but Vite warns that the Pixi-driven app chunk is larger than 500 KB after minification. Monitor bundle size and consider code splitting or asset optimization later.
 - Backend should remain out of scope unless leaderboard, analytics, accounts, replays, or community levels are approved.
 
 ## Fixed
 
-- None yet.
+- Replaced placeholder procedural tile fills with Unity-exported tile art sprites.
+- Replaced Larry's placeholder marker with the Unity-exported Larry sprite.

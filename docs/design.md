@@ -50,8 +50,8 @@ Example level format:
   "id": "level_001",
   "name": "Level 1",
   "moveLimit": 8,
-  "start": [-4, 0],
-  "goal": [4, 0],
+  "start": { "q": -4, "r": 0 },
+  "goal": { "q": 4, "r": 0 },
   "cells": [
     {
       "q": -3,
@@ -64,6 +64,14 @@ Example level format:
   ]
 }
 ```
+
+## Asset Pipeline
+
+- Unity-exported art currently lives under root `Art/` and is imported directly by the Vite web app.
+- Pixi renders tile art as sprites instead of procedural placeholder hex fills.
+- The web renderer maps path, blocked, start, goal, health, Larry, and direction-specific catapult PNGs in `apps/web/src/game/renderer/PixiStage.tsx`.
+- Path and blocked tile variants are resolved deterministically so unspecified variants still distribute evenly.
+- Catapult art is selected from the same `catapultDirection` value used by gameplay logic.
 
 ## Development Pipeline
 
@@ -123,6 +131,7 @@ Recommended backend if needed:
 - Keep game rules separate from Pixi rendering.
 - Keep UI separate from canvas rendering.
 - Store levels as data, not code.
+- Load JSON levels through `game/levels` and create runtime state through `game/core`.
 - Make the game deterministic so replay, undo, testing, and analytics are easier later.
 - Start without backend; add backend only when a feature requires it.
 - Optimize for fast load, clear mobile controls, and portfolio readability.

@@ -56,6 +56,10 @@ export function validateLevelData(level: LevelData): LevelValidationResult {
     if (cell.moveBonus !== undefined && (!Number.isInteger(cell.moveBonus) || cell.moveBonus < 0)) {
       errors.push(`Cell ${key} moveBonus must be a non-negative integer.`);
     }
+
+    if (cell.variant !== undefined && (!Number.isInteger(cell.variant) || cell.variant < 0)) {
+      errors.push(`Cell ${key} variant must be a non-negative integer.`);
+    }
   }
 
   return {

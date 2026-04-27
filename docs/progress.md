@@ -2,7 +2,7 @@
 
 ## Status
 
-- Project has completed the initial web bootstrap and first pure TypeScript game-core pass for the web-native port.
+- Project has completed the initial web bootstrap, first pure TypeScript game-core pass, first Unity-to-JSON level import, first interactive Level 1 state wiring, and first Unity art integration for the web-native port.
 - Current target stack is TypeScript, Pixi.js, Vite, React, SCSS, and JSON levels.
 - First milestone remains a static playable web slice with no backend.
 
@@ -24,18 +24,37 @@
 - Added movement rules for adjacency, walkability, already-active rejection, move spending, Larry position updates, win/loss resolution, health tile bonuses, and catapult chains.
 - Updated the Pixi board preview to read generated cells from `createInitialGameState()` instead of directly generating coordinates in the renderer.
 - Re-ran `npm run typecheck` and `npm run build`; both pass.
+- Converted Unity `Level_001.asset` into `apps/web/src/game/levels/level-001.json` using the current `LevelData` shape.
+- Added `game/levels/levelLoader.ts` with `LEVELS`, `getLevelData()`, `validateAvailableLevels()`, `createLevelGameState()`, and `createFirstLevelGameState()`.
+- Updated Pixi board preview to create state from imported `Level_001` JSON instead of an inline preview level.
+- Re-ran `npm run typecheck` and `npm run build`; both pass after the JSON loader change.
+- Moved Level 1 `GameState` ownership into React `App` with command dispatch through `applyCommand()`.
+- Updated `PixiStage` to receive `gameState` and `onActivateCell` props instead of creating static state internally.
+- Added Pixi pointer input on tiles; clicks dispatch `activate-cell` commands and core rules accept or reject the move.
+- Added live board redraw from current `GameState`, including active tile tinting and valid-neighbor stroke highlighting.
+- Added a placeholder Larry marker driven by `gameState.larryPosition`.
+- Added a compact temporary state strip and reset button in React for manual Level 1 testing.
+- Re-ran `npm run typecheck` and `npm run build`; both pass after interactive state wiring.
+- Updated hex coordinate-to-pixel layout so the full board displays as a vertical, corner-up map silhouette.
+- Replaced procedural tile placeholder fills with Pixi sprites loaded from root `Art/Tiles/Hex`.
+- Added deterministic path tile art selection across `HexTile_Path_01` through `HexTile_Path_10`.
+- Added deterministic blocked tile art selection across `HexTile_Blocked_01` through `HexTile_Blocked_03`.
+- Added direction-specific catapult art selection from `catapultDirection` using `HexTile_Catapult_E`, `NE`, `NW`, `W`, `SW`, and `SE`.
+- Replaced the Larry placeholder marker with `Art/Characters/Larry/LarrySprite.png`.
+- Added validation that level cell `variant` values must be non-negative integers.
+- Re-ran `npm run build`; it passes after art integration and variant validation.
 
 ## Immediate Next Steps
 
-1. Convert `Level_001` into JSON using the `LevelData` shape in `game/core/types.ts`.
-2. Add a level loader that imports JSON and creates the initial `GameState`.
-3. Replace the preview board with level-driven Pixi rendering using real cell states.
-4. Add click input that dispatches `activate-cell` commands through `applyCommand()`.
-5. Add the first React HUD values from live game state: moves, level name, reset, win, and loss.
+1. Manually browser-test Level 1 click movement, invalid clicks, win, loss, reset, board orientation, and tile art readability.
+2. Replace the temporary state strip with the first real React HUD layer.
+3. Add Larry movement animation instead of instant sprite repositioning.
+4. Optimize imported PNG assets or move to a more explicit web asset pipeline if bundle size becomes a problem.
+5. Add focused unit tests for Level 1 validation and core movement rules.
 
 ## Notes
 
 - Backend remains out of scope until a specific feature requires it.
 - Keep docs compact and update them when the real project state changes.
 - Use root commands: `npm run dev`, `npm run typecheck`, `npm run build`, and `npm run preview`.
-- Current core has not been wired into interactive React state yet; Pixi still renders a static preview from a preview level.
+- Level 1 is now interactive with Unity-exported tile and Larry sprite rendering; animation is still pending.

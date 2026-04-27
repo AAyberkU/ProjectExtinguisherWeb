@@ -27,8 +27,8 @@ export function createBoardCoordinates(radius = BOARD_RADIUS): AxialCoord[] {
 }
 
 export function axialToPixel(coord: AxialCoord, size: number): { x: number; y: number } {
-  const x = size * Math.sqrt(3) * (coord.q + coord.r / 2);
-  const y = size * 1.5 * coord.r;
+  const x = size * 1.5 * coord.q;
+  const y = size * Math.sqrt(3) * (coord.r + coord.q / 2);
 
   return { x, y };
 }
