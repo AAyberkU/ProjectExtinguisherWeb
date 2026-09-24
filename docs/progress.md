@@ -95,12 +95,15 @@
 - Switched to 'Comic Neue' Google Font for better cross-device consistency.
 - Integrated game bundle into an Astro portfolio site as a sub-directory.
 - Updated high-DPI scaling for mobile screens in PixiStage (added resolution and autoDensity).
+- Fixed intermittent cold-load startup failures by waiting for the background and memoized Pixi texture preload before entering gameplay.
+- Added an explicit loading state plus recoverable Retry UI for background, texture, or Pixi initialization failures.
+- Delayed the gameplay HUD and level-intro cue until the Pixi board is mounted so the tile-drop animation, canvas, and audio start together.
 
 ## Immediate Next Steps
 
 1. Add lightweight polish for win/final overlay copy and visual treatment after manual play review.
 2. Tune remaining animation/audio timing if browser feel differs from Unity after manual play review.
-3. Compress `music.wav` and large PNG assets or move to a more explicit web asset pipeline if bundle size becomes a problem.
+3. Compress `music.wav` and large PNG assets or move to a more explicit web asset pipeline to reduce the now-visible cold-load wait.
 4. Add focused unit tests for level validation and core movement rules.
 5. Prepare deployment settings once manual play review is complete.
 

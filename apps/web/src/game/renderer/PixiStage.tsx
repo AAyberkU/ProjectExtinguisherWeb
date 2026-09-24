@@ -8,6 +8,8 @@ type PixiStageProps = Readonly<{
   introKey: number;
   movementPath: readonly AxialCoord[] | null;
   onActivateCell: (coord: AxialCoord) => void;
+  onLoadError: (error: Error) => void;
+  onReady: () => void;
 }>;
 
 const TILE_LAYOUT_RADIUS = 42;
@@ -77,8 +79,21 @@ const TILE_TEXTURE_URLS = [
   LARRY_TEXTURE_URL,
 ];
 
-export async function preloadPixiAssets() {
-  await Assets.load(TILE_TEXTURE_URLS);
+let pixiAssetsPromise: Promise<void> | null = null;
+
+export function preloadPixiAssets(): Promise<void> {
+  if (pixiAssetsPromise !== null) {
+    return pixiAssetsPromise;
+  }
+
+  pixiAssetsPromise = Assets.load(TILE_TEXTURE_URLS)
+    .then(() => undefined)
+    .catch((error: unknown) => {
+      pixiAssetsPromise = null;
+      throw error;
+    });
+
+  return pixiAssetsPromise;
 }
 
 function drawHexOutline(graphics: Graphics, radius: number, color: number, alpha: number, width: number) {
@@ -435,12 +450,18 @@ function renderBoard(gameState: GameState, board: Container, onActivateCell: (co
   drawLarry(board, gameState, options, maxIntroDelay + TILE_INTRO_FALL_DURATION_MS);
 }
 
-export function PixiStage({ gameState, introKey, movementPath, onActivateCell }: PixiStageProps) {
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error('Failed to initialize the game board.');
+}
+
+export function PixiStage({ gameState, introKey, movementPath, onActivateCell, onLoadError, onReady }: PixiStageProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<Application | null>(null);
   const boardRef = useRef<Container | null>(null);
   const gameStateRef = useRef(gameState);
   const onActivateCellRef = useRef(onActivateCell);
+  const onLoadErrorRef = useRef(onLoadError);
+  const onReadyRef = useRef(onReady);
   const previousLarryPositionRef = useRef<AxialCoord | null>(null);
   const lastIntroKeyRef = useRef<number | null>(null);
   const animationCleanupsRef = useRef<AnimationCleanup[]>([]);
@@ -466,6 +487,14 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell }:
   }, [onActivateCell]);
 
   useEffect(() => {
+    onLoadErrorRef.current = onLoadError;
+  }, [onLoadError]);
+
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
+
+  useEffect(() => {
     const host = hostRef.current;
 
     if (host === null) {
@@ -479,70 +508,90 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell }:
     let resizeObserver: ResizeObserver | null = null;
     let resizeFrame: number | null = null;
     let scheduleResizeSync: (() => void) | null = null;
+    let initializingApp: Application | null = null;
 
     const handleViewportResize = () => scheduleResizeSync?.();
 
     async function mount() {
-      await Assets.load(TILE_TEXTURE_URLS);
+      try {
+        await preloadPixiAssets();
 
-      if (disposed) {
-        return;
-      }
-
-      const nextApp = new Application();
-      await nextApp.init({
-        antialias: true,
-        backgroundAlpha: 0,
-        resizeTo: mountHost,
-        resolution: getRenderResolution(),
-        autoDensity: true,
-      });
-
-      if (disposed) {
-        nextApp.destroy(true);
-        return;
-      }
-
-      app = nextApp;
-      appRef.current = nextApp;
-      mountHost.appendChild(nextApp.canvas);
-
-      const board = new Container();
-      board.label = 'Live Hex Board';
-      boardRef.current = board;
-      nextApp.stage.addChild(board);
-
-      renderBoard(gameStateRef.current, board, (coord) => onActivateCellRef.current(coord), {
-        app: nextApp,
-        previousLarryPosition: null,
-        larryPath: null,
-        animateLarry: false,
-        playTileIntro: true,
-        registerAnimation,
-      });
-      previousLarryPositionRef.current = gameStateRef.current.larryPosition;
-      lastIntroKeyRef.current = introKey;
-      syncRendererSize(nextApp, mountHost, board);
-
-      scheduleResizeSync = () => {
-        if (resizeFrame !== null) {
-          window.cancelAnimationFrame(resizeFrame);
+        if (disposed) {
+          return;
         }
 
-        resizeFrame = window.requestAnimationFrame(() => {
-          resizeFrame = null;
-
-          if (!disposed) {
-            syncRendererSize(nextApp, mountHost, board);
-          }
+        const nextApp = new Application();
+        initializingApp = nextApp;
+        await nextApp.init({
+          antialias: true,
+          backgroundAlpha: 0,
+          resizeTo: mountHost,
+          resolution: getRenderResolution(),
+          autoDensity: true,
         });
-      };
 
-      resizeObserver = new ResizeObserver(handleViewportResize);
-      resizeObserver.observe(mountHost);
-      window.addEventListener('resize', handleViewportResize);
-      window.addEventListener('orientationchange', handleViewportResize);
-      scheduleResizeSync();
+        if (disposed) {
+          nextApp.destroy(true);
+          initializingApp = null;
+          return;
+        }
+
+        app = nextApp;
+        initializingApp = null;
+        appRef.current = nextApp;
+        mountHost.appendChild(nextApp.canvas);
+
+        const board = new Container();
+        board.label = 'Live Hex Board';
+        boardRef.current = board;
+        nextApp.stage.addChild(board);
+
+        renderBoard(gameStateRef.current, board, (coord) => onActivateCellRef.current(coord), {
+          app: nextApp,
+          previousLarryPosition: null,
+          larryPath: null,
+          animateLarry: false,
+          playTileIntro: true,
+          registerAnimation,
+        });
+        previousLarryPositionRef.current = gameStateRef.current.larryPosition;
+        lastIntroKeyRef.current = introKey;
+        syncRendererSize(nextApp, mountHost, board);
+
+        scheduleResizeSync = () => {
+          if (resizeFrame !== null) {
+            window.cancelAnimationFrame(resizeFrame);
+          }
+
+          resizeFrame = window.requestAnimationFrame(() => {
+            resizeFrame = null;
+
+            if (!disposed) {
+              syncRendererSize(nextApp, mountHost, board);
+            }
+          });
+        };
+
+        resizeObserver = new ResizeObserver(handleViewportResize);
+        resizeObserver.observe(mountHost);
+        window.addEventListener('resize', handleViewportResize);
+        window.addEventListener('orientationchange', handleViewportResize);
+        scheduleResizeSync();
+        onReadyRef.current();
+      } catch (error) {
+        if (initializingApp !== null) {
+          try {
+            initializingApp.destroy(true, { children: true });
+          } catch {
+            // Pixi may reject before its renderer is initialized enough to destroy.
+          }
+          initializingApp = null;
+        }
+
+        if (!disposed) {
+          onLoadErrorRef.current(toError(error));
+        }
+      }
     }
 
     void mount();

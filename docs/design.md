@@ -75,6 +75,8 @@ Example level format:
 - The web renderer maps path, blocked, start, goal, health, Larry, and direction-specific catapult PNGs in `apps/web/src/game/renderer/PixiStage.tsx`.
 - Path and blocked tile variants are resolved deterministically so unspecified variants still distribute evenly.
 - Catapult art is selected from the same `catapultDirection` value used by gameplay logic.
+- The menu starts memoized background and Pixi texture preloads, then waits for both the asset gate and the menu transition before mounting gameplay.
+- The HUD and level-intro cue wait for the Pixi stage ready callback; load or initialization failures show a recoverable Retry state instead of an empty board.
 
 ## Progression Pipeline
 

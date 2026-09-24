@@ -19,6 +19,7 @@
 
 ## Fixed
 
+- Fixed intermittent cold-load startup behavior where the large background could remain on the pink fallback while gameplay appeared, slow tile delivery could leave a HUD-only screen, and one failed texture request could permanently prevent the Pixi canvas from mounting. Startup now waits for background and texture readiness, synchronizes the first intro cue with the mounted board, and exposes a Retry path for load failures.
 - Replaced placeholder procedural tile fills with Unity-exported tile art sprites.
 - Replaced Larry's placeholder marker with the Unity-exported Larry sprite.
 - Converted Unity Levels 1-5 to JSON and removed the pending-level import risk.

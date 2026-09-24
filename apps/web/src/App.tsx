@@ -17,6 +17,35 @@ const GAME_SHELL_STYLE: GameShellStyle = {
 };
 
 const MENU_TRANSITION_MS = 900;
+const LOAD_ERROR_MESSAGE = 'Some game files could not be loaded.';
+
+let backgroundImagePromise: Promise<void> | null = null;
+
+function preloadBackgroundImage(): Promise<void> {
+  if (backgroundImagePromise !== null) {
+    return backgroundImagePromise;
+  }
+
+  backgroundImagePromise = new Promise<void>((resolve, reject) => {
+    const image = new Image();
+
+    image.onload = () => {
+      if (typeof image.decode !== 'function') {
+        resolve();
+        return;
+      }
+
+      image.decode().then(() => resolve(), () => resolve());
+    };
+    image.onerror = () => reject(new Error(`Failed to load background image: ${BACKGROUND_IMAGE_URL}`));
+    image.src = BACKGROUND_IMAGE_URL;
+  }).catch((error: unknown) => {
+    backgroundImagePromise = null;
+    throw error;
+  });
+
+  return backgroundImagePromise;
+}
 
 type AppPhase = 'menu' | 'starting' | 'playing';
 type CompletionState = 'level' | 'game' | 'lost' | null;
@@ -46,7 +75,12 @@ export function App() {
   const [movementPath, setMovementPath] = useState<readonly AxialCoord[] | null>(null);
   const [completion, setCompletion] = useState<CompletionState>(null);
   const [stageIntroKey, setStageIntroKey] = useState(0);
+  const [stageReady, setStageReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const transitionTimeoutRef = useRef<number | null>(null);
+  const transitionResolveRef = useRef<(() => void) | null>(null);
+  const startRequestRef = useRef(0);
+  const stageReadyRef = useRef(false);
   const currentLevelNumber = getLevelIndex(gameState.level.id) + 1;
   const movesLeftLabel = String(gameState.movesRemaining).padStart(2, '0');
   const completedFinalLevel = completion === 'game';
@@ -58,12 +92,19 @@ export function App() {
 
     window.clearTimeout(transitionTimeoutRef.current);
     transitionTimeoutRef.current = null;
+    transitionResolveRef.current?.();
+    transitionResolveRef.current = null;
   }
 
-  useEffect(() => clearTransitionTimeout, []);
+  useEffect(() => () => {
+    startRequestRef.current += 1;
+    clearTransitionTimeout();
+  }, []);
 
   useEffect(() => {
-    preloadPixiAssets().catch(console.error);
+    void Promise.all([preloadBackgroundImage(), preloadPixiAssets()]).catch(() => {
+      // Start Game owns the visible retry state. This attempt only warms the cache.
+    });
   }, []);
 
   useEffect(() => {
@@ -112,19 +153,67 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [phase]);
 
-  function handleStartGame() {
+  function waitForMenuTransition(): Promise<void> {
+    return new Promise((resolve) => {
+      transitionResolveRef.current = resolve;
+      transitionTimeoutRef.current = window.setTimeout(() => {
+        transitionTimeoutRef.current = null;
+        transitionResolveRef.current = null;
+        resolve();
+      }, MENU_TRANSITION_MS);
+    });
+  }
+
+  async function handleStartGame() {
+    const requestId = startRequestRef.current + 1;
+
+    startRequestRef.current = requestId;
     clearTransitionTimeout();
+    setLoadError(null);
+    stageReadyRef.current = false;
+    setStageReady(false);
     setCompletion(null);
     setMovementPath(null);
     setStageIntroKey((currentKey) => currentKey + 1);
     setGameState(createFirstLevelGameState());
     setPhase('starting');
 
-    transitionTimeoutRef.current = window.setTimeout(() => {
-      transitionTimeoutRef.current = null;
-      gameAudio.play('levelIntro');
+    try {
+      await Promise.all([preloadBackgroundImage(), preloadPixiAssets(), waitForMenuTransition()]);
+
+      if (startRequestRef.current !== requestId) {
+        return;
+      }
+
       setPhase('playing');
-    }, MENU_TRANSITION_MS);
+    } catch (error) {
+      if (startRequestRef.current !== requestId) {
+        return;
+      }
+
+      console.error(error);
+      setLoadError(LOAD_ERROR_MESSAGE);
+    }
+  }
+
+  function handleStageReady() {
+    if (!stageReadyRef.current) {
+      stageReadyRef.current = true;
+      gameAudio.play('levelIntro');
+    }
+
+    setStageReady(true);
+  }
+
+  function handleStageLoadError(error: Error) {
+    console.error(error);
+    stageReadyRef.current = false;
+    setStageReady(false);
+    setLoadError(LOAD_ERROR_MESSAGE);
+  }
+
+  function handleRetryLoad() {
+    void handleStartGame();
   }
 
   function dispatchGameCommand(command: GameCommand) {
@@ -206,7 +295,25 @@ export function App() {
             introKey={stageIntroKey}
             movementPath={movementPath}
             onActivateCell={handleActivateCell}
+            onLoadError={handleStageLoadError}
+            onReady={handleStageReady}
           />
+        </section>
+      ) : null}
+
+      {phase === 'starting' || (phase === 'playing' && !stageReady) ? (
+        <section className="loading-overlay" role="status" aria-live="polite" aria-label="Game loading status">
+          <div className="loading-panel">
+            <p className="loading-title">{loadError === null ? 'Loading Game' : 'Loading Failed'}</p>
+            <p className="loading-copy">
+              {loadError === null ? 'Preparing the board...' : loadError}
+            </p>
+            {loadError !== null ? (
+              <button className="loading-retry" type="button" onClick={handleRetryLoad}>
+                Retry
+              </button>
+            ) : null}
+          </div>
         </section>
       ) : null}
 
@@ -229,7 +336,7 @@ export function App() {
         </section>
       ) : null}
 
-      {phase === 'playing' ? (
+      {phase === 'playing' && stageReady ? (
         <header className="game-hud" aria-label="Game HUD">
           <p className="hud-moves">Moves Left: {movesLeftLabel}</p>
           <p className="hud-level">
@@ -241,7 +348,7 @@ export function App() {
         </header>
       ) : null}
 
-      {phase === 'playing' && completion !== null ? (
+      {phase === 'playing' && stageReady && completion !== null ? (
         <section className="completion-overlay" aria-label={completion === 'lost' ? 'Level failed' : 'Level complete'}>
           <div className="completion-panel">
             <p className="completion-title">
