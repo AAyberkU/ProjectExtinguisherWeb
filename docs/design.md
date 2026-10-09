@@ -118,10 +118,12 @@ Example level format:
 
 ## Coordinate Mapping
 
-- Web axial coordinates use the same `GridIndex` values as Unity `HexCell` objects.
-- Unity scene sampling confirmed the layout as `x = q * columnSpacing` and `y = (r + q / 2) * rowSpacing`.
-- Browser canvas y increases downward, so web rendering inverts the Unity y projection while keeping gameplay offsets unchanged.
-- The web projection is implemented in `game/core/hex.ts` and uses Unity-derived spacing ratios rather than idealized hex math.
+- Web axial coordinates use the same `GridIndex` values as Unity `HexCell` objects, so Unity levels still convert 1:1.
+- The web board uses pointy-top cells: `x = size * sqrt(3) * (q + r / 2)` and `y = -size * 1.5 * r` (`game/core/hex.ts`). The board's flat edges face up and down.
+- This projection is the Unity flat-top layout rotated 30 degrees clockwise, so levels keep their shape, only rotated. Gameplay offsets are unchanged.
+- `catapultDirection` names are on-screen directions: `right` (1,0), `up_right` (0,1), `up_left` (-1,1), `left` (-1,0), `down_left` (0,-1), `down_right` (1,-1).
+- Converting Unity or legacy web levels maps `E`→`right`, `NE`→`down_right`, `NW`→`down_left`, `W`→`left`, `SW`→`up_left`, `SE`→`up_right` (same axial vectors).
+- The jam tile art is flat-top, so `PixiStage.tsx` rotates tile sprites 30 degrees (`PLACEHOLDER_TILE_ROTATION`) until pointy-top art arrives; set it to 0 for pointy-top art. Legacy catapult file names map to the new directions in `CATAPULT_TILE_TEXTURE_URLS`.
 
 ## Development Pipeline
 

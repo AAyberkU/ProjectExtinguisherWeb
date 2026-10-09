@@ -98,6 +98,7 @@
 - Fixed intermittent cold-load startup failures by waiting for the background and memoized Pixi texture preload before entering gameplay.
 - Added an explicit loading state plus recoverable Retry UI for background, texture, or Pixi initialization failures.
 - Delayed the gameplay HUD and level-intro cue until the Pixi board is mounted so the tile-drop animation, canvas, and audio start together.
+- Rotated the board to pointy-top cells so its flat edges face up and down, renamed catapult directions to on-screen names, converted Levels 3-5, and rotated the flat-top jam tile art 30 degrees as placeholders until pointy-top art arrives.
 
 ## Immediate Next Steps
 

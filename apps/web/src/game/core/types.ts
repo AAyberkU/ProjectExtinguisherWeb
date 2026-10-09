@@ -3,7 +3,7 @@ export type AxialCoord = Readonly<{
   r: number;
 }>;
 
-export type CatapultDirection = 'E' | 'NE' | 'NW' | 'W' | 'SW' | 'SE';
+export type CatapultDirection = 'right' | 'up_right' | 'up_left' | 'left' | 'down_left' | 'down_right';
 
 export type TileType = 'path' | 'start' | 'goal' | 'blocked' | 'catapult' | 'health';
 

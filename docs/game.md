@@ -22,7 +22,7 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 
 ## Core Rules
 
-- The board is a 61-cell axial hex grid displayed as a vertical, corner-up map silhouette.
+- The board is a 61-cell axial hex grid of pointy-top cells, so the board silhouette has flat top and bottom edges with corners on the left and right.
 - Larry starts on the level start tile.
 - The goal is to reach the goal tile within the move limit.
 - The player may only activate a tile adjacent to Larry's current tile.
@@ -47,7 +47,7 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 
 - Path tiles use `HexTile_Path_01` through `HexTile_Path_10` with an even fallback distribution when a level cell does not specify `variant`.
 - Blocked tiles use `HexTile_Blocked_01` through `HexTile_Blocked_03` with an even fallback distribution.
-- Catapult tiles use the art matching their `catapultDirection`: `E`, `NE`, `NW`, `W`, `SW`, or `SE`.
+- Catapult tiles use the art matching their on-screen `catapultDirection`: `right`, `up_right`, `up_left`, `left`, `down_left`, or `down_right`.
 - Start, goal, health, and Larry use their dedicated Unity-exported PNG assets from `Art/`.
 
 ## Current Content

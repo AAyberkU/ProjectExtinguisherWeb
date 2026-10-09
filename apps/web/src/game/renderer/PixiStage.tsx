@@ -12,10 +12,16 @@ type PixiStageProps = Readonly<{
   onReady: () => void;
 }>;
 
-const TILE_LAYOUT_RADIUS = 42;
+const TILE_LAYOUT_RADIUS = 40;
 const TILE_VISUAL_RADIUS = 36.5;
 const TILE_SPRITE_WIDTH = TILE_VISUAL_RADIUS * 2.1;
 const TILE_SPRITE_HEIGHT = TILE_VISUAL_RADIUS * 1.86;
+// The jam tile art is flat-top; rotating it 30 degrees clockwise fits the pointy-top board until
+// pointy-top art replaces it. Set to 0 for art drawn pointy-top.
+const PLACEHOLDER_TILE_ROTATION = Math.PI / 6;
+const HEX_CORNER_ANGLE_OFFSET_DEGREES = 30;
+const BOARD_FIT_WIDTH = 990;
+const BOARD_FIT_HEIGHT = 680;
 const LARRY_SPRITE_HEIGHT = TILE_VISUAL_RADIUS * 1.55;
 const LARRY_MOVE_DURATION_MS = 220;
 const LARRY_HOP_HEIGHT = TILE_VISUAL_RADIUS * 0.52;
@@ -55,13 +61,14 @@ const BLOCKED_TILE_TEXTURE_URLS = [
   new URL('../../../../../Art/Tiles/Hex/HexTile_Blocked_03.png', import.meta.url).href,
 ] as const;
 
+// Legacy jam file names; each one faces the mapped on-screen direction after placeholder rotation.
 const CATAPULT_TILE_TEXTURE_URLS: Readonly<Record<CatapultDirection, string>> = {
-  E: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_E.png', import.meta.url).href,
-  NE: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_NE.png', import.meta.url).href,
-  NW: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_NW.png', import.meta.url).href,
-  W: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_W.png', import.meta.url).href,
-  SW: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_SW.png', import.meta.url).href,
-  SE: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_SE.png', import.meta.url).href,
+  right: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_E.png', import.meta.url).href,
+  down_right: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_NE.png', import.meta.url).href,
+  down_left: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_NW.png', import.meta.url).href,
+  left: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_W.png', import.meta.url).href,
+  up_left: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_SW.png', import.meta.url).href,
+  up_right: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_SE.png', import.meta.url).href,
 };
 
 const SINGLE_TILE_TEXTURE_URLS: Readonly<Record<Exclude<TileType, 'path' | 'blocked' | 'catapult'>, string>> = {
@@ -96,17 +103,16 @@ export function preloadPixiAssets(): Promise<void> {
   return pixiAssetsPromise;
 }
 
+function getHexCornerPoints(radius: number): number[] {
+  return Array.from({ length: 6 }, (_, index) => {
+    const angle = (Math.PI / 180) * (60 * index + HEX_CORNER_ANGLE_OFFSET_DEGREES);
+    return [Math.cos(angle) * radius, Math.sin(angle) * radius];
+  }).flat();
+}
+
 function drawHexOutline(graphics: Graphics, radius: number, color: number, alpha: number, width: number) {
   graphics.clear();
-  graphics.poly(
-    Array.from({ length: 6 }, (_, index) => {
-      const angle = (Math.PI / 180) * (60 * index);
-      return {
-        x: Math.cos(angle) * radius,
-        y: Math.sin(angle) * radius,
-      };
-    }).flatMap((point) => [point.x, point.y]),
-  );
+  graphics.poly(getHexCornerPoints(radius));
 
   if (alpha > 0) {
     graphics.stroke({ color, width, alpha });
@@ -117,7 +123,7 @@ function centerBoard(app: Application, board: Container) {
   board.x = app.renderer.width / 2;
   board.y = app.renderer.height / 2 + app.renderer.height * 0.03;
 
-  const fit = Math.min(app.renderer.width / 920, app.renderer.height / 760, 1.45);
+  const fit = Math.min(app.renderer.width / BOARD_FIT_WIDTH, app.renderer.height / BOARD_FIT_HEIGHT, 1.45);
   board.scale.set(Math.max(0.52, fit));
 }
 
@@ -191,15 +197,7 @@ function resolveTileTextureUrl(cell: CellState, pathIndex: number, blockedIndex:
 function createTileHitArea() {
   const hitArea = new Graphics();
 
-  hitArea.poly(
-    Array.from({ length: 6 }, (_, index) => {
-      const angle = (Math.PI / 180) * (60 * index);
-      return {
-        x: Math.cos(angle) * TILE_VISUAL_RADIUS,
-        y: Math.sin(angle) * TILE_VISUAL_RADIUS,
-      };
-    }).flatMap((point) => [point.x, point.y]),
-  );
+  hitArea.poly(getHexCornerPoints(TILE_VISUAL_RADIUS));
   hitArea.fill({ color: 0xffffff, alpha: 0.001 });
 
   return hitArea;
@@ -211,6 +209,7 @@ function createTileSprite(textureUrl: string) {
   sprite.anchor.set(0.5);
   sprite.width = TILE_SPRITE_WIDTH;
   sprite.height = TILE_SPRITE_HEIGHT;
+  sprite.rotation = PLACEHOLDER_TILE_ROTATION;
 
   return sprite;
 }

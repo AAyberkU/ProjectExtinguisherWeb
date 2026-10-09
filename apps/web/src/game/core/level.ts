@@ -1,7 +1,7 @@
 import { BOARD_RADIUS, coordKey, createBoardCoordinates } from './hex';
 import type { LevelData } from './types';
 
-const CATAPULT_DIRECTIONS = new Set<string>(['E', 'NE', 'NW', 'W', 'SW', 'SE']);
+const CATAPULT_DIRECTIONS = new Set<string>(['right', 'up_right', 'up_left', 'left', 'down_left', 'down_right']);
 
 export type LevelValidationResult = Readonly<{
   valid: boolean;
@@ -68,7 +68,7 @@ export function validateLevelData(level: LevelData): LevelValidationResult {
       && cell.catapultDirection !== null
       && !CATAPULT_DIRECTIONS.has(cell.catapultDirection)
     ) {
-      errors.push(`Cell ${key} catapultDirection must be one of E, NE, NW, W, SW, or SE.`);
+      errors.push(`Cell ${key} catapultDirection must be one of right, up_right, up_left, left, down_left, or down_right.`);
     }
   }
 

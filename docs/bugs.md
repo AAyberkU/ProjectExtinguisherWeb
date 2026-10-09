@@ -13,7 +13,7 @@
 - Pixi rendering scale, camera framing, responsive board fit, Unity-matched vertical map orientation, HUD overlap, animation feel, and audio timing are still untested in browser.
 - Core reducer is implemented but not yet covered by automated unit tests; add focused tests once the first JSON level is introduced.
 - Five-level interactive state is wired, but manual browser gameplay parity still needs validation for click movement, win/loss, reset, manual next-level, and return-to-menu flow.
-- Catapult directional art is selected from `catapultDirection`, but launch direction versus visual art still needs manual validation in Levels 3-5.
+- Catapult directional art is selected from on-screen `catapultDirection` names after the pointy-top board rotation; launch direction versus the rotated placeholder art still needs manual validation in Levels 3-5.
 - Initial production build passes, but Vite warns that the Pixi-driven app chunk is larger than 500 KB after minification. Monitor bundle size and consider code splitting or asset optimization later.
 - Backend should remain out of scope unless leaderboard, analytics, accounts, replays, or community levels are approved.
 
