@@ -56,48 +56,67 @@ New mechanic art should follow the same pattern, for example `tile_swamp`, `tile
 `tile_portal`, `tile_switch_<a|b|c>`, `tile_door_<a|b|c>`. Mechanics without art use code-drawn glyphs
 from `apps/web/src/game/renderer/glyphs.ts` (preview in dev at `/glyph-preview.html`).
 
-## Art still needed for the hex-steps mechanics
+## Artist checklist
 
-Tell the artist early. Mechanics and their visual needs:
+Everything the artist (Ilgın) needs to draw, in one list (consolidated on 2026-10-10). The artist
+draws static pieces only; code does every animation, the layout, all text (with a self-hosted font,
+including the steps counter digits and refill numbers), dimming, glows, and placeholders. Until a
+piece arrives the game uses a code-drawn placeholder, so no work waits for art; delivered art replaces
+the placeholder by alias.
 
-- Floor (variants), wall/blocker (at least 3 variants; walls are now the most frequent tile and
-  appear in large adjacent groups, so variants must sit well next to each other), start, finish.
-- `plus1` (+1 step pickup).
-- `launcher`: 6 directions.
-- `swamp`.
-- `mover`: 6 directions.
-- `portal`: pairs must be distinguishable (the pool uses up to 3 pairs in one level).
-- `switch` and `door`: 3 colours (A/B/C).
-- `passage`: per-side bars (closed both ways) and one-way arrows.
-- `refill`: shows a number (1-99), so the number is likely drawn in code over a plain base.
-- `swap`: a marker showing the paired cells.
-- Larry, background (must work in landscape and portrait), UI pieces.
+Delivery rules:
 
-Until art arrives, new tiles use code-drawn placeholder glyphs (see `docs/rules.md`, editor
-presentation reference).
+- Transparent PNG. Larger is always fine; the pipeline shrinks (`Asset pipeline` above).
+- Tiles: **pointy-top** hexes (corners up and down), at least 512 px wide, on one shared tile canvas
+  so every tile lines up. Layered (base hex, object, optional shadow) or flattened is decided near
+  final art; keep layered sources either way.
+- Larry: at least 384 px tall. Icons and UI pieces: at least 256 px.
+- Background: at least 1920 px wide; it must work cropped to both landscape and portrait, so keep
+  the important content near the centre.
+- The artist sends files to Ayberk; the integrator names them and places them in `art-source/`.
 
-## UI art (roadmap step 2)
+### 1. Board and mechanics (required)
 
-Split agreed on 2026-10-10: the artist draws static pieces; code does every animation, the layout,
-all text (with a self-hosted font, including the steps counter digits), dimming, tutorial glows, and
-placeholders. Step 2 starts with code-drawn placeholders, so it never waits for art; delivered art
-replaces them by alias.
+- [ ] Floor, several variants.
+- [ ] Wall (blocker), at least 3 variants. Walls are now the most frequent tile and appear in large
+  adjacent groups, so the variants must sit well next to each other.
+- [ ] Start and finish.
+- [ ] `plus1` (+1 step pickup).
+- [ ] Launcher, 6 directions (E, SE, SW, W, NW, NE; the art faces that screen direction).
+- [ ] Swamp.
+- [ ] Mover, 6 directions.
+- [ ] Portal; pairs must be distinguishable (up to 3 pairs in one level).
+- [ ] Switch, 3 colours (A/B/C), each **up and pressed**.
+- [ ] Door, 3 colours (A/B/C), each **closed and open**.
+- [ ] Passage: per-side bars (closed both ways) and one-way arrows.
+- [ ] Refill: a plain base; the number (1-99) is drawn in code on top.
+- [ ] Swap: a marker that shows which cells are paired.
+- [ ] Larry.
+- [ ] Background (landscape and portrait).
 
-Needed from the artist (transparent PNG, icons at least 256 px; the integrator names them):
+### 2. Screens and HUD (required, roadmap step 2)
 
-1. HUD icons: undo, restart, menu, music on, music off, SFX on, SFX off (7 icons).
-2. One shared button base (round or hex). The pressed state is done in code.
-3. Level card: card base, lock icon, completed tick. Code combines them into the open, locked, and
-   completed states.
-4. Level select panel: frame, page arrows, close button.
-5. Game logo ("Project Extinguisher") for the main menu.
-6. "Next" arrow badge shown after a win.
+- [ ] HUD icons: undo, restart, menu, music on, music off, SFX on, SFX off (7 icons).
+- [ ] One shared button base (round or hex); the pressed state is done in code.
+- [ ] Level card: card base, lock icon, completed tick. Code combines them into the open, locked,
+  and completed states.
+- [ ] Level select panel: frame, page arrows, close button (the credits box reuses the frame).
+- [ ] Game logo ("Project Extinguisher") for the main menu.
+- [ ] "Next" arrow badge shown after a win, and a "finish" variant for the last level.
 
-Optional (later is fine):
+### 3. Optional (the game works without them)
 
-- Celebration particles (water drops, foam, sparks); code multiplies and moves them.
-- Larry happy and sad poses in layers. Without them, code animates the existing Larry (hop, shake).
-- A main menu background. Without it, the game background is reused.
+- [ ] Celebration particles (water drops, foam, sparks); code multiplies and moves them.
+- [ ] Larry happy and sad poses, in layers. Without them, code animates the existing Larry.
+- [ ] Finish tile "reached" state for the win celebration.
+- [ ] A plate behind the large steps counter.
+- [ ] A main menu background. Without it, the game background is reused.
+
+### 4. Release (later, before each store launch)
+
+- [ ] Game icon for the browser tab and PWA install (square; the integrator makes the sizes).
+- [ ] Coolmath Games promotional thumbnails; exact sizes come with the submission requirements.
+- [ ] Steam store capsules and library art (roadmap step 6).
 
 ## Board presentation
 

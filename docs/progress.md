@@ -19,7 +19,8 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
 ## Recent work (2026-10-10)
 
 Step 2 planning (2026-10-10): agreed screens, HUD, win and loss feedback, level select, tutorial
-trial, and the UI art split with the user; recorded in `docs/roadmap.md`, `docs/game.md`,
+trial, and the UI art split with the user (the artist checklist in `docs/art.md` now lists every
+piece to draw); recorded in `docs/roadmap.md`, `docs/game.md`,
 `docs/art.md`, and `docs/design.md`.
 
 Roadmap step 1 (merged to `main` on 2026-10-10 after the user's play test):
@@ -86,7 +87,7 @@ Earlier the same day:
 
 1. Roadmap step 2 as agreed in `docs/roadmap.md`: three screens, save adapter, HUD with music and
    SFX toggles, win and loss animations, tutorial trial.
-2. Tell the artist the tile list and the UI art list in `docs/art.md`; report the loop-validation gap
+2. Send the artist the artist checklist in `docs/art.md`; report the loop-validation gap
    (`docs/rules.md`) to Uğur and ask for the GDD's rule fixtures.
 3. Replace the temporary campaign when the editor's Final export exists (`docs/levels.md`).
 

@@ -68,7 +68,7 @@ Rail approach). The full screen and HUD spec is in `docs/game.md` (Screens and H
 - [ ] Console debug command to unlock levels once saving exists. (Dev-only `window.extinguisherDebug`
   with `goTo` and `loadLevel` exists since step 1 and is absent from production builds.)
 - Art: all screens start with code-drawn placeholders, so step 2 does not wait for the artist; the
-  UI art list is in `docs/art.md`. New sound cues (win, loss, button) are decided later.
+  pieces are in the artist checklist in `docs/art.md`. New sound cues (win, loss, button) are decided later.
 
 ## 3. Landscape and portrait
 
