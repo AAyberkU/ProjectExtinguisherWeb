@@ -98,13 +98,13 @@
 - Fixed intermittent cold-load startup failures by waiting for the background and memoized Pixi texture preload before entering gameplay.
 - Added an explicit loading state plus recoverable Retry UI for background, texture, or Pixi initialization failures.
 - Delayed the gameplay HUD and level-intro cue until the Pixi board is mounted so the tile-drop animation, canvas, and audio start together.
+- Added the `art-source/` asset pipeline (`npm run assets`): originals are resized, packed into a WebP atlas, compressed to MP3, and loaded through a Pixi manifest by alias with a loading percentage. Build outputs (dist zip, tsbuildinfo, emitted Vite config) are no longer tracked.
 - Rotated the board to pointy-top cells so its flat edges face up and down, renamed catapult directions to on-screen names, converted Levels 3-5, and rotated the flat-top jam tile art 30 degrees as placeholders until pointy-top art arrives.
 
 ## Immediate Next Steps
 
 1. Add lightweight polish for win/final overlay copy and visual treatment after manual play review.
 2. Tune remaining animation/audio timing if browser feel differs from Unity after manual play review.
-3. Compress `music.wav` and large PNG assets or move to a more explicit web asset pipeline to reduce the now-visible cold-load wait.
 4. Add focused unit tests for level validation and core movement rules.
 5. Prepare deployment settings once manual play review is complete.
 
@@ -112,5 +112,5 @@
 
 - Backend remains out of scope until a specific feature requires it.
 - Keep docs compact and update them when the real project state changes.
-- Use root commands: `npm run dev`, `npm run typecheck`, `npm run build`, and `npm run preview`.
+- Use root commands: `npm run assets`, `npm run dev`, `npm run typecheck`, `npm run build`, and `npm run preview`. `dev` and `build` run `assets` first.
 - Levels 1-5 are now imported and playable from a Unity-style main menu with full-screen background, HUD, completion overlays, Unity-exported tile art, Larry hop movement, tile intro animation, music, and gameplay SFX.

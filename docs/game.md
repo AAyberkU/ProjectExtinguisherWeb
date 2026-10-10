@@ -45,10 +45,10 @@ The player is not controlling Larry freely. They are preparing safe steps for hi
 
 ## Web Art Mapping
 
-- Path tiles use `HexTile_Path_01` through `HexTile_Path_10` with an even fallback distribution when a level cell does not specify `variant`.
-- Blocked tiles use `HexTile_Blocked_01` through `HexTile_Blocked_03` with an even fallback distribution.
+- Path tiles use `tile_path_01` through `tile_path_10` with an even fallback distribution when a level cell does not specify `variant`.
+- Blocked tiles use `tile_blocked_01` through `tile_blocked_03` with an even fallback distribution.
 - Catapult tiles use the art matching their on-screen `catapultDirection`: `right`, `up_right`, `up_left`, `left`, `down_left`, or `down_right`.
-- Start, goal, health, and Larry use their dedicated Unity-exported PNG assets from `Art/`.
+- Start, goal, health, and Larry use `tile_start`, `tile_goal`, `tile_health`, and `larry` from `art-source/`.
 
 ## Current Content
 

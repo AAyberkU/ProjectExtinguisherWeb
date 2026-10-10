@@ -50,9 +50,13 @@ To run the project locally:
    ```bash
    npm install
    ```
-4. Start the development server:
+4. Start the development server (it builds game assets from `art-source/` first):
    ```bash
    npm run dev
+   ```
+5. After adding or changing art in `art-source/`, rebuild assets and reload the page:
+   ```bash
+   npm run assets
    ```
 
 ## 📱 PWA & Mobile Support

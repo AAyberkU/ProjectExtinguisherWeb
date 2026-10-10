@@ -70,9 +70,15 @@ Example level format:
 
 ## Asset Pipeline
 
-- Unity-exported art currently lives under root `Art/` and is imported directly by the Vite web app.
+- Original art and audio live in root `art-source/` and stay in Git (plain PNG/WAV/MP3, no Git LFS; layered sources such as PSD stay outside the repository). Artists deliver large originals; the build shrinks them.
+- `npm run assets` (`apps/web/scripts/build-assets.mjs`) builds `apps/web/public/game-assets/`, which is generated and ignored by Git. `npm run dev` and `npm run build` run it first; AssetPack's cache in `apps/web/.assets-cache/` skips unchanged files.
+- Step 1 resizes each original to its group's @2x target with sharp: `images/tiles` to 256 px wide, `images/characters` to 192 px tall, `images/backgrounds` to 1920 px wide.
+- Step 2 runs AssetPack 1.7 (`pixiPipes`): tiles and Larry are packed into one atlas at @2x and @1x, images become WebP (quality 90) with a PNG fallback, audio becomes MP3 (SFX 96 kbps mono, music 128 kbps stereo), file names get cache-busting hashes, and a Pixi manifest is written.
+- Manifest bundles: `game` (atlas), `ui` (background), `audio`. `game/assets.ts` initializes Pixi `Assets` with the manifest, prefers WebP at the render resolution, reports `game` bundle progress to the loading screen, and resolves other aliases to absolute URLs (CSS resolves relative URLs against the stylesheet).
+- Code references art only by alias, the original file name without extension. Naming: `tile_path_01..10`, `tile_blocked_01..03`, `tile_catapult_<direction>`, `tile_start`, `tile_goal`, `tile_health`, `larry`, `background`, `music`, `sfx_<name>`. New art goes into the matching `art-source/` folder with the canonical name; adding a new variant also needs its alias in code.
+- A future Steam profile can raise the target sizes from the same originals.
 - Pixi renders tile art as sprites instead of procedural placeholder hex fills.
-- The web renderer maps path, blocked, start, goal, health, Larry, and direction-specific catapult PNGs in `apps/web/src/game/renderer/PixiStage.tsx`.
+- The web renderer maps path, blocked, start, goal, health, Larry, and direction-specific catapult aliases in `apps/web/src/game/renderer/PixiStage.tsx`.
 - Path and blocked tile variants are resolved deterministically so unspecified variants still distribute evenly.
 - Catapult art is selected from the same `catapultDirection` value used by gameplay logic.
 - The menu starts memoized background and Pixi texture preloads, then waits for both the asset gate and the menu transition before mounting gameplay.
@@ -107,14 +113,14 @@ Example level format:
 
 ## Audio Pipeline
 
-- `game/audio.ts` imports all files from root `sound/` and owns music/SFX playback.
-- `music.wav` uses a looping `HTMLAudioElement`, starts when the app mounts, and retries on pointer/key interaction if browser autoplay blocks the first attempt.
+- `game/audio.ts` resolves the `audio` manifest aliases after asset initialization and owns music/SFX playback.
+- `music` uses a looping `HTMLAudioElement`, starts when the app mounts, and retries on pointer/key interaction if browser autoplay blocks the first attempt.
 - Short SFX use Web Audio: files are fetched and decoded into `AudioBuffer`s up front, with preloaded `HTMLAudioElement` fallback for unsupported browsers.
 - Gameplay SFX are scheduled from ordered `GameEvent` output so audio follows movement/catapult/health timing with minimal play-time decode delay.
-- Manual movement plays `jump.wav` at hop start.
-- Catapult launch movement plays `catapult.wav` after Larry has first hopped onto the catapult tile.
-- Health pickup plays `heal.wav` after Larry lands on the health tile.
-- `passed.mp3`, `lose.wav`, `restart.wav`, and `levelIntro.wav` are bound to level pass, lose, reset, and tile intro flows.
+- Manual movement plays `sfx_jump` at hop start.
+- Catapult launch movement plays `sfx_catapult` after Larry has first hopped onto the catapult tile.
+- Health pickup plays `sfx_heal` after Larry lands on the health tile.
+- `sfx_passed`, `sfx_lose`, `sfx_restart`, and `sfx_level_intro` are bound to level pass, lose, reset, and tile intro flows.
 
 ## Coordinate Mapping
 

@@ -7,6 +7,7 @@
     "apps/web"
   ],
   "scripts": {
+    "assets": "npm --workspace apps/web run assets",
     "dev": "npm --workspace apps/web run dev",
     "build": "npm --workspace apps/web run build",
     "preview": "npm --workspace apps/web run preview",

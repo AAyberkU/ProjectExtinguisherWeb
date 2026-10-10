@@ -6,9 +6,8 @@
 
 ## Open Technical Risks
 
-- Web asset optimization strategy is not defined yet; imported PNG tiles are large and should be compressed or atlased later.
-- `music.wav` is currently large and should likely be compressed for web delivery, but SFX playback now uses pre-decoded Web Audio buffers to avoid per-play decode latency.
-- Browser autoplay policy may block `music.wav` until first user interaction despite the app attempting playback on initial mount.
+- Browser autoplay policy may block music until first user interaction despite the app attempting playback on initial mount.
+- Each SFX is still downloaded twice: once for the Web Audio buffer and once for the preloaded HTMLAudio fallback (about 100 KB total).
 - Mobile layout, main menu sizing, completion overlays, and touch input have not been validated yet.
 - Pixi rendering scale, camera framing, responsive board fit, Unity-matched vertical map orientation, HUD overlap, animation feel, and audio timing are still untested in browser.
 - Core reducer is implemented but not yet covered by automated unit tests; add focused tests once the first JSON level is introduced.
@@ -19,6 +18,7 @@
 
 ## Fixed
 
+- Replaced direct imports of full-size PNG/WAV files with the `npm run assets` pipeline. The production build dropped from about 53 MB to 4.7 MB, and a first gameplay load now downloads about 2 MB (atlas, background, audio) plus the JS bundle.
 - Fixed intermittent cold-load startup behavior where the large background could remain on the pink fallback while gameplay appeared, slow tile delivery could leave a HUD-only screen, and one failed texture request could permanently prevent the Pixi canvas from mounting. Startup now waits for background and texture readiness, synchronizes the first intro cue with the mounted board, and exposes a Retry path for load failures.
 - Replaced placeholder procedural tile fills with Unity-exported tile art sprites.
 - Replaced Larry's placeholder marker with the Unity-exported Larry sprite.

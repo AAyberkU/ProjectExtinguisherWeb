@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Application, Assets, Container, Graphics, Sprite } from 'pixi.js';
+import { Application, Container, Graphics, Sprite } from 'pixi.js';
+import { getRenderResolution, loadGameAssets } from '../assets';
 import { axialToPixel, canActivateCell, coordsEqual, getOrderedCells } from '../core';
 import type { AxialCoord, CatapultDirection, CellState, GameState, TileType } from '../core';
 
@@ -28,8 +29,6 @@ const LARRY_HOP_HEIGHT = TILE_VISUAL_RADIUS * 0.52;
 const TILE_INTRO_DROP_OFFSET = TILE_VISUAL_RADIUS * 9;
 const TILE_INTRO_FALL_DURATION_MS = 180;
 const TILE_INTRO_LINE_DELAY_MS = 8;
-const MIN_RENDER_RESOLUTION = 2;
-const MAX_RENDER_RESOLUTION = 3;
 
 type AnimationCleanup = () => void;
 
@@ -42,66 +41,28 @@ type RenderBoardOptions = Readonly<{
   registerAnimation: (cleanup: AnimationCleanup) => void;
 }>;
 
-const PATH_TILE_TEXTURE_URLS = [
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Path_01.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Path_02.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Path_03.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Path_04.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Path_05.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Path_06.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Path_07.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Path_08.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Path_09.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Path_10.png', import.meta.url).href,
-] as const;
+const PATH_TILE_TEXTURES = Array.from(
+  { length: 10 },
+  (_, index) => `tile_path_${String(index + 1).padStart(2, '0')}`,
+);
+const BLOCKED_TILE_TEXTURES = ['tile_blocked_01', 'tile_blocked_02', 'tile_blocked_03'] as const;
 
-const BLOCKED_TILE_TEXTURE_URLS = [
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Blocked_01.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Blocked_02.png', import.meta.url).href,
-  new URL('../../../../../Art/Tiles/Hex/HexTile_Blocked_03.png', import.meta.url).href,
-] as const;
-
-// Legacy jam file names; each one faces the mapped on-screen direction after placeholder rotation.
-const CATAPULT_TILE_TEXTURE_URLS: Readonly<Record<CatapultDirection, string>> = {
-  right: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_E.png', import.meta.url).href,
-  down_right: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_NE.png', import.meta.url).href,
-  down_left: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_NW.png', import.meta.url).href,
-  left: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_W.png', import.meta.url).href,
-  up_left: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_SW.png', import.meta.url).href,
-  up_right: new URL('../../../../../Art/Tiles/Hex/HexTile_Catapult_SE.png', import.meta.url).href,
+const CATAPULT_TILE_TEXTURES: Readonly<Record<CatapultDirection, string>> = {
+  right: 'tile_catapult_right',
+  up_right: 'tile_catapult_up_right',
+  up_left: 'tile_catapult_up_left',
+  left: 'tile_catapult_left',
+  down_left: 'tile_catapult_down_left',
+  down_right: 'tile_catapult_down_right',
 };
 
-const SINGLE_TILE_TEXTURE_URLS: Readonly<Record<Exclude<TileType, 'path' | 'blocked' | 'catapult'>, string>> = {
-  start: new URL('../../../../../Art/Tiles/Hex/HexTile_Start.png', import.meta.url).href,
-  goal: new URL('../../../../../Art/Tiles/Hex/HexTile_Goal.png', import.meta.url).href,
-  health: new URL('../../../../../Art/Tiles/Hex/HexTile_Health.png', import.meta.url).href,
+const SINGLE_TILE_TEXTURES: Readonly<Record<Exclude<TileType, 'path' | 'blocked' | 'catapult'>, string>> = {
+  start: 'tile_start',
+  goal: 'tile_goal',
+  health: 'tile_health',
 };
 
-const LARRY_TEXTURE_URL = new URL('../../../../../Art/Characters/Larry/LarrySprite.png', import.meta.url).href;
-const TILE_TEXTURE_URLS = [
-  ...PATH_TILE_TEXTURE_URLS,
-  ...BLOCKED_TILE_TEXTURE_URLS,
-  ...Object.values(CATAPULT_TILE_TEXTURE_URLS),
-  ...Object.values(SINGLE_TILE_TEXTURE_URLS),
-  LARRY_TEXTURE_URL,
-];
-
-let pixiAssetsPromise: Promise<void> | null = null;
-
-export function preloadPixiAssets(): Promise<void> {
-  if (pixiAssetsPromise !== null) {
-    return pixiAssetsPromise;
-  }
-
-  pixiAssetsPromise = Assets.load(TILE_TEXTURE_URLS)
-    .then(() => undefined)
-    .catch((error: unknown) => {
-      pixiAssetsPromise = null;
-      throw error;
-    });
-
-  return pixiAssetsPromise;
-}
+const LARRY_TEXTURE = 'larry';
 
 function getHexCornerPoints(radius: number): number[] {
   return Array.from({ length: 6 }, (_, index) => {
@@ -125,10 +86,6 @@ function centerBoard(app: Application, board: Container) {
 
   const fit = Math.min(app.renderer.width / BOARD_FIT_WIDTH, app.renderer.height / BOARD_FIT_HEIGHT, 1.45);
   board.scale.set(Math.max(0.52, fit));
-}
-
-function getRenderResolution(): number {
-  return Math.min(Math.max(window.devicePixelRatio || 1, MIN_RENDER_RESOLUTION), MAX_RENDER_RESOLUTION);
 }
 
 function syncRendererSize(app: Application, host: HTMLElement, board: Container) {
@@ -173,22 +130,22 @@ function resolveVariantIndex(cell: CellState, fallbackIndex: number, variantCoun
   return positiveModulo(cell.variant ?? fallbackIndex, variantCount);
 }
 
-function resolveTileTextureUrl(cell: CellState, pathIndex: number, blockedIndex: number): string {
+function resolveTileTexture(cell: CellState, pathIndex: number, blockedIndex: number): string {
   switch (cell.tileType) {
     case 'path':
-      return PATH_TILE_TEXTURE_URLS[resolveVariantIndex(cell, pathIndex, PATH_TILE_TEXTURE_URLS.length)];
+      return PATH_TILE_TEXTURES[resolveVariantIndex(cell, pathIndex, PATH_TILE_TEXTURES.length)];
     case 'blocked':
-      return BLOCKED_TILE_TEXTURE_URLS[resolveVariantIndex(cell, blockedIndex, BLOCKED_TILE_TEXTURE_URLS.length)];
+      return BLOCKED_TILE_TEXTURES[resolveVariantIndex(cell, blockedIndex, BLOCKED_TILE_TEXTURES.length)];
     case 'catapult':
       return cell.catapultDirection === null
-        ? PATH_TILE_TEXTURE_URLS[resolveVariantIndex(cell, pathIndex, PATH_TILE_TEXTURE_URLS.length)]
-        : CATAPULT_TILE_TEXTURE_URLS[cell.catapultDirection];
+        ? PATH_TILE_TEXTURES[resolveVariantIndex(cell, pathIndex, PATH_TILE_TEXTURES.length)]
+        : CATAPULT_TILE_TEXTURES[cell.catapultDirection];
     case 'start':
-      return SINGLE_TILE_TEXTURE_URLS.start;
+      return SINGLE_TILE_TEXTURES.start;
     case 'goal':
-      return SINGLE_TILE_TEXTURE_URLS.goal;
+      return SINGLE_TILE_TEXTURES.goal;
     case 'health':
-      return SINGLE_TILE_TEXTURE_URLS.health;
+      return SINGLE_TILE_TEXTURES.health;
   }
 }
 
@@ -203,8 +160,8 @@ function createTileHitArea() {
   return hitArea;
 }
 
-function createTileSprite(textureUrl: string) {
-  const sprite = Sprite.from(textureUrl);
+function createTileSprite(texture: string) {
+  const sprite = Sprite.from(texture);
 
   sprite.anchor.set(0.5);
   sprite.width = TILE_SPRITE_WIDTH;
@@ -277,7 +234,7 @@ function resolveLarrySpritePosition(coord: AxialCoord) {
 }
 
 function drawLarry(board: Container, gameState: GameState, options: RenderBoardOptions, introLarryDelayMs: number) {
-  const larry = Sprite.from(LARRY_TEXTURE_URL);
+  const larry = Sprite.from(LARRY_TEXTURE);
   const targetPosition = resolveLarrySpritePosition(gameState.larryPosition);
   const scale = LARRY_SPRITE_HEIGHT / larry.texture.height;
   const larryPath = options.larryPath;
@@ -389,8 +346,7 @@ function renderBoard(gameState: GameState, board: Container, onActivateCell: (co
 
   for (const { cell, position, projection } of orderedCells) {
     const tile = new Container();
-    const textureUrl = resolveTileTextureUrl(cell, pathIndex, blockedIndex);
-    const sprite = createTileSprite(textureUrl);
+    const sprite = createTileSprite(resolveTileTexture(cell, pathIndex, blockedIndex));
     const targetAlpha = 1;
     const isLarryTile = coordsEqual(cell.coord, gameState.larryPosition);
     const activation = canActivateCell(gameState, cell.coord);
@@ -513,7 +469,7 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell, o
 
     async function mount() {
       try {
-        await preloadPixiAssets();
+        await loadGameAssets();
 
         if (disposed) {
           return;

@@ -1,28 +1,32 @@
+import { initAssets, resolveAssetUrl } from './assets';
 import type { GameEvent } from './core';
 
 const LARRY_MOVE_DURATION_MS = 220;
 
-const SOUND_URLS = {
-  music: new URL('../../../../sound/music.wav', import.meta.url).href,
-  jump: new URL('../../../../sound/jump.wav', import.meta.url).href,
-  passed: new URL('../../../../sound/passed.mp3', import.meta.url).href,
-  catapult: new URL('../../../../sound/catapult.wav', import.meta.url).href,
-  heal: new URL('../../../../sound/heal.wav', import.meta.url).href,
-  lose: new URL('../../../../sound/lose.wav', import.meta.url).href,
-  restart: new URL('../../../../sound/restart.wav', import.meta.url).href,
-  levelIntro: new URL('../../../../sound/levelIntro.wav', import.meta.url).href,
+// Manifest aliases built from /art-source/audio by `npm run assets`.
+const SOUND_ALIASES = {
+  music: 'music',
+  jump: 'sfx_jump',
+  passed: 'sfx_passed',
+  catapult: 'sfx_catapult',
+  heal: 'sfx_heal',
+  lose: 'sfx_lose',
+  restart: 'sfx_restart',
+  levelIntro: 'sfx_level_intro',
 } as const;
 
 const SFX_NAMES = ['jump', 'passed', 'catapult', 'heal', 'lose', 'restart', 'levelIntro'] as const;
 
 type SoundName = (typeof SFX_NAMES)[number];
+type SoundUrls = Readonly<Record<keyof typeof SOUND_ALIASES, string>>;
 type AudioContextConstructor = new () => AudioContext;
 type WindowWithLegacyAudioContext = Window &
   typeof globalThis &
   Readonly<{ webkitAudioContext?: AudioContextConstructor }>;
 
 class GameAudioController {
-  private readonly music = new Audio(SOUND_URLS.music);
+  private music: HTMLAudioElement | null = null;
+  private soundUrlsPromise: Promise<SoundUrls> | null = null;
   private readonly buffers = new Map<SoundName, AudioBuffer>();
   private readonly bufferPromises = new Map<SoundName, Promise<AudioBuffer>>();
   private readonly fallbackAudio = new Map<SoundName, HTMLAudioElement>();
@@ -31,23 +35,12 @@ class GameAudioController {
   private isPrimed = false;
 
   public constructor() {
-    this.music.loop = true;
-    this.music.preload = 'auto';
-    this.music.volume = 0.4;
-
-    for (const name of SFX_NAMES) {
-      const audio = new Audio(SOUND_URLS[name]);
-
-      audio.preload = 'auto';
-      this.fallbackAudio.set(name, audio);
-    }
-
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
-          this.music.pause();
+          this.music?.pause();
         } else if (this.isPrimed) {
-          void this.music.play().catch(() => {
+          void this.music?.play().catch(() => {
             // Autoplay might be blocked if unlocked state was lost
           });
         }
@@ -59,25 +52,65 @@ class GameAudioController {
     if (this.isPrimed) {
       return;
     }
-    
+
     this.isPrimed = true;
-    this.music.load();
+    void this.loadSoundUrls()
+      .then((urls) => {
+        this.createAudioElements(urls);
 
-    for (const audio of this.fallbackAudio.values()) {
-      audio.load();
-    }
-
-    for (const name of SFX_NAMES) {
-      void this.loadBuffer(name);
-    }
+        for (const name of SFX_NAMES) {
+          void this.loadBuffer(name).catch(() => {
+            // Playback falls back to HTMLAudio when decoding fails.
+          });
+        }
+      })
+      .catch(() => {
+        // The next gesture retries priming.
+        this.isPrimed = false;
+      });
   }
 
   public startMusic() {
     this.prime();
     void this.unlock();
-    void this.music.play().catch(() => {
+    void this.music?.play().catch(() => {
       // Browsers may block autoplay until the first user gesture.
     });
+  }
+
+  private loadSoundUrls(): Promise<SoundUrls> {
+    if (this.soundUrlsPromise === null) {
+      this.soundUrlsPromise = initAssets()
+        .then(() => {
+          const entries = Object.entries(SOUND_ALIASES).map(([name, alias]) => [name, resolveAssetUrl(alias)]);
+
+          return Object.fromEntries(entries) as SoundUrls;
+        })
+        .catch((error: unknown) => {
+          this.soundUrlsPromise = null;
+          throw error;
+        });
+    }
+
+    return this.soundUrlsPromise;
+  }
+
+  private createAudioElements(urls: SoundUrls) {
+    if (this.music !== null) {
+      return;
+    }
+
+    this.music = new Audio(urls.music);
+    this.music.loop = true;
+    this.music.preload = 'auto';
+    this.music.volume = 0.4;
+
+    for (const name of SFX_NAMES) {
+      const audio = new Audio(urls[name]);
+
+      audio.preload = 'auto';
+      this.fallbackAudio.set(name, audio);
+    }
   }
 
   public async unlock() {
@@ -183,7 +216,8 @@ class GameAudioController {
       return Promise.reject(new Error('Web Audio is not available.'));
     }
 
-    const promise = fetch(SOUND_URLS[soundName], { cache: 'force-cache' })
+    const promise = this.loadSoundUrls()
+      .then((urls) => fetch(urls[soundName], { cache: 'force-cache' }))
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Could not load sound '${soundName}'.`);

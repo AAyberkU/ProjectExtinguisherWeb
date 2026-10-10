@@ -8,3 +8,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Generated runtime assets (npm run assets builds them from art-source/)
+apps/web/public/game-assets/
+apps/web/.assets-cache/
+
+# TypeScript/Vite build outputs and packaged builds
+*.tsbuildinfo
+apps/web/vite.config.js
+apps/web/vite.config.d.ts
+ProjectExtinguisherWeb-dist-*.zip

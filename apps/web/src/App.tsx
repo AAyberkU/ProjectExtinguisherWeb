@@ -1,45 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { initAssets, loadGameAssets, resolveAssetUrl, subscribeGameAssetProgress } from './game/assets';
 import { gameAudio } from './game/audio';
 import { applyCommand } from './game/core';
 import type { AxialCoord, GameCommand, GameEvent } from './game/core';
 import { createFirstLevelGameState, createNextLevelGameState, getLevelIndex, LEVELS } from './game/levels';
-import { PixiStage, preloadPixiAssets } from './game/renderer/PixiStage';
-
-const BACKGROUND_IMAGE_URL = new URL('../../../Art/Background/Background.png', import.meta.url).href;
+import { PixiStage } from './game/renderer/PixiStage';
 
 type GameShellStyle = CSSProperties & Readonly<{
-  '--game-background-image': string;
+  '--game-background-image'?: string;
 }>;
-
-const GAME_SHELL_STYLE: GameShellStyle = {
-  '--game-background-image': `url(${BACKGROUND_IMAGE_URL})`,
-};
 
 const MENU_TRANSITION_MS = 900;
 const LOAD_ERROR_MESSAGE = 'Some game files could not be loaded.';
 
-let backgroundImagePromise: Promise<void> | null = null;
+let backgroundImagePromise: Promise<string> | null = null;
 
-function preloadBackgroundImage(): Promise<void> {
+function preloadBackgroundImage(): Promise<string> {
   if (backgroundImagePromise !== null) {
     return backgroundImagePromise;
   }
 
-  backgroundImagePromise = new Promise<void>((resolve, reject) => {
+  backgroundImagePromise = initAssets().then(() => new Promise<string>((resolve, reject) => {
+    const url = resolveAssetUrl('background');
     const image = new Image();
 
     image.onload = () => {
       if (typeof image.decode !== 'function') {
-        resolve();
+        resolve(url);
         return;
       }
 
-      image.decode().then(() => resolve(), () => resolve());
+      image.decode().then(() => resolve(url), () => resolve(url));
     };
-    image.onerror = () => reject(new Error(`Failed to load background image: ${BACKGROUND_IMAGE_URL}`));
-    image.src = BACKGROUND_IMAGE_URL;
-  }).catch((error: unknown) => {
+    image.onerror = () => reject(new Error(`Failed to load background image: ${url}`));
+    image.src = url;
+  })).catch((error: unknown) => {
     backgroundImagePromise = null;
     throw error;
   });
@@ -77,6 +73,8 @@ export function App() {
   const [stageIntroKey, setStageIntroKey] = useState(0);
   const [stageReady, setStageReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
+  const [assetProgress, setAssetProgress] = useState(0);
   const transitionTimeoutRef = useRef<number | null>(null);
   const transitionResolveRef = useRef<(() => void) | null>(null);
   const startRequestRef = useRef(0);
@@ -84,6 +82,7 @@ export function App() {
   const currentLevelNumber = getLevelIndex(gameState.level.id) + 1;
   const movesLeftLabel = String(gameState.movesRemaining).padStart(2, '0');
   const completedFinalLevel = completion === 'game';
+  const gameShellStyle: GameShellStyle = backgroundUrl === null ? {} : { '--game-background-image': `url(${backgroundUrl})` };
 
   function clearTransitionTimeout() {
     if (transitionTimeoutRef.current === null) {
@@ -101,8 +100,13 @@ export function App() {
     clearTransitionTimeout();
   }, []);
 
+  useEffect(() => subscribeGameAssetProgress(setAssetProgress), []);
+
   useEffect(() => {
-    void Promise.all([preloadBackgroundImage(), preloadPixiAssets()]).catch(() => {
+    void preloadBackgroundImage().then(setBackgroundUrl, () => {
+      // Start Game owns the visible retry state.
+    });
+    void loadGameAssets().catch(() => {
       // Start Game owns the visible retry state. This attempt only warms the cache.
     });
   }, []);
@@ -179,12 +183,13 @@ export function App() {
     setPhase('starting');
 
     try {
-      await Promise.all([preloadBackgroundImage(), preloadPixiAssets(), waitForMenuTransition()]);
+      const [loadedBackgroundUrl] = await Promise.all([preloadBackgroundImage(), loadGameAssets(), waitForMenuTransition()]);
 
       if (startRequestRef.current !== requestId) {
         return;
       }
 
+      setBackgroundUrl(loadedBackgroundUrl);
       setPhase('playing');
     } catch (error) {
       if (startRequestRef.current !== requestId) {
@@ -287,7 +292,7 @@ export function App() {
   }
 
   return (
-    <main className={`app-shell app-shell--${phase}`} style={GAME_SHELL_STYLE}>
+    <main className={`app-shell app-shell--${phase}`} style={gameShellStyle}>
       {phase === 'playing' ? (
         <section className="game-panel" aria-label="Playable Project Extinguisher board">
           <PixiStage
@@ -306,7 +311,7 @@ export function App() {
           <div className="loading-panel">
             <p className="loading-title">{loadError === null ? 'Loading Game' : 'Loading Failed'}</p>
             <p className="loading-copy">
-              {loadError === null ? 'Preparing the board...' : loadError}
+              {loadError === null ? `Preparing the board... ${Math.round(assetProgress * 100)}%` : loadError}
             </p>
             {loadError !== null ? (
               <button className="loading-retry" type="button" onClick={handleRetryLoad}>
