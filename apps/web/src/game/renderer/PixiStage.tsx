@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Application, Container, Graphics, Sprite } from 'pixi.js';
 import { getRenderResolution, loadGameAssets } from '../assets';
 import { axialToPixel, canActivateCell, coordsEqual, getOrderedCells } from '../core';
 import type { AxialCoord, CatapultDirection, CellState, GameState, TileType } from '../core';
 
 type PixiStageProps = Readonly<{
+  /** While false, Pixi initializes off-screen but the board is not drawn and onReady is not called. */
+  active: boolean;
   gameState: GameState;
   introKey: number;
   movementPath: readonly AxialCoord[] | null;
@@ -409,17 +411,18 @@ function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error('Failed to initialize the game board.');
 }
 
-export function PixiStage({ gameState, introKey, movementPath, onActivateCell, onLoadError, onReady }: PixiStageProps) {
+export function PixiStage({ active, gameState, introKey, movementPath, onActivateCell, onLoadError, onReady }: PixiStageProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<Application | null>(null);
   const boardRef = useRef<Container | null>(null);
-  const gameStateRef = useRef(gameState);
   const onActivateCellRef = useRef(onActivateCell);
   const onLoadErrorRef = useRef(onLoadError);
   const onReadyRef = useRef(onReady);
   const previousLarryPositionRef = useRef<AxialCoord | null>(null);
   const lastIntroKeyRef = useRef<number | null>(null);
   const animationCleanupsRef = useRef<AnimationCleanup[]>([]);
+  const initialRenderDoneRef = useRef(false);
+  const [pixiReady, setPixiReady] = useState(false);
 
   function stopAnimations() {
     for (const cleanup of animationCleanupsRef.current) {
@@ -432,10 +435,6 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell, o
   function registerAnimation(cleanup: AnimationCleanup) {
     animationCleanupsRef.current.push(cleanup);
   }
-
-  useEffect(() => {
-    gameStateRef.current = gameState;
-  }, [gameState]);
 
   useEffect(() => {
     onActivateCellRef.current = onActivateCell;
@@ -501,16 +500,6 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell, o
         boardRef.current = board;
         nextApp.stage.addChild(board);
 
-        renderBoard(gameStateRef.current, board, (coord) => onActivateCellRef.current(coord), {
-          app: nextApp,
-          previousLarryPosition: null,
-          larryPath: null,
-          animateLarry: false,
-          playTileIntro: true,
-          registerAnimation,
-        });
-        previousLarryPositionRef.current = gameStateRef.current.larryPosition;
-        lastIntroKeyRef.current = introKey;
         syncRendererSize(nextApp, mountHost, board);
 
         scheduleResizeSync = () => {
@@ -532,7 +521,7 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell, o
         window.addEventListener('resize', handleViewportResize);
         window.addEventListener('orientationchange', handleViewportResize);
         scheduleResizeSync();
-        onReadyRef.current();
+        setPixiReady(true);
       } catch (error) {
         if (initializingApp !== null) {
           try {
@@ -575,11 +564,28 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell, o
     const app = appRef.current;
     const board = boardRef.current;
 
-    if (app === null || board === null) {
+    if (!pixiReady || !active || app === null || board === null) {
       return;
     }
 
     stopAnimations();
+
+    if (!initialRenderDoneRef.current) {
+      initialRenderDoneRef.current = true;
+      renderBoard(gameState, board, (coord) => onActivateCellRef.current(coord), {
+        app,
+        previousLarryPosition: null,
+        larryPath: null,
+        animateLarry: false,
+        playTileIntro: true,
+        registerAnimation,
+      });
+      previousLarryPositionRef.current = gameState.larryPosition;
+      lastIntroKeyRef.current = introKey;
+      centerBoard(app, board);
+      onReadyRef.current();
+      return;
+    }
 
     const previousLarryPosition = previousLarryPositionRef.current;
     const playTileIntro = lastIntroKeyRef.current !== introKey;
@@ -599,7 +605,7 @@ export function PixiStage({ gameState, introKey, movementPath, onActivateCell, o
     previousLarryPositionRef.current = gameState.larryPosition;
     lastIntroKeyRef.current = introKey;
     centerBoard(app, board);
-  }, [gameState, introKey, movementPath]);
+  }, [pixiReady, active, gameState, introKey, movementPath]);
 
   return <div ref={hostRef} className="pixi-stage" />;
 }

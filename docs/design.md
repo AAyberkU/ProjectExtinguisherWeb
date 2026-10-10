@@ -81,8 +81,8 @@ Example level format:
 - The web renderer maps path, blocked, start, goal, health, Larry, and direction-specific catapult aliases in `apps/web/src/game/renderer/PixiStage.tsx`.
 - Path and blocked tile variants are resolved deterministically so unspecified variants still distribute evenly.
 - Catapult art is selected from the same `catapultDirection` value used by gameplay logic.
-- The menu starts memoized background and Pixi texture preloads, then waits for both the asset gate and the menu transition before mounting gameplay.
-- The HUD and level-intro cue wait for the Pixi stage ready callback; load or initialization failures show a recoverable Retry state instead of an empty board.
+- The menu starts memoized background and Pixi texture preloads. Start Game mounts `PixiStage` hidden (`active={false}`) so WebGL initializes during the 900 ms background zoom; the board is drawn and the intro plays only once the phase becomes `playing`.
+- The loading panel appears only while assets are still downloading, while the stage is not ready after the transition, or on failure. It fades in after 300 ms, so fast starts never flash it. The HUD and level-intro cue wait for the Pixi stage ready callback; failures show a recoverable Retry state that remounts the stage.
 
 ## Progression Pipeline
 

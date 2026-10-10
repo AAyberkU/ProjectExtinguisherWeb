@@ -98,6 +98,7 @@
 - Fixed intermittent cold-load startup failures by waiting for the background and memoized Pixi texture preload before entering gameplay.
 - Added an explicit loading state plus recoverable Retry UI for background, texture, or Pixi initialization failures.
 - Delayed the gameplay HUD and level-intro cue until the Pixi board is mounted so the tile-drop animation, canvas, and audio start together.
+- Removed the loading panel from normal starts: Pixi now initializes during the menu zoom, so Start Game reaches the board in about 0.9 s instead of about 1.4 s, and the panel only shows for slow downloads or failures.
 - Added the `art-source/` asset pipeline (`npm run assets`): originals are resized, packed into a WebP atlas, compressed to MP3, and loaded through a Pixi manifest by alias with a loading percentage. Build outputs (dist zip, tsbuildinfo, emitted Vite config) are no longer tracked.
 - Rotated the board to pointy-top cells so its flat edges face up and down, renamed catapult directions to on-screen names, converted Levels 3-5, and rotated the flat-top jam tile art 30 degrees as placeholders until pointy-top art arrives.
 

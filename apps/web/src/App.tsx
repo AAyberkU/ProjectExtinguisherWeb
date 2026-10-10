@@ -75,6 +75,7 @@ export function App() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
   const [assetProgress, setAssetProgress] = useState(0);
+  const [stageMountKey, setStageMountKey] = useState(0);
   const transitionTimeoutRef = useRef<number | null>(null);
   const transitionResolveRef = useRef<(() => void) | null>(null);
   const startRequestRef = useRef(0);
@@ -82,6 +83,11 @@ export function App() {
   const currentLevelNumber = getLevelIndex(gameState.level.id) + 1;
   const movesLeftLabel = String(gameState.movesRemaining).padStart(2, '0');
   const completedFinalLevel = completion === 'game';
+  const assetsReady = assetProgress >= 1 && backgroundUrl !== null;
+  // The board initializes hidden during the menu transition; the panel only covers real waits.
+  const showLoadingOverlay = loadError !== null
+    || (phase === 'starting' && !assetsReady)
+    || (phase === 'playing' && !stageReady);
   const gameShellStyle: GameShellStyle = backgroundUrl === null ? {} : { '--game-background-image': `url(${backgroundUrl})` };
 
   function clearTransitionTimeout() {
@@ -179,6 +185,7 @@ export function App() {
     setCompletion(null);
     setMovementPath(null);
     setStageIntroKey((currentKey) => currentKey + 1);
+    setStageMountKey((currentKey) => currentKey + 1);
     setGameState(createFirstLevelGameState());
     setPhase('starting');
 
@@ -293,9 +300,15 @@ export function App() {
 
   return (
     <main className={`app-shell app-shell--${phase}`} style={gameShellStyle}>
-      {phase === 'playing' ? (
-        <section className="game-panel" aria-label="Playable Project Extinguisher board">
+      {phase !== 'menu' ? (
+        <section
+          className={phase === 'playing' ? 'game-panel' : 'game-panel game-panel--pending'}
+          aria-label="Playable Project Extinguisher board"
+          aria-hidden={phase !== 'playing'}
+        >
           <PixiStage
+            key={stageMountKey}
+            active={phase === 'playing'}
             gameState={gameState}
             introKey={stageIntroKey}
             movementPath={movementPath}
@@ -306,7 +319,7 @@ export function App() {
         </section>
       ) : null}
 
-      {phase === 'starting' || (phase === 'playing' && !stageReady) ? (
+      {showLoadingOverlay ? (
         <section className="loading-overlay" role="status" aria-live="polite" aria-label="Game loading status">
           <div className="loading-panel">
             <p className="loading-title">{loadError === null ? 'Loading Game' : 'Loading Failed'}</p>

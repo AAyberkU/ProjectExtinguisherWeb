@@ -80,6 +80,10 @@ select {
   overflow: hidden;
 }
 
+.game-panel--pending {
+  visibility: hidden;
+}
+
 .loading-overlay {
   position: absolute;
   z-index: 5;
@@ -88,6 +92,18 @@ select {
   place-items: center;
   padding: 1rem;
   background: rgba(8, 10, 16, 0.48);
+  // Short waits finish before the panel fades in, so it never flashes on a fast start.
+  animation: loading-overlay-in 200ms ease 300ms both;
+}
+
+@keyframes loading-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .loading-panel {
