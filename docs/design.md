@@ -59,6 +59,8 @@ ProjectExtinguisherWeb/
   - `PixiStage.tsx`: React wrapper; `stageController.ts`: the Pixi application and resize.
   - `layout.ts`: board bounds from all cells, fitted below the measured HUD height with no maximum
     scale, so every board (19 to 91 cells) fills the same area and smaller boards get bigger hexes.
+    The board fills 78% of that area (`DEFAULT_BOARD_FILL`) to leave room around it; dev builds can
+    try other values with `extinguisherDebug.setBoardFill(0.7)`.
   - `boardView.ts`: persistent tile views built once per level load or restart, updated in place;
     Larry, legal-move highlights, and every event animation.
   - `timeline.ts`: plays engine events in order and calls audio cues as each animation starts.

@@ -18,8 +18,26 @@ export const PLACEHOLDER_TILE_ROTATION = Math.PI / 6;
 const TILE_HALF_WIDTH = (TILE_SPRITE_WIDTH / 2) * Math.cos(Math.PI / 6);
 const TILE_HALF_HEIGHT = TILE_SPRITE_WIDTH / 2;
 
-// No maximum scale: every board, from 19 to 91 cells, fills the same available area, so smaller
-// boards get bigger hexes. Tile art is built at 512 px (@2x) to stay sharp at large scales.
+// No maximum scale: every board, from 19 to 91 cells, fills the same share of the available area,
+// so smaller boards get bigger hexes. Tile art is built at 512 px (@2x) to stay sharp at large scales.
+
+/**
+ * Share of the area below the HUD that the board fills. Below 1 so the board leaves breathing room
+ * and the background frame and toys stay visible. Tunable in dev via `extinguisherDebug.setBoardFill`.
+ */
+export const DEFAULT_BOARD_FILL = 0.78;
+let boardFill = DEFAULT_BOARD_FILL;
+
+export function getBoardFill(): number {
+  return boardFill;
+}
+
+/** Changes the board fill (clamped to 0.3-1); the next fit applies it. */
+export function setBoardFill(value: number): number {
+  boardFill = Math.min(1, Math.max(0.3, Number.isFinite(value) ? value : DEFAULT_BOARD_FILL));
+  return boardFill;
+}
+
 const SIDE_MARGIN = 16;
 const BOTTOM_MARGIN = 16;
 
@@ -75,7 +93,7 @@ export function fitBoard(bounds: Bounds, width: number, height: number, topInset
   const availableHeight = Math.max(1, height - top - BOTTOM_MARGIN);
   const boardWidth = bounds.maxX - bounds.minX;
   const boardHeight = bounds.maxY - bounds.minY;
-  const scale = Math.min(availableWidth / boardWidth, availableHeight / boardHeight);
+  const scale = Math.min(availableWidth / boardWidth, availableHeight / boardHeight) * boardFill;
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;
 

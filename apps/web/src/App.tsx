@@ -5,6 +5,7 @@ import { gameAudio } from './game/audio';
 import type { Dir, EngineEvent, LossReason, PuzzleLabLevel } from './game/engine';
 import { CAMPAIGN, createAdHocLevel, getCampaignLevel, isFinalCampaignLevel, type PlayableLevel } from './game/levels';
 import { PixiStage, type PixiStageHandle } from './game/renderer/PixiStage';
+import { setBoardFill } from './game/renderer/layout';
 import { canUndo, createSession, sessionMove, sessionRestart, sessionUndo, type Session } from './game/session';
 
 type GameShellStyle = CSSProperties & Readonly<{
@@ -79,6 +80,8 @@ type DebugApi = Readonly<{
   loadLevel: (level: PuzzleLabLevel) => void;
   stats: () => unknown;
   cellScreenPoint: (q: number, r: number) => { x: number; y: number } | null;
+  /** Share of the free area the board fills (0.3-1); returns the applied value. */
+  setBoardFill: (value: number) => number;
 }>;
 
 export function App() {
@@ -345,6 +348,11 @@ export function App() {
       loadLevel: (level) => debugHandlersRef.current.handleLoadLevel(createAdHocLevel(level)),
       stats: () => stageRef.current?.stats() ?? null,
       cellScreenPoint: (q, r) => stageRef.current?.cellScreenPoint(q, r) ?? null,
+      setBoardFill: (value) => {
+        const applied = setBoardFill(value);
+        window.dispatchEvent(new Event('resize'));
+        return applied;
+      },
     };
     const target = window as unknown as { extinguisherDebug?: DebugApi };
 
