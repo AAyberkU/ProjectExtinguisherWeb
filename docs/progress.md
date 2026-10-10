@@ -12,9 +12,15 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
   code-drawn glyphs.
 - A pool of 180 candidate levels lives in `apps/web/levels/pool/` (none final; selection happens in
   the editor).
-- **Next:** roadmap step 2 (menus and save).
+- **Next:** roadmap step 2 (menus and save). Its scope was agreed on 2026-10-10 (three screens, no
+  settings or pause, HUD layout, animations instead of win and loss panels, simple tutorial trial);
+  implementation has not started.
 
 ## Recent work (2026-10-10)
+
+Step 2 planning (2026-10-10): agreed screens, HUD, win and loss feedback, level select, tutorial
+trial, and the UI art split with the user; recorded in `docs/roadmap.md`, `docs/game.md`,
+`docs/art.md`, and `docs/design.md`.
 
 Roadmap step 1 (merged to `main` on 2026-10-10 after the user's play test):
 
@@ -78,8 +84,9 @@ Earlier the same day:
 
 ## Next steps
 
-1. Roadmap step 2: screens, save adapter, settings, chapter tutorials.
-2. Tell the artist the new tile list in `docs/art.md`; report the loop-validation gap
+1. Roadmap step 2 as agreed in `docs/roadmap.md`: three screens, save adapter, HUD with music and
+   SFX toggles, win and loss animations, tutorial trial.
+2. Tell the artist the tile list and the UI art list in `docs/art.md`; report the loop-validation gap
    (`docs/rules.md`) to Uğur and ask for the GDD's rule fixtures.
 3. Replace the temporary campaign when the editor's Final export exists (`docs/levels.md`).
 

@@ -91,10 +91,12 @@ ProjectExtinguisherWeb/
 
 - **Input**: one action layer fed by pointer, touch, keyboard, and later gamepad (today the keyboard
   and pointer paths live in `App.tsx` and `boardView.ts`).
-- **Screens**: menu, chapter and level select, game, settings, as separate components instead of a
-  single `App.tsx`.
-- **Save**: an adapter (`get`/`set`) keyed by stable `levelId`. localStorage on web with a namespace
-  per portal build; Steam Cloud later. Play continues without saving if storage is unavailable.
+- **Screens**: main menu, level select, and game as separate components instead of a single
+  `App.tsx`; no settings screen and no pause menu. Level select also opens over the game. Win and
+  loss become board animations plus a "next" badge instead of DOM overlays (`docs/game.md`).
+- **Save**: an adapter (`get`/`set`) keyed by stable `levelId`, storing completed level ids, the
+  music and SFX toggles, and seen tutorials. localStorage on web with a namespace per portal build;
+  Steam Cloud later. Play continues without saving if storage is unavailable.
 - **Platform adapters**: Coolmath (ad-break pause and mute hooks, SDK after acceptance) and Steam
   (wrapper, achievements, cloud save) behind one interface, so the game code stays platform-free.
 - **Responsive layout**: separate HUD layouts for landscape and portrait (the board already fits any

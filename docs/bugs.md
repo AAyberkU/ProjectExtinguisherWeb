@@ -29,7 +29,7 @@
   until the next typecheck. (The file is not tracked, but it still exists after builds.)
 - **Audio:** each SFX is downloaded twice (Web Audio buffer plus HTMLAudio fallback, about 100 KB);
   iOS Safari ignores `HTMLAudioElement.volume`, so music may play at full volume there; there is no
-  gain-bus structure for settings or ad pauses; the AudioContext is not suspended when the page is
+  gain-bus structure for the music and SFX toggles or ad pauses; the AudioContext is not suspended when the page is
   hidden; new mechanics have no cues yet.
 - **Placeholder art:** the flat-top jam tiles are rotated 30 degrees; final pointy-top art is
   pending. New mechanics use code-drawn glyphs.

@@ -76,6 +76,29 @@ Tell the artist early. Mechanics and their visual needs:
 Until art arrives, new tiles use code-drawn placeholder glyphs (see `docs/rules.md`, editor
 presentation reference).
 
+## UI art (roadmap step 2)
+
+Split agreed on 2026-10-10: the artist draws static pieces; code does every animation, the layout,
+all text (with a self-hosted font, including the steps counter digits), dimming, tutorial glows, and
+placeholders. Step 2 starts with code-drawn placeholders, so it never waits for art; delivered art
+replaces them by alias.
+
+Needed from the artist (transparent PNG, icons at least 256 px; the integrator names them):
+
+1. HUD icons: undo, restart, menu, music on, music off, SFX on, SFX off (7 icons).
+2. One shared button base (round or hex). The pressed state is done in code.
+3. Level card: card base, lock icon, completed tick. Code combines them into the open, locked, and
+   completed states.
+4. Level select panel: frame, page arrows, close button.
+5. Game logo ("Project Extinguisher") for the main menu.
+6. "Next" arrow badge shown after a win.
+
+Optional (later is fine):
+
+- Celebration particles (water drops, foam, sparks); code multiplies and moves them.
+- Larry happy and sad poses in layers. Without them, code animates the existing Larry (hop, shake).
+- A main menu background. Without it, the game background is reused.
+
 ## Board presentation
 
 - Every blocker is drawn, including the walls that pad large boards. Each wall picks one of the
@@ -113,5 +136,5 @@ Richer per-object effects need layered art.
 - Current mapping: walk `sfx_jump`, launch `sfx_catapult`, +1 and refill `sfx_heal`, win
   `sfx_passed`, loss `sfx_lose`, restart `sfx_restart`, level intro `sfx_level_intro`. Slide,
   teleport, swap, switch, door, and swamp steps are silent until cues exist.
-- Planned (step 2): master, music, and SFX gain buses for settings, mute, and pausing during portal
-  ads.
+- Planned (step 2): music and SFX on/off toggles in the HUD (saved), on gain buses that portal ad
+  breaks can also mute. New cues for win, loss, and buttons are decided later.

@@ -19,7 +19,7 @@ uses exactly the given steps.
 
 ## Core loop
 
-1. Pick a level (chapter and level select, roadmap step 2).
+1. Pick a level (level select, roadmap step 2).
 2. Read the board: start, finish, step budget, special tiles.
 3. Move Larry one neighbouring cell at a time (tap or click a neighbour, or use the keyboard).
 4. Each move spends steps; special tiles launch, slide, teleport, refill, open doors, or swap cells.
@@ -55,6 +55,36 @@ uses exactly the given steps.
 - Only completed level ids are saved (localStorage on web). Finishing a level unlocks the next one.
 - No score and no stars.
 
+## Screens and HUD (agreed 2026-10-10, roadmap step 2)
+
+Keep panels to a minimum: every extra panel makes the game feel more like a web site and less
+immersive. Feedback comes from animation wherever possible.
+
+- **Three screens:** main menu, level select, game. There is no settings screen and no pause menu.
+- **Main menu:** Play (first run) or Continue (first unfinished level), Level Select, Credits.
+  Credits is a box over the menu, not a separate screen.
+- **Level select:** 10 chapters of 6 levels on two pages (chapters 1-5 and 6-10). Locked levels stay
+  visible with a lock; completed levels show a tick. Opens from the main menu and from the game's
+  Menu button or `Esc` (over the board; closing it resumes the level). A Main Menu button leads back
+  to the main menu.
+- **HUD:**
+
+  ```txt
+  [Level 7] [Undo] [Restart]        12        [Music] [SFX] [Menu]
+            left                  centre               right
+  ```
+
+  The steps counter is large and shows only the number. Music and SFX are on/off toggles (keys `M`
+  and `V`) and are saved.
+- **Win:** a celebration animation, then a "next" arrow badge in the centre; tap it or press Enter
+  to continue. No auto-advance, so Undo and Restart remain available. The last level ends with an
+  ending animation and a return to the main menu.
+- **Loss:** no panel and no auto-restart. Out of steps: the counter flashes red at 0. Stuck: Larry
+  and the board shake. Undo and Restart pulse because one undo is usually the best way out.
+- **Tutorial (trial):** on a chapter's first level the new mechanic's tile glows and one line of text
+  appears next to it, without blocking play; it disappears once the mechanic is used and is not shown
+  again. Removed if it does not feel right.
+
 ## UX goals
 
 - Open on a main menu; music starts on load and loops.
@@ -62,7 +92,8 @@ uses exactly the given steps.
 - Movement feels toy-like: Larry hops between cells; launches, slides, and teleports are readable.
 - Valid moves are visually clear; failure is fast to retry; undo is always available.
 - Works on desktop and mobile browsers, in landscape and portrait.
-- Every new mechanic gets a short tutorial at the start of its chapter.
+- Every new mechanic gets a short, non-blocking hint at the start of its chapter (trial).
+- As few panels as possible; win and loss are shown through animation.
 
 ## Platforms
 

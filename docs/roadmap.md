@@ -37,24 +37,47 @@ the Puzzle Lab editor; this repository integrates them into the game.
 - [x] End-to-end browser run wins all 60 campaign levels with their stored solutions.
 - [ ] Replace the temporary campaign with the Puzzle Lab Final export when it exists.
 
-## 2. Menus and save (next)
+## 2. Menus and save (next; scope agreed 2026-10-10)
 
-- [ ] Screen system (menu, chapter and level select, game, settings); split `App.tsx`.
+Guiding idea: as few panels as possible, so the game feels like a game and not a web site (the Echo
+Rail approach). The full screen and HUD spec is in `docs/game.md` (Screens and HUD).
+
+- [ ] Three screens: main menu, level select, game. No settings screen and no pause menu. Split
+  `App.tsx` into screen components.
+- [ ] Main menu: Play (no save) or Continue (first unfinished level), Level Select, Credits. Credits
+  stays as the current box over the menu for now; its content is rewritten later.
+- [ ] Level select: all 60 levels, 10 chapters of 6, on two pages (chapters 1-5 and 6-10). Locked
+  levels are visible with a lock; completed levels show a tick. The same screen opens from the main
+  menu and from the game (over the board; closing returns to the level in progress). It has a Main
+  Menu button.
+- [ ] Game HUD: left `Level N`, Undo, Restart; centre a large steps counter (number only); right
+  Music on/off, SFX on/off, Menu (opens level select). Keys: `M` music, `V` SFX, `Esc` opens and
+  closes level select.
+- [ ] No win or loss panels; animations instead:
+  - Win: a celebration animation, then a "next" arrow badge in the centre. Tapping it (or Enter)
+    loads the next level; there is no auto-advance. Undo and Restart keep working while it waits.
+    The last level plays an ending and returns to the main menu.
+  - Loss: no panel and no auto-restart. Out of steps: the counter flashes red at 0. Stuck: Larry and
+    the board shake. Moves are locked; Undo and Restart pulse to show the way on.
 - [ ] Save adapter keyed by stable `levelId` (localStorage on web, Steam Cloud later); store only
-  completed level ids; finishing a level unlocks the next (GDD).
-- [ ] Settings with separate music and SFX volume, pause. (Undo button done in step 1.)
-- [ ] A short tutorial at the start of each chapter for its new mechanic.
+  completed level ids plus the music and SFX toggles; finishing a level unlocks the next (GDD).
+- [ ] Tutorial, kept very simple as a trial: on the first level of a chapter the new mechanic's
+  tile glows and a one-line hint appears next to it; it never blocks play, disappears after the
+  mechanic is first used, and is saved as seen. Removed entirely if it does not feel right.
 - [x] Touch-friendly copy (no "Press R" text; done in step 1).
 - [ ] Console debug command to unlock levels once saving exists. (Dev-only `window.extinguisherDebug`
   with `goTo` and `loadLevel` exists since step 1 and is absent from production builds.)
+- Art: all screens start with code-drawn placeholders, so step 2 does not wait for the artist; the
+  UI art list is in `docs/art.md`. New sound cues (win, loss, button) are decided later.
 
 ## 3. Landscape and portrait
 
 - [x] Board fit computed from the actual board and screen (step 1).
 - [x] Remove the mobile "rotate your device" screen (step 1).
-- [ ] Two HUD layouts; portrait currently leaves large empty areas above and below the board.
-- [ ] Steps counter large in the top-right corner, number only (GDD); move Undo and Reset accordingly.
-- [ ] Undo and Replay buttons on the win overlay (GDD acceptance 4).
+- [ ] Two HUD layouts; portrait currently leaves large empty areas above and below the board. Check
+  that the step 2 HUD rows fit narrow phones in portrait.
+- (Moved to step 2: the large steps counter, now centred, and undo/restart after a win, now through
+  the HUD instead of a win panel.)
 - [ ] Check 91-cell boards on phones in portrait; quieter edge walls if needed.
 
 ## 4. Art integration and code polish (continuous, as art arrives)
@@ -99,4 +122,5 @@ the Puzzle Lab editor; this repository integrates them into the game.
 | 2026-10-10 | Controls follow the editor: W/E/A/D/Z/X (plus Left/Right arrows), Backspace undo, R restart; tapping a neighbour also moves. One loss panel with a reason line (out of steps or stuck). |
 | 2026-10-10 | GitHub Actions runs typecheck, tests, and `level:check` on every push; it reports and never blocks. |
 | 2026-10-10 | HUD level label is only `Level N` (campaign order, no chapter or name). Every board fills the same screen area regardless of size; tile art built at 512 px for sharpness. Steps-counter placement (GDD: large, top-right, number only) and undo/restart buttons after a win are agreed but deferred. |
+| 2026-10-10 | Step 2 scope: three screens (main menu, level select, game); no settings screen and no pause menu; music and SFX on/off buttons in the HUD (Echo Rail style). HUD: left level, Undo, Restart; centre a large steps counter (deliberately differs from the GDD's top-right); right Music, SFX, Menu. The Menu button and `Esc` open level select, which also has a Main Menu button. Win and loss panels are replaced by animations; win waits for a "next" arrow tap (no auto-advance), loss never auto-restarts, and Undo and Restart work after both. Level select shows all 60 levels on two pages with locked levels visible. Tutorial is a very simple, non-blocking tile glow with one line of text, on trial. Credits keep their current content for now. UI art split: the artist draws static pieces, code does every animation and placeholder. Sound cues are decided later. |
 | 2026-10-10 | Uğur's GDD (rules 1-20) adopted as a source next to the editor code; copy in `docs/reference/`. The v1 and GPT sets used empty cells as walls on purpose; "full floor" levels come from the v2 set. Progress saves only completed level ids with linear unlock; no score or stars. |
