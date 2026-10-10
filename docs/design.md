@@ -103,7 +103,7 @@ ProjectExtinguisherWeb/
 ## Target architecture (roadmap steps 3-6)
 
 - **Input**: one action layer fed by pointer, touch, keyboard, and later gamepad (today the keyboard
-  and pointer paths live in `App.tsx` and `boardView.ts`).
+  and pointer paths live in `App.tsx`, `ui/GameScreen.tsx`, and `boardView.ts`).
 - **Save**: a separate save namespace per portal build; Steam Cloud behind the same adapter later.
 - **Platform adapters**: Coolmath (ad-break pause and mute hooks, SDK after acceptance) and Steam
   (wrapper, achievements, cloud save) behind one interface, so the game code stays platform-free.
