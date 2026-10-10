@@ -32,7 +32,7 @@ export function MainMenu({ hasProgress, onPlay, onLevelSelect }: MainMenuProps) 
       </nav>
 
       {creditsOpen ? (
-        <div className="menu-credits-box" aria-label="Credits">
+        <div className="menu-credits-box" role="group" aria-label="Credits">
           <p className="credit-role">Artist</p>
           <p className="credit-name credit-name--artist">Elif Ilgin Tilev</p>
           <p className="credit-role">Designer</p>

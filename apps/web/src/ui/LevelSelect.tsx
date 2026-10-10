@@ -80,7 +80,49 @@ export function LevelSelect({ entries, currentIndex, onSelect, onClose, onMainMe
   pageCountRef.current = pageCount;
 
   useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
     panelRef.current?.focus({ preventScroll: true });
+
+    // Closing returns focus to whatever opened the dialog (when it still exists).
+    return () => {
+      if (opener !== null && opener.isConnected) {
+        opener.focus({ preventScroll: true });
+      }
+    };
+  }, []);
+
+  // Tab stays inside the dialog while it is open.
+  useEffect(() => {
+    function handleTab(event: KeyboardEvent) {
+      const panel = panelRef.current;
+
+      if (event.key !== 'Tab' || panel === null) {
+        return;
+      }
+
+      const items = [...panel.querySelectorAll<HTMLElement>('button:not(:disabled)')];
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+
+      if (first === undefined || last === undefined) {
+        event.preventDefault();
+      } else if (!panel.contains(active) || active === panel) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener('keydown', handleTab);
+
+    return () => window.removeEventListener('keydown', handleTab);
   }, []);
 
   useEffect(() => {
@@ -111,7 +153,7 @@ export function LevelSelect({ entries, currentIndex, onSelect, onClose, onMainMe
   }
 
   return (
-    <section className="level-select" role="dialog" aria-label="Level select" onClick={handleBackdropClick}>
+    <section className="level-select" role="dialog" aria-modal="true" aria-label="Level select" onClick={handleBackdropClick}>
       <div className="level-select-panel" ref={panelRef} tabIndex={-1}>
         <header className="level-select-header">
           <h2 className="level-select-title">Level Select</h2>

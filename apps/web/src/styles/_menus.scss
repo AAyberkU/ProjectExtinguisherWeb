@@ -10,7 +10,7 @@
   --menu-ink-dark: #2b0d4f;
   --menu-surface: rgba(20, 28, 42, 0.78);
   --menu-surface-hover: rgba(25, 34, 50, 0.92);
-  --menu-surface-strong: rgba(20, 28, 42, 0.94);
+  --menu-surface-strong: rgb(20, 28, 42);
   --menu-accent: #f2b21a;
   --menu-focus: rgba(255, 247, 251, 0.45);
   --menu-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
@@ -405,6 +405,50 @@
   &:focus-visible {
     background: rgba(255, 247, 251, 0.28);
     outline: 3px solid var(--menu-focus);
+  }
+}
+
+// Short landscape screens (phones): two chapter columns so all five chapters of a page fit without scrolling.
+@media (max-height: 480px) and (min-width: 600px) {
+  .level-select {
+    --level-card-size: clamp(40px, 11vh, 48px);
+
+    padding: 0.4rem;
+  }
+
+  .level-select-panel {
+    gap: 0.25rem;
+    width: min(56rem, 100%);
+    padding-block: 0.4rem;
+  }
+
+  .level-select-header {
+    margin-top: -0.1rem;
+  }
+
+  .level-select-title {
+    font-size: 1.1rem;
+  }
+
+  .level-select-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem 1.25rem;
+  }
+
+  .level-chapter-title {
+    margin-bottom: 0.1rem;
+    font-size: 0.8rem;
+  }
+
+  .level-card {
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 1rem;
+  }
+
+  .level-select-footer {
+    flex-wrap: nowrap;
   }
 }
 

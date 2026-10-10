@@ -173,10 +173,6 @@ export function GameScreen(props: GameScreenProps) {
 
     outcomeTokenRef.current = token;
 
-    if (level.index >= 0) {
-      saveStore.markCompleted(level.id);
-    }
-
     commitOutcome({ result, badge: false });
     void (stageRef.current?.celebrate(result === 'final') ?? Promise.resolve()).then(() => {
       if (outcomeTokenRef.current === token) {
@@ -203,6 +199,14 @@ export function GameScreen(props: GameScreenProps) {
     }
 
     commitSession(moved.session);
+
+    // Saved at once, not after the celebration: restarting, leaving or closing the tab must not lose the win.
+    const { level } = moved.session;
+
+    if (moved.session.state.status === 'won' && level.index >= 0) {
+      saveStore.markCompleted(level.id);
+    }
+
     markBusy(true);
     stageRef.current?.playMove(moved.events, moved.session.state);
   }
@@ -273,8 +277,16 @@ export function GameScreen(props: GameScreenProps) {
   }
 
   function handleBadgeKey(event: KeyboardEvent) {
-    if (!badgeVisible(outcomeRef.current)) {
+    const current = outcomeRef.current;
+
+    if (current === null || current.result === 'lost') {
       // Enter and Space keep their normal meaning (activating a focused button).
+      return;
+    }
+
+    if (!current.badge) {
+      // The celebration is playing: a focused HUD button must not be activated (Undo would revert the win).
+      event.preventDefault();
       return;
     }
 

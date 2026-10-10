@@ -99,6 +99,57 @@ describe('SaveStore', () => {
   });
 });
 
+describe('SaveStore with two tabs', () => {
+  it('unions progress instead of overwriting it', () => {
+    const storage = createMemoryStorage();
+    const a = new SaveStore(storage);
+    const b = new SaveStore(storage);
+    a.markCompleted('l1');
+    b.markCompleted('l2');
+    b.markTutorialSeen('t2');
+    a.markTutorialSeen('t1');
+    expect(parseSave(storage.read()).completed).toEqual(['l1', 'l2']);
+    expect(parseSave(storage.read()).tutorialsSeen).toEqual(['t2', 't1']);
+    expect(a.data.completed).toEqual(['l1', 'l2']);
+  });
+  it('lets only the changed setting win', () => {
+    const storage = createMemoryStorage();
+    const a = new SaveStore(storage);
+    const b = new SaveStore(storage);
+    a.setMusic(false);
+    b.setSfx(false);
+    expect(parseSave(storage.read())).toMatchObject({ music: false, sfx: false });
+    b.markCompleted('x');
+    expect(parseSave(storage.read())).toMatchObject({ music: false, sfx: false, completed: ['x'] });
+  });
+  it('reset still writes the defaults', () => {
+    const storage = createMemoryStorage();
+    const a = new SaveStore(storage);
+    const b = new SaveStore(storage);
+    b.markCompleted('l1');
+    a.reset();
+    expect(parseSave(storage.read())).toEqual(defaults);
+  });
+  it('adopts a save written by another tab on the storage event', () => {
+    const storage = createMemoryStorage();
+    let handler: ((event: { key: string | null }) => void) | undefined;
+    vi.stubGlobal('window', { addEventListener: (_: string, fn: typeof handler) => { handler = fn; } });
+    try {
+      const store = new SaveStore(storage);
+      const listener = vi.fn();
+      store.subscribe(listener);
+      storage.write(JSON.stringify({ version: 1, completed: ['z'], music: true, sfx: true, tutorialsSeen: [] }));
+      handler?.({ key: 'other' });
+      expect(listener).not.toHaveBeenCalled();
+      handler?.({ key: SAVE_KEY });
+      expect(store.data.completed).toEqual(['z']);
+      expect(listener).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
 describe('storage adapters', () => {
   it('memory storage holds the last written value', () => {
     const s = createMemoryStorage('x');

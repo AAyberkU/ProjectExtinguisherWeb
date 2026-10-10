@@ -27,10 +27,12 @@ type HudButtonProps = Readonly<{
   disabled?: boolean;
   pressed?: boolean;
   pulse?: boolean;
+  /** The level select restores focus to its opener, so the Menu button keeps it after a click. */
+  keepFocus?: boolean;
   children: ReactNode;
 }>;
 
-function HudButton({ className, label, onClick, disabled, pressed, pulse, children }: HudButtonProps) {
+function HudButton({ className, label, onClick, disabled, pressed, pulse, keepFocus, children }: HudButtonProps) {
   return (
     <button
       className={`hud-button ${className}`}
@@ -39,7 +41,14 @@ function HudButton({ className, label, onClick, disabled, pressed, pulse, childr
       aria-pressed={pressed}
       disabled={disabled}
       data-pulse={pulse === true ? 'true' : undefined}
-      onClick={onClick}
+      onClick={(event) => {
+        onClick();
+
+        // A pointer click must not leave the button focused (a later Enter would activate it); Tab focus is kept.
+        if (event.detail > 0 && !keepFocus) {
+          event.currentTarget.blur();
+        }
+      }}
     >
       {children}
     </button>
@@ -86,6 +95,7 @@ export function Hud({
 
       <p
         className="hud-steps"
+        role="status"
         aria-label={`Steps left: ${steps}`}
         data-low={lossReason === 'out-of-steps' ? 'true' : undefined}
       >
@@ -99,7 +109,7 @@ export function Hud({
         <HudButton className="hud-sfx" label="Sound effects" pressed={sfx} onClick={onToggleSfx}>
           {sfx ? <SfxOnIcon /> : <SfxOffIcon />}
         </HudButton>
-        <HudButton className="hud-menu" label="Menu" onClick={onMenu}>
+        <HudButton className="hud-menu" label="Menu" keepFocus onClick={onMenu}>
           <MenuIcon />
         </HudButton>
       </div>

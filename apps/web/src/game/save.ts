@@ -92,6 +92,7 @@ export class SaveStore {
       raw = null;
     }
     this.current = parseSave(raw);
+    this.listenForOtherTabs();
   }
 
   get data(): SaveData {
@@ -113,12 +114,12 @@ export class SaveStore {
 
   setMusic(on: boolean): void {
     if (this.current.music === on) return;
-    this.commit({ ...this.current, music: on });
+    this.commit({ ...this.current, music: on }, 'music');
   }
 
   setSfx(on: boolean): void {
     if (this.current.sfx === on) return;
-    this.commit({ ...this.current, sfx: on });
+    this.commit({ ...this.current, sfx: on }, 'sfx');
   }
 
   hasSeenTutorial(key: string): boolean {
@@ -137,7 +138,7 @@ export class SaveStore {
   }
 
   reset(): void {
-    this.commit(DEFAULT_SAVE);
+    this.commit(DEFAULT_SAVE, 'reset');
   }
 
   subscribe(listener: (data: SaveData) => void): () => void {
@@ -147,14 +148,56 @@ export class SaveStore {
     };
   }
 
-  private commit(next: SaveData): void {
-    this.current = next;
+  /** Another tab wrote the save: adopt it and tell the subscribers. */
+  private listenForOtherTabs(): void {
     try {
-      this.storage.write(JSON.stringify(next));
+      if (typeof window === 'undefined') return;
+      window.addEventListener('storage', (event) => {
+        if (event.key !== null && event.key !== SAVE_KEY) return;
+        try {
+          this.current = parseSave(this.storage.read());
+        } catch {
+          return;
+        }
+        for (const listener of [...this.listeners]) listener(this.current);
+      });
+    } catch {
+      // No window events: the store still works on its own.
+    }
+  }
+
+  /**
+   * Merges with what is stored right now, so a second tab's progress is not overwritten: progress lists are
+   * unioned (stored order first), and only the setting this store changed wins over the stored one.
+   */
+  private merge(next: SaveData, changed: 'music' | 'sfx' | 'reset' | null): SaveData {
+    if (changed === 'reset') return next;
+    let raw: string | null = null;
+    try {
+      raw = this.storage.read();
+    } catch {
+      raw = null;
+    }
+    if (raw === null) return next;
+    const stored = parseSave(raw);
+    return {
+      version: 1,
+      completed: uniqueStrings([...stored.completed, ...next.completed]),
+      tutorialsSeen: uniqueStrings([...stored.tutorialsSeen, ...next.tutorialsSeen]),
+      music: changed === 'music' ? next.music : stored.music,
+      sfx: changed === 'sfx' ? next.sfx : stored.sfx,
+    };
+  }
+
+  private commit(next: SaveData, changed: 'music' | 'sfx' | 'reset' | null = null): void {
+    const merged = this.merge(next, changed);
+    this.current = merged;
+    try {
+      this.storage.write(JSON.stringify(merged));
     } catch {
       // In-memory data stays correct for the session.
     }
-    for (const listener of [...this.listeners]) listener(next);
+    for (const listener of [...this.listeners]) listener(merged);
   }
 }
 
