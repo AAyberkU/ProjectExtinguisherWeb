@@ -1,18 +1,37 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { initAssets, loadGameAssets, resolveAssetUrl, subscribeGameAssetProgress } from './game/assets';
 import { gameAudio } from './game/audio';
-import { applyCommand } from './game/core';
-import type { AxialCoord, GameCommand, GameEvent } from './game/core';
-import { createFirstLevelGameState, createNextLevelGameState, getLevelIndex, LEVELS } from './game/levels';
-import { PixiStage } from './game/renderer/PixiStage';
+import type { Dir, EngineEvent, LossReason, PuzzleLabLevel } from './game/engine';
+import { CAMPAIGN, createAdHocLevel, getCampaignLevel, isFinalCampaignLevel, type PlayableLevel } from './game/levels';
+import { PixiStage, type PixiStageHandle } from './game/renderer/PixiStage';
+import { canUndo, createSession, sessionMove, sessionRestart, sessionUndo, type Session } from './game/session';
 
 type GameShellStyle = CSSProperties & Readonly<{
   '--game-background-image'?: string;
 }>;
 
 const MENU_TRANSITION_MS = 900;
+const RESTART_INTRO_DELAY_MS = 80;
+const HUD_BOARD_GAP_PX = 10;
+const DEFAULT_TOP_INSET_PX = 96;
 const LOAD_ERROR_MESSAGE = 'Some game files could not be loaded.';
+
+const KEY_DIRS: Readonly<Record<string, Dir>> = {
+  w: 'NW',
+  e: 'NE',
+  a: 'W',
+  arrowleft: 'W',
+  d: 'E',
+  arrowright: 'E',
+  z: 'SW',
+  x: 'SE',
+};
+
+const LOSS_REASON_TEXT: Readonly<Record<LossReason, string>> = {
+  'out-of-steps': 'Out of steps',
+  stuck: 'Stuck — no moves left',
+};
 
 let backgroundImagePromise: Promise<string> | null = null;
 
@@ -44,33 +63,32 @@ function preloadBackgroundImage(): Promise<string> {
 }
 
 type AppPhase = 'menu' | 'starting' | 'playing';
-type CompletionState = 'level' | 'game' | 'lost' | null;
-type LarryMovedEvent = Extract<GameEvent, Readonly<{ type: 'larry-moved' }>>;
-
-function resetLevelState(currentState: ReturnType<typeof createFirstLevelGameState>) {
-  return applyCommand(currentState, { type: 'reset-level' }).state;
-}
+type Outcome = Readonly<{ result: 'won' | 'final' } | { result: 'lost'; reason: LossReason }>;
 
 function isEditableTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+  return target instanceof HTMLElement
+    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 }
 
-function createMovementPath(events: readonly GameEvent[]): readonly AxialCoord[] | null {
-  const movementEvents = events.filter((event): event is LarryMovedEvent => event.type === 'larry-moved');
-
-  if (movementEvents.length === 0) {
-    return null;
-  }
-
-  return [movementEvents[0].from, ...movementEvents.map((event) => event.to)];
+function firstSession(): Session {
+  return createSession(getCampaignLevel(0));
 }
+
+type DebugApi = Readonly<{
+  goTo: (levelNumber: number) => void;
+  loadLevel: (level: PuzzleLabLevel) => void;
+  stats: () => unknown;
+  cellScreenPoint: (q: number, r: number) => { x: number; y: number } | null;
+}>;
 
 export function App() {
   const [phase, setPhase] = useState<AppPhase>('menu');
-  const [gameState, setGameState] = useState(createFirstLevelGameState);
-  const [movementPath, setMovementPath] = useState<readonly AxialCoord[] | null>(null);
-  const [completion, setCompletion] = useState<CompletionState>(null);
-  const [stageIntroKey, setStageIntroKey] = useState(0);
+  const [session, setSession] = useState<Session>(firstSession);
+  const [hudSteps, setHudSteps] = useState(() => session.state.steps);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [loadKey, setLoadKey] = useState(0);
+  const [introDelayMs, setIntroDelayMs] = useState(0);
+  const [topInset, setTopInset] = useState(DEFAULT_TOP_INSET_PX);
   const [stageReady, setStageReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
@@ -80,15 +98,36 @@ export function App() {
   const transitionResolveRef = useRef<(() => void) | null>(null);
   const startRequestRef = useRef(0);
   const stageReadyRef = useRef(false);
-  const currentLevelNumber = getLevelIndex(gameState.level.id) + 1;
-  const movesLeftLabel = String(gameState.movesRemaining).padStart(2, '0');
-  const completedFinalLevel = completion === 'game';
+  const phaseRef = useRef<AppPhase>('menu');
+  const sessionRef = useRef<Session>(session);
+  const busyRef = useRef(true);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const hudRef = useRef<HTMLElement | null>(null);
+  const stageRef = useRef<PixiStageHandle | null>(null);
   const assetsReady = assetProgress >= 1 && backgroundUrl !== null;
   // The board initializes hidden during the menu transition; the panel only covers real waits.
   const showLoadingOverlay = loadError !== null
     || (phase === 'starting' && !assetsReady)
     || (phase === 'playing' && !stageReady);
   const gameShellStyle: GameShellStyle = backgroundUrl === null ? {} : { '--game-background-image': `url(${backgroundUrl})` };
+
+  phaseRef.current = phase;
+
+  function commitSession(next: Session) {
+    sessionRef.current = next;
+    setSession(next);
+  }
+
+  /** Written straight to the DOM so input locks and tests see it in the same task as the input. */
+  function markBusy(busy: boolean) {
+    busyRef.current = busy;
+    panelRef.current?.setAttribute('data-busy', busy ? 'true' : 'false');
+  }
+
+  const attachPanel = useCallback((element: HTMLElement | null) => {
+    panelRef.current = element;
+    element?.setAttribute('data-busy', busyRef.current ? 'true' : 'false');
+  }, []);
 
   function clearTransitionTimeout() {
     if (transitionTimeoutRef.current === null) {
@@ -130,38 +169,191 @@ export function App() {
     return () => {
       window.removeEventListener('pointerdown', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
-      gameAudio.cancelScheduledSfx();
     };
   }, []);
 
+  // The board fit reserves the HUD's actual height (it differs between landscape and portrait).
+  useLayoutEffect(() => {
+    const hud = hudRef.current;
+    const panel = panelRef.current;
+
+    if (phase !== 'playing' || hud === null || panel === null) {
+      return undefined;
+    }
+
+    const measure = () => {
+      const inset = hud.getBoundingClientRect().bottom - panel.getBoundingClientRect().top + HUD_BOARD_GAP_PX;
+      setTopInset(Math.max(0, Math.round(inset)));
+    };
+    const observer = new ResizeObserver(measure);
+
+    measure();
+    observer.observe(hud);
+    observer.observe(panel);
+
+    return () => observer.disconnect();
+  }, [phase]);
+
+  function isPlayable(): boolean {
+    return phaseRef.current === 'playing' && stageReadyRef.current && stageRef.current !== null;
+  }
+
+  function handleMove(dir: Dir) {
+    if (!isPlayable() || busyRef.current) {
+      return;
+    }
+
+    const moved = sessionMove(sessionRef.current, dir);
+
+    if (moved === null) {
+      return;
+    }
+
+    commitSession(moved.session);
+    markBusy(true);
+    stageRef.current?.playMove(moved.events, moved.session.state);
+  }
+
+  function handleUndo() {
+    if (!isPlayable() || busyRef.current) {
+      return;
+    }
+
+    const previous = sessionUndo(sessionRef.current);
+
+    if (previous === null) {
+      return;
+    }
+
+    commitSession(previous);
+    setOutcome(null);
+    setHudSteps(previous.state.steps);
+    stageRef.current?.showState(previous.state);
+  }
+
+  function loadSession(next: Session, delayMs: number) {
+    commitSession(next);
+    setOutcome(null);
+    setHudSteps(next.state.steps);
+    setIntroDelayMs(delayMs);
+    setLoadKey((key) => key + 1);
+    markBusy(true);
+  }
+
+  function handleRestart() {
+    if (!isPlayable()) {
+      return;
+    }
+
+    gameAudio.play('restart');
+    loadSession(sessionRestart(sessionRef.current), RESTART_INTRO_DELAY_MS);
+  }
+
+  function handleLoadLevel(level: PlayableLevel) {
+    if (!isPlayable()) {
+      return;
+    }
+
+    loadSession(createSession(level), 0);
+  }
+
+  function handleNextLevel() {
+    if (outcome?.result !== 'won') {
+      return;
+    }
+
+    const nextIndex = sessionRef.current.level.index + 1;
+    handleLoadLevel(getCampaignLevel(nextIndex < CAMPAIGN.length ? nextIndex : 0));
+  }
+
+  function handleReturnToMenu() {
+    clearTransitionTimeout();
+    commitSession(firstSession());
+    setOutcome(null);
+    stageReadyRef.current = false;
+    setStageReady(false);
+    markBusy(true);
+    setPhase('menu');
+  }
+
+  function handleTimelineEnd() {
+    const { level, state } = sessionRef.current;
+
+    setHudSteps(state.steps);
+
+    if (state.status === 'won') {
+      setOutcome({ result: isFinalCampaignLevel(level) ? 'final' : 'won' });
+    } else if (state.status === 'lost') {
+      setOutcome({ result: 'lost', reason: state.lossReason ?? 'stuck' });
+    }
+  }
+
+  function handleEventStart(event: EngineEvent) {
+    gameAudio.playEvent(event);
+
+    if (event.type === 'steps') {
+      setHudSteps(event.after);
+    }
+  }
+
+  // Keyboard: one listener; handlers are read through a ref so it always sees the current state.
+  const keyHandlersRef = useRef({ handleMove, handleUndo, handleRestart });
+  keyHandlersRef.current = { handleMove, handleUndo, handleRestart };
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (phase !== 'playing') {
+      if (phaseRef.current !== 'playing' || event.repeat) {
         return;
       }
 
-      if (event.key.toLowerCase() !== 'r' || event.repeat || event.altKey || event.ctrlKey || event.metaKey) {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || isEditableTarget(event.target)) {
         return;
       }
 
-      if (isEditableTarget(event.target)) {
-        return;
-      }
+      const key = event.key.toLowerCase();
+      const dir = KEY_DIRS[key];
+      const handlers = keyHandlersRef.current;
 
-      event.preventDefault();
-      gameAudio.cancelScheduledSfx();
-      gameAudio.play('restart');
-      gameAudio.schedule('levelIntro', 80);
-      setCompletion(null);
-      setMovementPath(null);
-      setStageIntroKey((currentKey) => currentKey + 1);
-      setGameState(resetLevelState);
+      if (dir !== undefined) {
+        event.preventDefault();
+        handlers.handleMove(dir);
+      } else if (key === 'backspace') {
+        event.preventDefault();
+        handlers.handleUndo();
+      } else if (key === 'r') {
+        event.preventDefault();
+        handlers.handleRestart();
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown);
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [phase]);
+  }, []);
+
+  // Developer access to any level (docs/levels.md); not part of release builds.
+  const debugHandlersRef = useRef({ handleLoadLevel });
+  debugHandlersRef.current = { handleLoadLevel };
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return undefined;
+    }
+
+    const api: DebugApi = {
+      goTo: (levelNumber) => debugHandlersRef.current.handleLoadLevel(getCampaignLevel(levelNumber - 1)),
+      loadLevel: (level) => debugHandlersRef.current.handleLoadLevel(createAdHocLevel(level)),
+      stats: () => stageRef.current?.stats() ?? null,
+      cellScreenPoint: (q, r) => stageRef.current?.cellScreenPoint(q, r) ?? null,
+    };
+    const target = window as unknown as { extinguisherDebug?: DebugApi };
+
+    target.extinguisherDebug = api;
+
+    return () => {
+      delete target.extinguisherDebug;
+    };
+  }, []);
 
   function waitForMenuTransition(): Promise<void> {
     return new Promise((resolve) => {
@@ -182,11 +374,13 @@ export function App() {
     setLoadError(null);
     stageReadyRef.current = false;
     setStageReady(false);
-    setCompletion(null);
-    setMovementPath(null);
-    setStageIntroKey((currentKey) => currentKey + 1);
-    setStageMountKey((currentKey) => currentKey + 1);
-    setGameState(createFirstLevelGameState());
+    markBusy(true);
+    commitSession(firstSession());
+    setOutcome(null);
+    setHudSteps(sessionRef.current.state.steps);
+    setIntroDelayMs(0);
+    setLoadKey((key) => key + 1);
+    setStageMountKey((key) => key + 1);
     setPhase('starting');
 
     try {
@@ -209,11 +403,7 @@ export function App() {
   }
 
   function handleStageReady() {
-    if (!stageReadyRef.current) {
-      stageReadyRef.current = true;
-      gameAudio.play('levelIntro');
-    }
-
+    stageReadyRef.current = true;
     setStageReady(true);
   }
 
@@ -228,93 +418,34 @@ export function App() {
     void handleStartGame();
   }
 
-  function dispatchGameCommand(command: GameCommand) {
-    const result = applyCommand(gameState, command);
-    const completedLevel = result.events.some((event) => event.type === 'level-won');
-    const lostLevel = result.events.some((event) => event.type === 'level-lost');
-    const nextMovementPath = createMovementPath(result.events);
-
-    if (result.accepted) {
-      gameAudio.cancelScheduledSfx();
-      gameAudio.scheduleGameplayEvents(result.events);
-    }
-
-    if (!completedLevel && !lostLevel) {
-      setMovementPath(nextMovementPath);
-      setGameState(result.state);
-      return;
-    }
-
-    setMovementPath(nextMovementPath);
-    setGameState(result.state);
-    
-    if (completedLevel) {
-      setCompletion(currentLevelNumber === LEVELS.length ? 'game' : 'level');
-    } else if (lostLevel) {
-      setCompletion('lost');
-    }
-  }
-
-  function handleActivateCell(coord: AxialCoord) {
-    if (phase !== 'playing' || completion !== null) {
-      return;
-    }
-
-    dispatchGameCommand({ type: 'activate-cell', coord });
-  }
-
-  function handleResetLevel() {
-    if (phase !== 'playing') {
-      return;
-    }
-
-    setCompletion(null);
-    gameAudio.cancelScheduledSfx();
-    gameAudio.play('restart');
-    gameAudio.schedule('levelIntro', 80);
-    setMovementPath(null);
-    setStageIntroKey((currentKey) => currentKey + 1);
-    setGameState(resetLevelState);
-  }
-
-  function handleContinueAfterWin() {
-    if (completion === 'level') {
-      setCompletion(null);
-      gameAudio.cancelScheduledSfx();
-      gameAudio.play('levelIntro');
-      setMovementPath(null);
-      setStageIntroKey((currentKey) => currentKey + 1);
-      setGameState(createNextLevelGameState(gameState.level.id));
-      return;
-    }
-
-    if (completion === 'game') {
-      clearTransitionTimeout();
-      gameAudio.cancelScheduledSfx();
-      setCompletion(null);
-      setMovementPath(null);
-      setGameState(createFirstLevelGameState());
-      setPhase('menu');
-    }
-  }
+  const level = session.level;
+  const lost = outcome?.result === 'lost' ? outcome : null;
 
   return (
     <main className={`app-shell app-shell--${phase}`} style={gameShellStyle}>
       {phase !== 'menu' ? (
         <section
+          ref={attachPanel}
           className={phase === 'playing' ? 'game-panel' : 'game-panel game-panel--pending'}
           aria-label="Playable Project Extinguisher board"
           aria-hidden={phase !== 'playing'}
         >
           <PixiStage
             key={stageMountKey}
+            ref={stageRef}
             active={phase === 'playing'}
-            gameState={gameState}
-            introKey={stageIntroKey}
-            movementPath={movementPath}
-            onActivateCell={handleActivateCell}
-            onLoadError={handleStageLoadError}
+            level={level.compiled}
+            state={session.state}
+            loadKey={loadKey}
+            introDelayMs={introDelayMs}
+            topInset={topInset}
             onReady={handleStageReady}
+            onLoadError={handleStageLoadError}
+            onBusyChange={markBusy}
+            onIntroStart={() => gameAudio.play('levelIntro')}
+            onEventStart={handleEventStart}
+            onTimelineEnd={handleTimelineEnd}
+            onMoveRequest={handleMove}
           />
         </section>
       ) : null}
@@ -354,33 +485,67 @@ export function App() {
         </section>
       ) : null}
 
-      {phase === 'playing' && stageReady ? (
-        <header className="game-hud" aria-label="Game HUD">
-          <p className="hud-moves">Moves Left: {movesLeftLabel}</p>
-          <p className="hud-level">
-            {gameState.level.name}
-          </p>
-          <button className="hud-reset" type="button" onClick={handleResetLevel} aria-label="Reset current level">
-            R Reset
-          </button>
+      {phase === 'playing' ? (
+        <header
+          ref={hudRef}
+          className={stageReady ? 'game-hud' : 'game-hud game-hud--hidden'}
+          aria-label="Game HUD"
+          data-level-id={level.id}
+          data-steps={hudSteps}
+        >
+          <p className="hud-steps">Steps: {hudSteps}</p>
+          <p className="hud-level">{level.label}</p>
+          <div className="hud-actions">
+            <button
+              className="hud-button hud-undo"
+              type="button"
+              onClick={handleUndo}
+              disabled={!canUndo(session)}
+              aria-label="Undo last move"
+            >
+              Undo
+            </button>
+            <button className="hud-button hud-reset" type="button" onClick={handleRestart} aria-label="Reset current level">
+              R Reset
+            </button>
+          </div>
         </header>
       ) : null}
 
-      {phase === 'playing' && stageReady && completion !== null ? (
-        <section className="completion-overlay" aria-label={completion === 'lost' ? 'Level failed' : 'Level complete'}>
+      {phase === 'playing' && stageReady && outcome !== null ? (
+        <section
+          className="completion-overlay"
+          data-result={outcome.result}
+          aria-label={outcome.result === 'lost' ? 'Level failed' : 'Level complete'}
+        >
           <div className="completion-panel">
-            <p className="completion-title">
-              {completion === 'lost' ? 'Out of Moves' : completedFinalLevel ? 'You Finished The Game' : 'You Won'}
-            </p>
-            <p className="completion-copy">Press R to Reset</p>
-            {completion === 'lost' ? (
-              <button className="completion-button" type="button" onClick={handleResetLevel}>
-                Try Again
-              </button>
+            {lost !== null ? (
+              <>
+                <p className="completion-title">Level Failed</p>
+                <p className="completion-copy">{LOSS_REASON_TEXT[lost.reason]}</p>
+                <div className="completion-actions">
+                  <button className="completion-button completion-button--secondary" type="button" data-action="undo" onClick={handleUndo}>
+                    Undo
+                  </button>
+                  <button className="completion-button" type="button" data-action="retry" onClick={handleRestart}>
+                    Try Again
+                  </button>
+                </div>
+              </>
+            ) : outcome.result === 'final' ? (
+              <>
+                <p className="completion-title">You Finished The Game</p>
+                <button className="completion-button" type="button" data-action="menu" onClick={handleReturnToMenu}>
+                  Return to Main Menu
+                </button>
+              </>
             ) : (
-              <button className="completion-button" type="button" onClick={handleContinueAfterWin}>
-                {completedFinalLevel ? 'Return to Main Menu' : 'Next Level'}
-              </button>
+              <>
+                <p className="completion-title">You Won</p>
+                <button className="completion-button" type="button" data-action="next" onClick={handleNextLevel}>
+                  Next Level
+                </button>
+              </>
             )}
           </div>
         </section>

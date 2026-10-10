@@ -110,12 +110,18 @@ function swamp(r: number): Container {
 
 function mover(r: number, dir: GlyphDir): Container {
   const c = new Container();
-  const g = new Graphics();
   const s = r * 0.3;
+  const w = Math.max(3, r * 0.13);
+  // Dark outline under light chevrons: readable on light editor tiles and on the dark jam floor.
+  const outline = new Graphics();
+  chevron(outline, -s * 0.9, s);
+  chevron(outline, s * 0.9, s);
+  outline.stroke({ width: w + Math.max(3, r * 0.1), color: 0x2b0d4f, alpha: 0.85, cap: 'round', join: 'round' });
+  const g = new Graphics();
   chevron(g, -s * 0.9, s);
   chevron(g, s * 0.9, s);
-  g.stroke({ width: Math.max(3, r * 0.13), color: COL.purple, cap: 'round', join: 'round' });
-  c.addChild(g);
+  g.stroke({ width: w, color: 0xf3ecff, cap: 'round', join: 'round' });
+  c.addChild(outline, g);
   c.rotation = DIR_ANGLE_DEG[dir] * RAD;
   return c;
 }
@@ -223,8 +229,8 @@ function refill(r: number, value: number): Container {
 export function createSwapMarker(swapId: number, radius: number): Container {
   const c = new Container();
   const g = new Graphics();
-  dottedCircle(g, radius * 0.78, 18, Math.max(1.5, radius * 0.04));
-  g.fill({ color: COL.purple, alpha: 0.95 });
+  dottedCircle(g, radius * 0.78, 18, Math.max(1.5, radius * 0.05));
+  g.fill({ color: 0xf3ecff, alpha: 0.95 }).stroke({ width: Math.max(1, radius * 0.02), color: COL.purple });
   c.addChild(g);
   const bx = radius * 0.5, by = -radius * 0.55, br = radius * 0.24;
   const b = new Graphics();

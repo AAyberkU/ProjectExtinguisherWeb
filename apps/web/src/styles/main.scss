@@ -160,6 +160,7 @@ select {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
 .main-menu {
@@ -260,9 +261,14 @@ select {
   pointer-events: none;
 }
 
-.hud-moves,
+// Rendered (for measuring the board fit) but invisible until the board is ready.
+.game-hud--hidden {
+  visibility: hidden;
+}
+
+.hud-steps,
 .hud-level,
-.hud-reset {
+.hud-button {
   margin: 0;
   color: #2b0d4f;
   font-weight: 950;
@@ -273,8 +279,9 @@ select {
     0 0 16px rgba(255, 255, 255, 0.42);
 }
 
-.hud-moves {
+.hud-steps {
   justify-self: start;
+  white-space: nowrap;
   font-size: clamp(1.55rem, 3.2vw, 3rem);
 }
 
@@ -282,10 +289,16 @@ select {
   justify-self: center;
   padding-top: 0.15rem;
   font-size: clamp(1.4rem, 2.7vw, 2.3rem);
+  text-align: center;
 }
 
-.hud-reset {
+.hud-actions {
+  display: flex;
   justify-self: end;
+  gap: 0.4rem;
+}
+
+.hud-button {
   padding: 0.35rem 0.8rem 0.5rem;
   border: 0;
   border-radius: 14px;
@@ -295,10 +308,15 @@ select {
   pointer-events: auto;
 }
 
-.hud-reset:hover,
-.hud-reset:focus-visible {
+.hud-button:hover:not(:disabled),
+.hud-button:focus-visible {
   background: rgba(255, 219, 235, 0.5);
   outline: 3px solid rgba(43, 13, 79, 0.22);
+}
+
+.hud-button:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .completion-overlay {
@@ -353,6 +371,30 @@ select {
   font-weight: 900;
 }
 
+.completion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+  margin-top: clamp(1.6rem, 3vh, 2.4rem);
+}
+
+.completion-actions .completion-button {
+  min-width: min(12rem, 100%);
+  margin-top: 0;
+}
+
+.completion-button--secondary {
+  background: rgba(255, 247, 251, 0.22);
+  color: #fff7fb;
+}
+
+.completion-button--secondary:hover,
+.completion-button--secondary:focus-visible {
+  background: rgba(255, 247, 251, 0.34);
+  color: #fff7fb;
+}
+
 .completion-button:hover,
 .completion-button:focus-visible {
   background: #ffffff;
@@ -375,7 +417,7 @@ select {
     align-items: center;
   }
 
-  .hud-moves {
+  .hud-steps {
     grid-column: 1;
     grid-row: 1;
   }
@@ -386,36 +428,16 @@ select {
     justify-self: center;
   }
 
-  .hud-reset {
+  .hud-actions {
     grid-column: 2;
     grid-row: 1;
   }
-}
 
-#portrait-warning {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: #121212;
-  color: white;
-  z-index: 9999;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-family: var(--game-font-family);
-  font-size: clamp(1.5rem, 4vw, 2rem);
-  padding: 2rem;
-  line-height: 1.4;
-}
-
-@media screen and (orientation: portrait) and (max-width: 860px) {
-  #root {
-    display: none !important;
-  }
-  #portrait-warning {
-    display: flex;
+  .hud-button {
+    font-size: clamp(1.35rem, 5.4vw, 2.2rem);
   }
 }
+
 
 @media screen and (orientation: landscape) and (max-height: 500px) {
   .main-menu {
@@ -452,5 +474,10 @@ select {
     grid-row: 2;
     justify-self: start;
     padding-top: 0;
+  }
+
+  .hud-actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
   }
 }

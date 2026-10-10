@@ -5,7 +5,7 @@ import { Assets } from 'pixi.js';
 const ASSET_BASE_PATH = 'game-assets/';
 const ASSET_MANIFEST = 'manifest.json';
 const GAME_BUNDLE = 'game';
-const MIN_RENDER_RESOLUTION = 2;
+const MIN_RENDER_RESOLUTION = 1;
 const MAX_RENDER_RESOLUTION = 3;
 
 type ProgressListener = (progress: number) => void;
@@ -15,6 +15,7 @@ let gameBundlePromise: Promise<void> | null = null;
 let gameBundleProgress = 0;
 const progressListeners = new Set<ProgressListener>();
 
+/** The device pixel ratio clamped to 1-3: honest on 1x screens, bounded on very dense ones. */
 export function getRenderResolution(): number {
   return Math.min(Math.max(window.devicePixelRatio || 1, MIN_RENDER_RESOLUTION), MAX_RENDER_RESOLUTION);
 }

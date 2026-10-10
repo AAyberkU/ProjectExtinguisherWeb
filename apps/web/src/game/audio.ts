@@ -1,7 +1,5 @@
 import { initAssets, resolveAssetUrl } from './assets';
-import type { GameEvent } from './core';
-
-const LARRY_MOVE_DURATION_MS = 220;
+import type { EngineEvent } from './engine';
 
 // Manifest aliases built from /art-source/audio by `npm run assets`.
 const SOUND_ALIASES = {
@@ -17,7 +15,7 @@ const SOUND_ALIASES = {
 
 const SFX_NAMES = ['jump', 'passed', 'catapult', 'heal', 'lose', 'restart', 'levelIntro'] as const;
 
-type SoundName = (typeof SFX_NAMES)[number];
+export type SoundName = (typeof SFX_NAMES)[number];
 type SoundUrls = Readonly<Record<keyof typeof SOUND_ALIASES, string>>;
 type AudioContextConstructor = new () => AudioContext;
 type WindowWithLegacyAudioContext = Window &
@@ -31,7 +29,6 @@ class GameAudioController {
   private readonly bufferPromises = new Map<SoundName, Promise<AudioBuffer>>();
   private readonly fallbackAudio = new Map<SoundName, HTMLAudioElement>();
   private audioContext: AudioContext | null = null;
-  private scheduledSfx: number[] = [];
   private isPrimed = false;
 
   public constructor() {
@@ -138,46 +135,12 @@ class GameAudioController {
       .catch(() => this.playFallback(soundName));
   }
 
-  public schedule(soundName: SoundName, delayMs: number) {
-    void this.loadBuffer(soundName);
+  /** Plays the cue of an engine event when its animation starts. Unvoiced events stay silent. */
+  public playEvent(event: EngineEvent) {
+    const sound = soundForEvent(event);
 
-    const timeout = window.setTimeout(() => {
-      this.scheduledSfx = this.scheduledSfx.filter((candidate) => candidate !== timeout);
-      this.play(soundName);
-    }, Math.max(0, delayMs));
-
-    this.scheduledSfx.push(timeout);
-  }
-
-  public cancelScheduledSfx() {
-    for (const timeout of this.scheduledSfx) {
-      window.clearTimeout(timeout);
-    }
-
-    this.scheduledSfx = [];
-  }
-
-  public scheduleGameplayEvents(events: readonly GameEvent[]) {
-    let delayMs = 0;
-
-    for (const event of events) {
-      switch (event.type) {
-        case 'larry-moved':
-          this.schedule(event.source === 'catapult' ? 'catapult' : 'jump', delayMs);
-          delayMs += LARRY_MOVE_DURATION_MS;
-          break;
-        case 'move-bonus-consumed':
-          this.schedule('heal', delayMs);
-          break;
-        case 'level-won':
-          this.schedule('passed', 0);
-          break;
-        case 'level-lost':
-          this.schedule('lose', delayMs);
-          break;
-        default:
-          break;
-      }
+    if (sound !== null) {
+      this.play(sound);
     }
   }
 
@@ -284,6 +247,25 @@ class GameAudioController {
     void audio.play().catch(() => {
       // SFX can be safely skipped if the browser rejects playback.
     });
+  }
+}
+
+function soundForEvent(event: EngineEvent): SoundName | null {
+  switch (event.type) {
+    case 'walk':
+      return 'jump';
+    case 'launch':
+      return 'catapult';
+    case 'plus1':
+    case 'refill':
+      return 'heal';
+    case 'win':
+      return 'passed';
+    case 'lose':
+      return 'lose';
+    default:
+      // swap, slide, teleport, switch, and steps have no cue yet (docs/art.md).
+      return null;
   }
 }
 
