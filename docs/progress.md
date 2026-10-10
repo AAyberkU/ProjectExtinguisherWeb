@@ -40,6 +40,9 @@ Roadmap step 1 (branch `level-pipeline`):
 - End-to-end browser run: all 60 campaign levels won with their stored solutions via the keyboard,
   no page errors.
 
+- Received Uğur's GDD and level-set history: rules 1-20 match the engine; added the GDD as a
+  reference copy and recorded the v1/GPT/v2 history, design rules, and progress rules.
+
 Earlier the same day:
 
 - Reviewed the port against the PuzzlePanic (Echo Rail) experience; kept Pixi.js and React; agreed

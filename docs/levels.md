@@ -82,17 +82,36 @@ All mechanics are planned for the game. If one is cancelled, a replacement mecha
 
 ## Edge blockers are walls (decided 2026-10-10)
 
-Large boards are mostly blockers: size-11 levels play on a median of about 30 of 91 cells. Before
-2026-10-03 the editor allowed empty cells; it then made hex-steps maps solid and converted old holes
-to blockers (`solidify(level, 'blocker')`, "an old level with holes plays the same with walls").
-Uğur confirmed the AI authors defined those cells as walls.
+History (from Uğur, 2026-10-10):
 
-Decision: keep the data as exported. Blockers are walls. Turning edge-connected blockers into floor
-would open shortcuts in 87 of the 129 levels that have them (the approved `c01-l01-v1` would drop
-from 5 to 2 steps). The game reads tile types from data, so if the editor ever changes a cell, a new
-export carries the change and the oracle tests re-verify it.
+- The **Lumen v1** set (`-v1` ids) and the **GPT** set (`-v1-2` ids) were designed on maps with empty
+  cells. Empty cells and blockers behave identically (no walking or landing on them, slides stop in
+  front of them, launches fly over them), so the designers used empty cells as walls on purpose.
+  There was no bug.
+- Then the rule "maps contain no empty cells" came (2026-10-03). Filling the v1 holes with floor
+  opened shortcuts in 58 of its 60 levels (our own test found 87 of the 129 pool levels with edge
+  blockers), so the holes were converted to blockers and gameplay stayed exactly the same. The editor
+  also fills holes with blockers automatically when GPT-set levels are saved.
+- The **Lumen v2** set (base ids) was made from scratch for the no-holes rule: a full hexagon of floor,
+  no padding blockers, every blocker has a purpose. The data agrees: only 17 of v2's 50 blockers touch
+  the board edge (in 9 levels), against about 95% of the blockers in the other two sets.
+- Conclusion: v1 and GPT levels keep their blockers; a level that should be "full floor" is picked
+  from v2. The temporary campaign already uses v2 for every slot except the approved `c01-l01-v1`.
 
-All blockers are drawn (see `docs/art.md`).
+Decision: keep the data as exported; blockers are walls. The game reads tile types from data, so any
+editor change arrives with a new export and is re-verified by the oracle tests. All blockers are drawn
+(see `docs/art.md`).
+
+## Level design rules (from the GDD and the editor)
+
+- Every level has exactly one solution, and its budget equals the minimum needed (`minBudget`).
+- The chapter's mechanic must be necessary to solve the level.
+- The first level of each chapter introduces its mechanic; difficulty rises from level 1 to 6.
+- A swap pair should not bring a `passage` with a closed side onto the player's current cell: the
+  engine allows it, but the player meets a restriction they could not see (Uğur, 2026-09-27).
+- Uğur's GDD also lists rule fixtures (`levels/fixtures/*.json` in the editor repository, with
+  `expect.moves`, `expect.result`, `expect.stepsLeft`, `expect.at`) as acceptance tests. We do not
+  have them yet; when they arrive they should join our Vitest suite.
 
 ## In-game pipeline
 

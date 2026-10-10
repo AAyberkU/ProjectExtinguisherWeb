@@ -12,6 +12,10 @@
 - **Loop validation gap (editor and engine):** a mover/launcher chain can still hit the 32-link limit
   at runtime in rare layouts (collected `+1` between facing movers, or movers swapped onto floor
   cells). No pool level is affected. See `docs/rules.md`; to report to Uğur.
+- **Undo after a win (GDD acceptance 4):** keyboard Backspace and R work after a win, but the win
+  overlay only offers Next Level, so touch players cannot undo or restart from it.
+- **Missing rule fixtures:** the GDD's fixture files (`levels/fixtures/*.json`) are not in our tests
+  yet.
 - **"Stuck" loss** is unreachable in every current campaign level, so its overlay is only covered by
   a hand-made test level.
 - **Intro input lock:** input is ignored during the level intro (up to about 0.6 s on 91-cell

@@ -14,7 +14,7 @@ Repository-wide operational rules are defined in this root `AGENTS.md`. Living p
 8. `docs/design.md`: Stack, architecture (current and target), and engineering principles.
 9. `docs/bugs.md`: Confirmed bugs, open technical risks, and fixed issues.
 
-Read the task-specific documents in depth; skim the rest.
+Read the task-specific documents in depth; skim the rest. `docs/reference/` holds external source documents (for example Uğur's hex-steps GDD) kept for traceability; the numbered documents above are the project's own spec.
 
 ## Project Direction
 

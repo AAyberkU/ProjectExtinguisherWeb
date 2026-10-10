@@ -50,6 +50,11 @@ uses exactly the given steps.
 - No hidden knowledge: every rule is visible from the board.
 - Puzzles should feel clever, never random.
 
+## Progress and scoring (from the GDD)
+
+- Only completed level ids are saved (localStorage on web). Finishing a level unlocks the next one.
+- No score and no stars.
+
 ## UX goals
 
 - Open on a main menu; music starts on load and loops.

@@ -4,8 +4,10 @@ This is the authoritative gameplay specification. The game uses the **hex-steps*
 team's Puzzle Lab level editor (<https://bilaxten.art/leveleditor/>, owned by Uğur). All levels are
 authored and validated there, so the game must reproduce the editor's rules exactly.
 
-Source: the editor's core script (`<script id="pl-core">`, hex-steps profile, rules dated through
-2026-10-03). The editor's rules table refers to `games/hex-steps/GDD.md`, which we do not have yet.
+Sources: the editor's core script (`<script id="pl-core">`, hex-steps profile) and Uğur's game
+design document (rules table 1-20, received 2026-10-10, copy in `docs/reference/hex-steps-gdd.md`).
+The GDD rules and the editor code agree with this document; where wording differs, the code is
+authoritative (see the quirks at the end).
 On 2026-10-10 an independent simulator built from this specification, and the editor's own core
 logic, both reproduced all 180 pool levels: stored shortest solution, `minBudget`, solution count,
 and the exact `shortest` path matched 180/180.
@@ -43,6 +45,8 @@ and the exact `shortest` path matched 180/180.
 `(position, steps, collected +1 mask, switch colour bits 1-3, swap phase 0/1)`.
 
 ## A move
+
+The player always starts on the cell authored as `start`, even when `start` is part of a swap pair.
 
 The player picks one of the six directions. A move is resolved in this order:
 
@@ -83,10 +87,10 @@ loops are a validation error). Only the final cell acts: cells flown over or sli
 | --- | --- |
 | `finish` | Win. Stop. |
 | `plus1` | First time only: +1 step (tracked per tile, also across swaps). Then it behaves like floor. At most 31 per level. Stop. |
-| `refill` (`value` 1-99) | Set steps to `value`, even if you had more. Fires on every entry. Stop. |
+| `refill` (`value` 1-99) | Set steps to `value`, even if you had more. Fires on every entry. The move's cost is paid first, so a move that would reach 0 still survives when it ends on a refill. Stop. |
 | `switch` (`color` 1-3, shown A/B/C) | Permanently opens every `door` of the same colour. Stop. |
 | `portal` (`pair` >= 1) | Teleport to the cell currently holding the partner portal. The arrival portal does not fire. Stop. |
-| `launcher` (`dir`) | Fly 2 cells along `dir` if that cell exists and is not a wall; otherwise 1 cell under the same condition; otherwise stay. Flies over walls, closed doors, and passage sides. Continue the chain on the landing cell. |
+| `launcher` (`dir`) | Fly 2 cells along `dir` if that cell exists and is not a wall; otherwise 1 cell under the same condition; otherwise stay on the launcher without re-triggering it. Flies over walls, closed doors, and passage sides. Continue the chain on the landing cell. |
 | `mover` (`dir`) | Slide along `dir` one cell at a time over floor-like cells (floor, start, open door, collected +1). Stop before a cell that cannot be entered (edge, wall, closed door, passage `noIn`); stop on the first non-floor-like cell and continue the chain there. |
 | `floor`, `start`, `swamp`, open `door`, `passage` | Nothing. |
 

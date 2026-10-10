@@ -40,7 +40,8 @@ the Puzzle Lab editor; this repository integrates them into the game.
 ## 2. Menus and save
 
 - [ ] Screen system (menu, chapter and level select, game, settings); split `App.tsx`.
-- [ ] Save adapter keyed by stable `levelId` (localStorage on web, Steam Cloud later).
+- [ ] Save adapter keyed by stable `levelId` (localStorage on web, Steam Cloud later); store only
+  completed level ids; finishing a level unlocks the next (GDD).
 - [ ] Settings with separate music and SFX volume, pause. (Undo button done in step 1.)
 - [ ] A short tutorial at the start of each chapter for its new mechanic.
 - [x] Touch-friendly copy (no "Press R" text; done in step 1).
@@ -95,3 +96,4 @@ the Puzzle Lab editor; this repository integrates them into the game.
 | 2026-10-10 | Temporary campaign: the base alternative of each slot (approved `c01-l01-v1` for the first slot) until the Final export. The 180-level pool lives in the repository as test fixtures. |
 | 2026-10-10 | Controls follow the editor: W/E/A/D/Z/X (plus Left/Right arrows), Backspace undo, R restart; tapping a neighbour also moves. One loss panel with a reason line (out of steps or stuck). |
 | 2026-10-10 | GitHub Actions runs typecheck, tests, and `level:check` on every push; it reports and never blocks. |
+| 2026-10-10 | Uğur's GDD (rules 1-20) adopted as a source next to the editor code; copy in `docs/reference/`. The v1 and GPT sets used empty cells as walls on purpose; "full floor" levels come from the v2 set. Progress saves only completed level ids with linear unlock; no score or stars. |
