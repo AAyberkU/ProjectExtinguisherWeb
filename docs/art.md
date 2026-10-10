@@ -20,8 +20,9 @@
 - `npm run assets` (`apps/web/scripts/build-assets.mjs`) builds `apps/web/public/game-assets/`
   (generated, ignored by Git). `npm run dev` and `npm run build` run it first. AssetPack's cache in
   `apps/web/.assets-cache/` skips unchanged files.
-- Step 1 resizes each original with sharp to its group's @2x target: `images/tiles` 256 px wide,
-  `images/characters` 192 px tall, `images/backgrounds` 1920 px wide. Artists can always deliver
+- Step 1 resizes each original with sharp to its group's @2x target: `images/tiles` 512 px wide,
+  `images/characters` 384 px tall, `images/backgrounds` 1920 px wide (tiles and Larry were raised
+  from 256/192 so small boards, which are scaled up, stay sharp). Artists can always deliver
   large originals.
 - Step 2 runs AssetPack 1.7 (`pixiPipes`): tiles and Larry go into one atlas at @2x and @1x, images
   become WebP (quality 90) with a PNG fallback, audio becomes MP3 (SFX 96 kbps mono, music 128 kbps
@@ -30,8 +31,11 @@
   initializes Pixi `Assets`, prefers WebP at the render resolution, reports `game` bundle progress
   to the loading screen, and resolves other aliases to absolute URLs.
 - Code references art only by alias (file name without extension), never by path.
-- Result on 2026-10-10: production build about 4.7 MB (was about 53 MB); a first gameplay load
-  downloads about 2 MB plus the JS bundle.
+- Result on 2026-10-10: production build about 7 MB (was about 53 MB before the pipeline); a first
+  gameplay load downloads about 2.3 MB (atlas @2x WebP about 820 KB, background 420 KB, audio about
+  1.1 MB) plus the JS bundle.
+- After each run the script deletes output files the manifest no longer references (AssetPack keeps
+  outputs from earlier runs otherwise).
 - A Steam asset profile with larger targets can be added later from the same originals.
 
 ## Naming

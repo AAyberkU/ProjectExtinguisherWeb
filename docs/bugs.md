@@ -20,8 +20,6 @@
   a hand-made test level.
 - **Intro input lock:** input is ignored during the level intro (up to about 0.6 s on 91-cell
   boards). Letting a key press skip the intro would be a small improvement.
-- **Level names:** names come from the export as-is (for example `v2 · Halka`), so the HUD shows the
-  editor's working names until final names are set in the editor.
 - **Release blockers for portals:** fonts load from Google Fonts (`index.html`); there is no portal
   adapter, ad-break pause, or save system yet.
 - **Dependencies:** nine packages in `apps/web/package.json` are pinned to `latest` (only the lockfile

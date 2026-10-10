@@ -25,8 +25,8 @@ const AUDIO_EXTENSIONS = new Set(['.wav', '.mp3', '.ogg']);
 
 // Target sizes are the @2x texture sizes; AssetPack derives the @1x copies.
 const IMAGE_GROUPS = [
-  { source: 'images/tiles', staging: 'game{m}/atlas{tps}', resize: { width: 256 } },
-  { source: 'images/characters', staging: 'game{m}/atlas{tps}', resize: { height: 192 } },
+  { source: 'images/tiles', staging: 'game{m}/atlas{tps}', resize: { width: 512 } },
+  { source: 'images/characters', staging: 'game{m}/atlas{tps}', resize: { height: 384 } },
   { source: 'images/backgrounds', staging: 'ui{m}/backgrounds{nomip}', resize: { width: 1920 } },
 ];
 const AUDIO_GROUP = { source: 'audio', staging: 'audio{m}' };
@@ -108,4 +108,35 @@ await new AssetPack({
   ],
   assetSettings: [{ files: ['**/music.*'], settings: { audio: { outputs: [musicOutput] } } }],
 }).run();
-console.log(`[assets] wrote ${path.relative(repoRoot, outputRoot)}`);
+
+// AssetPack keeps files from earlier runs (for example an atlas built at an older size). Delete
+// every output file the manifest no longer references, so stale files never reach the build.
+async function pruneUnreferenced() {
+  const manifest = JSON.parse(await fs.readFile(path.join(outputRoot, 'manifest.json'), 'utf8'));
+  const keep = new Set(['manifest.json']);
+  for (const bundle of manifest.bundles) {
+    for (const asset of bundle.assets) {
+      for (const src of asset.src) {
+        keep.add(src);
+        if (src.endsWith('.json')) {
+          const sheet = JSON.parse(await fs.readFile(path.join(outputRoot, src), 'utf8'));
+          if (sheet.meta?.image) keep.add(path.posix.join(path.posix.dirname(src), sheet.meta.image));
+        }
+      }
+    }
+  }
+  let removed = 0;
+  for (const entry of await fs.readdir(outputRoot, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    const full = path.join(entry.parentPath, entry.name);
+    const rel = path.relative(outputRoot, full).split(path.sep).join('/');
+    if (!keep.has(rel)) {
+      await fs.rm(full);
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
+const pruned = await pruneUnreferenced();
+console.log(`[assets] wrote ${path.relative(repoRoot, outputRoot)}${pruned ? ` (removed ${pruned} stale files)` : ''}`);

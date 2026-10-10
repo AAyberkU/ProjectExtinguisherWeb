@@ -18,8 +18,8 @@ export const PLACEHOLDER_TILE_ROTATION = Math.PI / 6;
 const TILE_HALF_WIDTH = (TILE_SPRITE_WIDTH / 2) * Math.cos(Math.PI / 6);
 const TILE_HALF_HEIGHT = TILE_SPRITE_WIDTH / 2;
 
-/** Largest board scale: small boards stay readable without turning comically large. */
-const MAX_BOARD_SCALE = 1.6;
+// No maximum scale: every board, from 19 to 91 cells, fills the same available area, so smaller
+// boards get bigger hexes. Tile art is built at 512 px (@2x) to stay sharp at large scales.
 const SIDE_MARGIN = 16;
 const BOTTOM_MARGIN = 16;
 
@@ -75,7 +75,7 @@ export function fitBoard(bounds: Bounds, width: number, height: number, topInset
   const availableHeight = Math.max(1, height - top - BOTTOM_MARGIN);
   const boardWidth = bounds.maxX - bounds.minX;
   const boardHeight = bounds.maxY - bounds.minY;
-  const scale = Math.min(availableWidth / boardWidth, availableHeight / boardHeight, MAX_BOARD_SCALE);
+  const scale = Math.min(availableWidth / boardWidth, availableHeight / boardHeight);
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;
 

@@ -57,7 +57,8 @@ ProjectExtinguisherWeb/
   HUD, outcome overlays, and the dev-only `window.extinguisherDebug` API.
 - **Renderer** (`game/renderer/`):
   - `PixiStage.tsx`: React wrapper; `stageController.ts`: the Pixi application and resize.
-  - `layout.ts`: board bounds from all cells, fitted below the measured HUD height (up to 1.6x).
+  - `layout.ts`: board bounds from all cells, fitted below the measured HUD height with no maximum
+    scale, so every board (19 to 91 cells) fills the same area and smaller boards get bigger hexes.
   - `boardView.ts`: persistent tile views built once per level load or restart, updated in place;
     Larry, legal-move highlights, and every event animation.
   - `timeline.ts`: plays engine events in order and calls audio cues as each animation starts.
@@ -67,7 +68,8 @@ ProjectExtinguisherWeb/
 - **Input**: tap or click a highlighted neighbour, or keys `W` (NW), `E` (NE), `A`/Left (W), `D`/Right
   (E), `Z` (SW), `X` (SE); `Backspace` undo; `R` restart. Input is locked while motion plays
   (`data-busy` on `.game-panel`) and during the level intro.
-- **HUD**: steps, level label (`chapter-position · name`), Undo and Reset buttons. Overlays appear
+- **HUD**: steps, level label (`Level N`, the position in the whole campaign; no chapter or name),
+  Undo and Reset buttons. Overlays appear
   after motion ends: win (Next Level), final level (Return to Main Menu), loss (reason line, Undo,
   Try Again).
 - Render resolution is the device pixel ratio clamped to 1-3.

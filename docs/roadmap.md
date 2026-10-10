@@ -52,7 +52,9 @@ the Puzzle Lab editor; this repository integrates them into the game.
 
 - [x] Board fit computed from the actual board and screen (step 1).
 - [x] Remove the mobile "rotate your device" screen (step 1).
-- [ ] Two HUD layouts; portrait currently leaves large empty areas above and below big boards.
+- [ ] Two HUD layouts; portrait currently leaves large empty areas above and below the board.
+- [ ] Steps counter large in the top-right corner, number only (GDD); move Undo and Reset accordingly.
+- [ ] Undo and Replay buttons on the win overlay (GDD acceptance 4).
 - [ ] Check 91-cell boards on phones in portrait; quieter edge walls if needed.
 
 ## 4. Art integration and code polish (continuous, as art arrives)
@@ -96,4 +98,5 @@ the Puzzle Lab editor; this repository integrates them into the game.
 | 2026-10-10 | Temporary campaign: the base alternative of each slot (approved `c01-l01-v1` for the first slot) until the Final export. The 180-level pool lives in the repository as test fixtures. |
 | 2026-10-10 | Controls follow the editor: W/E/A/D/Z/X (plus Left/Right arrows), Backspace undo, R restart; tapping a neighbour also moves. One loss panel with a reason line (out of steps or stuck). |
 | 2026-10-10 | GitHub Actions runs typecheck, tests, and `level:check` on every push; it reports and never blocks. |
+| 2026-10-10 | HUD level label is only `Level N` (campaign order, no chapter or name). Every board fills the same screen area regardless of size; tile art built at 512 px for sharpness. Steps-counter placement (GDD: large, top-right, number only) and undo/restart buttons after a win are agreed but deferred. |
 | 2026-10-10 | Uğur's GDD (rules 1-20) adopted as a source next to the editor code; copy in `docs/reference/`. The v1 and GPT sets used empty cells as walls on purpose; "full floor" levels come from the v2 set. Progress saves only completed level ids with linear unlock; no score or stars. |

@@ -134,6 +134,6 @@ editor change arrives with a new export and is re-verified by the oracle tests. 
 - **Developer access:** in dev builds only, `window.extinguisherDebug` offers `goTo(n)`,
   `loadLevel(json)`, `stats()`, and `cellScreenPoint(q, r)`. It is absent from production builds.
 - The jam levels and the jam ruleset were removed on 2026-10-10.
-- Level names come straight from the export (for example `v2 · Halka`); final names should be set in
-  the editor.
+- Level names from the export (for example `v2 · Halka`) are not shown in the game; the HUD shows
+  only `Level N`, the level's position in the campaign.
 

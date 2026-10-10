@@ -40,6 +40,9 @@ Roadmap step 1 (branch `level-pipeline`):
 - End-to-end browser run: all 60 campaign levels won with their stored solutions via the keyboard,
   no page errors.
 
+- HUD shows only `Level N` (campaign position). Boards now fill the same screen area at every size
+  (no maximum scale); tile art is built at 512 px to stay sharp; glyph text renders at high
+  resolution; the asset script prunes stale outputs. End-to-end run still 60/60.
 - Received Uğur's GDD and level-set history: rules 1-20 match the engine; added the GDD as a
   reference copy and recorded the v1/GPT/v2 history, design rules, and progress rules.
 

@@ -48,6 +48,8 @@ export function hexCorners(radius: number): number[] {
   return out;
 }
 
+const GLYPH_TEXT_RESOLUTION = 8;
+
 function label(text: string, size: number, color: number, stroke?: number): Text {
   const t = new Text({
     text,
@@ -59,6 +61,9 @@ function label(text: string, size: number, color: number, stroke?: number): Text
       ...(stroke !== undefined ? { stroke: { color: stroke, width: Math.max(2, size / 7) } } : {}),
     },
   });
+  // Boards scale up to about 3x on small maps and screens render at up to 3x DPR, so glyph text is
+  // rasterized at a high resolution to stay sharp.
+  t.resolution = GLYPH_TEXT_RESOLUTION;
   t.anchor.set(0.5);
   return t;
 }

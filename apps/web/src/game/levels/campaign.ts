@@ -10,7 +10,7 @@ export interface PlayableLevel {
   readonly index: number;
   readonly id: string;
   readonly name: string;
-  /** HUD label, for example "1-1 · İlk engel". */
+  /** HUD label: the level's position in the whole campaign, for example "Level 8". */
   readonly label: string;
   readonly compiled: CompiledLevel;
 }
@@ -59,7 +59,7 @@ function buildCampaign(): readonly CampaignLevel[] {
         position,
         id,
         name: level.name,
-        label: `${chapterNumber}-${position} · ${level.name}`,
+        label: `Level ${out.length + 1}`,
         compiled: compileLevel(level),
       });
     });
@@ -86,5 +86,5 @@ export function isFinalCampaignLevel(level: PlayableLevel): boolean {
 
 /** Wraps a level outside the campaign (development tooling). */
 export function createAdHocLevel(level: PuzzleLabLevel): PlayableLevel {
-  return { index: -1, id: level.id, name: level.name, label: `dev · ${level.name}`, compiled: compileLevel(level) };
+  return { index: -1, id: level.id, name: level.name, label: 'Dev level', compiled: compileLevel(level) };
 }
