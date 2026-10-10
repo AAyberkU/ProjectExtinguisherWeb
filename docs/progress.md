@@ -6,18 +6,17 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
 
 - The project is moving from the jam web port to the full product (about 60 levels, Coolmath first,
   Steam later). See `docs/roadmap.md`.
-- **Roadmap step 1 is done on branch `level-pipeline`** and waits for the user's play test before it
-  goes to `main`: the game runs the Puzzle Lab hex-steps rules on a temporary 60-level campaign with
-  a rewritten renderer.
+- **Roadmap step 1 is done and merged to `main`** after the user's play test: the game runs the
+  Puzzle Lab hex-steps rules on a temporary 60-level campaign with a rewritten renderer.
 - The jam rules and the 5 jam levels are gone. Placeholder art is still the rotated jam art plus
   code-drawn glyphs.
 - A pool of 180 candidate levels lives in `apps/web/levels/pool/` (none final; selection happens in
   the editor).
-- **Next:** user play test of step 1, then roadmap step 2 (menus and save).
+- **Next:** roadmap step 2 (menus and save).
 
 ## Recent work (2026-10-10)
 
-Roadmap step 1 (branch `level-pipeline`):
+Roadmap step 1 (merged to `main` on 2026-10-10 after the user's play test):
 
 - Imported the 180-level pool as fixtures and a temporary campaign (base alternative per slot,
   approved `c01-l01-v1` first); renamed placeholder art to the Puzzle Lab vocabulary
@@ -41,8 +40,9 @@ Roadmap step 1 (branch `level-pipeline`):
   no page errors.
 
 - HUD shows only `Level N` (campaign position). Boards now fill the same screen area at every size
-  (no maximum scale); tile art is built at 512 px to stay sharp; glyph text renders at high
-  resolution; the asset script prunes stale outputs. End-to-end run still 60/60.
+  (no maximum scale, 78% of the free area so the background stays visible); tile art is built at
+  512 px to stay sharp; glyph text renders at high resolution; the asset script prunes stale outputs.
+  End-to-end run still 60/60.
 - Received Uğur's GDD and level-set history: rules 1-20 match the engine; added the GDD as a
   reference copy and recorded the v1/GPT/v2 history, design rules, and progress rules.
 
@@ -78,11 +78,10 @@ Earlier the same day:
 
 ## Next steps
 
-1. User play test of step 1 on branch `level-pipeline`; merge to `main` on approval.
-2. Roadmap step 2: screens, save adapter, settings, chapter tutorials.
-3. Tell the artist the new tile list in `docs/art.md`; report the loop-validation gap
-   (`docs/rules.md`) to Uğur.
-4. Replace the temporary campaign when the editor's Final export exists (`docs/levels.md`).
+1. Roadmap step 2: screens, save adapter, settings, chapter tutorials.
+2. Tell the artist the new tile list in `docs/art.md`; report the loop-validation gap
+   (`docs/rules.md`) to Uğur and ask for the GDD's rule fixtures.
+3. Replace the temporary campaign when the editor's Final export exists (`docs/levels.md`).
 
 ## Notes
 

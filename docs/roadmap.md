@@ -17,7 +17,7 @@ the Puzzle Lab editor; this repository integrates them into the game.
 - [x] Start transition: Pixi initializes during the menu zoom; no loading panel on normal starts
   (2026-10-10).
 
-## 1. Level pipeline and hex-steps engine (done, branch `level-pipeline`, awaiting user test)
+## 1. Level pipeline and hex-steps engine (done, merged 2026-10-10)
 
 - [x] hex-steps engine in TypeScript, pure and deterministic, following `docs/rules.md`, with an
   ordered event stream (walk, launch, slide, teleport, swap, pickup, switch, refill, win and loss
@@ -37,7 +37,7 @@ the Puzzle Lab editor; this repository integrates them into the game.
 - [x] End-to-end browser run wins all 60 campaign levels with their stored solutions.
 - [ ] Replace the temporary campaign with the Puzzle Lab Final export when it exists.
 
-## 2. Menus and save
+## 2. Menus and save (next)
 
 - [ ] Screen system (menu, chapter and level select, game, settings); split `App.tsx`.
 - [ ] Save adapter keyed by stable `levelId` (localStorage on web, Steam Cloud later); store only
