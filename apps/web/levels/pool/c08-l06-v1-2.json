@@ -1,0 +1,63 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "c08-l06-v1-2",
+  "name": "Değişen ödül",
+  "grid": {"size":7,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":11},
+  "tiles": [
+    {"q":0,"r":-3,"type":"plus1"},
+    {"q":1,"r":-3,"type":"plus1","swap":1},
+    {"q":2,"r":-3,"type":"floor"},
+    {"q":3,"r":-3,"type":"blocker"},
+    {"q":-1,"r":-2,"type":"floor"},
+    {"q":0,"r":-2,"type":"blocker"},
+    {"q":1,"r":-2,"type":"blocker"},
+    {"q":2,"r":-2,"type":"floor"},
+    {"q":3,"r":-2,"type":"floor"},
+    {"q":-2,"r":-1,"type":"start"},
+    {"q":-1,"r":-1,"type":"blocker"},
+    {"q":0,"r":-1,"type":"blocker"},
+    {"q":1,"r":-1,"type":"blocker"},
+    {
+      "q": 2,
+      "r": -1,
+      "type": "passage",
+      "noIn": ["NW"],
+      "noOut": []
+    },
+    {"q":3,"r":-1,"type":"floor"},
+    {"q":-3,"r":0,"type":"blocker"},
+    {"q":-2,"r":0,"type":"blocker"},
+    {"q":-1,"r":0,"type":"blocker"},
+    {"q":0,"r":0,"type":"blocker"},
+    {"q":1,"r":0,"type":"plus1"},
+    {"q":2,"r":0,"type":"floor"},
+    {"q":3,"r":0,"type":"blocker"},
+    {"q":-3,"r":1,"type":"blocker"},
+    {"q":-2,"r":1,"type":"blocker"},
+    {"q":-1,"r":1,"type":"blocker"},
+    {"q":0,"r":1,"type":"blocker"},
+    {"q":1,"r":1,"type":"floor"},
+    {"q":2,"r":1,"type":"floor","swap":1},
+    {"q":-3,"r":2,"type":"blocker"},
+    {"q":-2,"r":2,"type":"finish"},
+    {"q":-1,"r":2,"type":"launcher","dir":"E"},
+    {"q":0,"r":2,"type":"floor"},
+    {"q":1,"r":2,"type":"floor"},
+    {"q":-3,"r":3,"type":"blocker"},
+    {"q":-2,"r":3,"type":"floor"},
+    {"q":-1,"r":3,"type":"floor"},
+    {"q":0,"r":3,"type":"blocker"}
+  ],
+  "meta": {
+    "slot": 48,
+    "author": "GPT",
+    "solution": {
+      "solvable": true,
+      "minBudget": 11,
+      "solutions": 1,
+      "shortest": ["NE","NE","E","E","SE","E","SW","SW","SE","SW","SW","W","NW"]
+    }
+  }
+}

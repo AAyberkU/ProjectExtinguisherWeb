@@ -1,0 +1,36 @@
+# GitHub Actions workflow: GitHub runs this file on its own servers.
+# It never blocks a push. It only marks each commit with a green check (all steps passed)
+# or a red cross (a step failed) and emails the author on failure.
+# Results: the repository's "Actions" tab on GitHub, with the log of every step.
+
+name: CI # The name shown in the Actions tab.
+
+on: # WHEN to run.
+  push: # On every push to any branch.
+  pull_request: # And on every pull request.
+
+jobs:
+  check: # One job; jobs can run in parallel, this project needs only one.
+    runs-on: ubuntu-latest # WHERE: a fresh Linux machine provided by GitHub.
+    timeout-minutes: 15 # Safety limit so a stuck run cannot burn free minutes.
+    steps: # WHAT to do, in order. If one step fails, the following steps are skipped.
+      - name: Check out the repository
+        uses: actions/checkout@v4 # A ready-made action: copies the pushed commit onto the machine.
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4 # Installs Node.js and caches npm downloads between runs.
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci # Installs exactly the versions in package-lock.json.
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Rules and oracle tests
+        run: npm test # Every level must reproduce its stored solution, minBudget, and solution count.
+
+      - name: Validate levels
+        run: npm run level:check # The editor's validation rules on every level file.

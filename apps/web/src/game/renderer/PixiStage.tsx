@@ -45,23 +45,23 @@ type RenderBoardOptions = Readonly<{
 
 const PATH_TILE_TEXTURES = Array.from(
   { length: 10 },
-  (_, index) => `tile_path_${String(index + 1).padStart(2, '0')}`,
+  (_, index) => `tile_floor_${String(index + 1).padStart(2, '0')}`,
 );
-const BLOCKED_TILE_TEXTURES = ['tile_blocked_01', 'tile_blocked_02', 'tile_blocked_03'] as const;
+const BLOCKED_TILE_TEXTURES = ['tile_blocker_01', 'tile_blocker_02', 'tile_blocker_03'] as const;
 
 const CATAPULT_TILE_TEXTURES: Readonly<Record<CatapultDirection, string>> = {
-  right: 'tile_catapult_right',
-  up_right: 'tile_catapult_up_right',
-  up_left: 'tile_catapult_up_left',
-  left: 'tile_catapult_left',
-  down_left: 'tile_catapult_down_left',
-  down_right: 'tile_catapult_down_right',
+  right: 'tile_launcher_e',
+  up_right: 'tile_launcher_ne',
+  up_left: 'tile_launcher_nw',
+  left: 'tile_launcher_w',
+  down_left: 'tile_launcher_sw',
+  down_right: 'tile_launcher_se',
 };
 
 const SINGLE_TILE_TEXTURES: Readonly<Record<Exclude<TileType, 'path' | 'blocked' | 'catapult'>, string>> = {
   start: 'tile_start',
-  goal: 'tile_goal',
-  health: 'tile_health',
+  goal: 'tile_finish',
+  health: 'tile_plus1',
 };
 
 const LARRY_TEXTURE = 'larry';

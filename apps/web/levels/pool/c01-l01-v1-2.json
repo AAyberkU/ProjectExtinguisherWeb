@@ -1,0 +1,39 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "c01-l01-v1-2",
+  "name": "Engelin çevresi",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":4},
+  "tiles": [
+    {"q":0,"r":-2,"type":"blocker"},
+    {"q":1,"r":-2,"type":"blocker"},
+    {"q":2,"r":-2,"type":"blocker"},
+    {"q":-1,"r":-1,"type":"blocker"},
+    {"q":0,"r":-1,"type":"plus1"},
+    {"q":1,"r":-1,"type":"floor"},
+    {"q":2,"r":-1,"type":"blocker"},
+    {"q":-2,"r":0,"type":"blocker"},
+    {"q":-1,"r":0,"type":"floor"},
+    {"q":0,"r":0,"type":"blocker"},
+    {"q":1,"r":0,"type":"floor"},
+    {"q":2,"r":0,"type":"blocker"},
+    {"q":-2,"r":1,"type":"start"},
+    {"q":-1,"r":1,"type":"floor"},
+    {"q":0,"r":1,"type":"blocker"},
+    {"q":1,"r":1,"type":"finish"},
+    {"q":-2,"r":2,"type":"blocker"},
+    {"q":-1,"r":2,"type":"blocker"},
+    {"q":0,"r":2,"type":"blocker"}
+  ],
+  "meta": {
+    "slot": 1,
+    "author": "GPT",
+    "solution": {
+      "solvable": true,
+      "minBudget": 4,
+      "solutions": 1,
+      "shortest": ["NE","NE","E","SE","SE"]
+    }
+  }
+}

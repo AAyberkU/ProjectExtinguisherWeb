@@ -1,0 +1,39 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "c03-l03",
+  "name": "v2 · Çamur parası",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":4},
+  "tiles": [
+    {"q":0,"r":-2,"type":"floor"},
+    {"q":1,"r":-2,"type":"floor"},
+    {"q":2,"r":-2,"type":"start"},
+    {"q":-1,"r":-1,"type":"floor"},
+    {"q":0,"r":-1,"type":"floor"},
+    {"q":1,"r":-1,"type":"swamp"},
+    {"q":2,"r":-1,"type":"floor"},
+    {"q":-2,"r":0,"type":"floor"},
+    {"q":-1,"r":0,"type":"floor"},
+    {"q":0,"r":0,"type":"plus1"},
+    {"q":1,"r":0,"type":"floor"},
+    {"q":2,"r":0,"type":"launcher","dir":"W"},
+    {"q":-2,"r":1,"type":"blocker"},
+    {"q":-1,"r":1,"type":"swamp"},
+    {"q":0,"r":1,"type":"floor"},
+    {"q":1,"r":1,"type":"floor"},
+    {"q":-2,"r":2,"type":"finish"},
+    {"q":-1,"r":2,"type":"blocker"},
+    {"q":0,"r":2,"type":"floor"}
+  ],
+  "meta": {
+    "slot": 15,
+    "author": "Lumen v2 (Claude)",
+    "solution": {
+      "solvable": true,
+      "minBudget": 4,
+      "solutions": 1,
+      "shortest": ["SE","SE","SW","SW"]
+    }
+  }
+}

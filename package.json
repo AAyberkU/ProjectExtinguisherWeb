@@ -11,7 +11,9 @@
     "dev": "npm --workspace apps/web run dev",
     "build": "npm --workspace apps/web run build",
     "preview": "npm --workspace apps/web run preview",
-    "typecheck": "npm --workspace apps/web run typecheck"
+    "typecheck": "npm --workspace apps/web run typecheck",
+    "test": "npm --workspace apps/web run test",
+    "level:check": "npm --workspace apps/web run level:check --"
   },
   "engines": {
     "node": ">=20.0.0"

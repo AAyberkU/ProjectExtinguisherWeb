@@ -1,0 +1,90 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "c08-l05",
+  "name": "v2 · Işınlanma odası",
+  "grid": {"size":7,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":5},
+  "tiles": [
+    {"q":0,"r":-3,"type":"floor"},
+    {"q":1,"r":-3,"type":"floor"},
+    {
+      "q": 2,
+      "r": -3,
+      "type": "passage",
+      "noIn": ["W","SW"],
+      "noOut": ["W","SW"]
+    },
+    {"q":3,"r":-3,"type":"portal","pair":1},
+    {"q":-1,"r":-2,"type":"floor"},
+    {"q":0,"r":-2,"type":"floor"},
+    {"q":1,"r":-2,"type":"start"},
+    {
+      "q": 2,
+      "r": -2,
+      "type": "passage",
+      "noIn": ["W","SW","SE"],
+      "noOut": ["W","SW","SE"]
+    },
+    {
+      "q": 3,
+      "r": -2,
+      "type": "passage",
+      "noIn": ["SW","SE"],
+      "noOut": ["SW"]
+    },
+    {"q":-2,"r":-1,"type":"floor"},
+    {"q":-1,"r":-1,"type":"floor"},
+    {"q":0,"r":-1,"type":"floor"},
+    {"q":1,"r":-1,"type":"floor"},
+    {
+      "q": 2,
+      "r": -1,
+      "type": "passage",
+      "noOut": ["E"]
+    },
+    {"q":3,"r":-1,"type":"finish"},
+    {"q":-3,"r":0,"type":"portal","pair":1},
+    {"q":-2,"r":0,"type":"floor"},
+    {"q":-1,"r":0,"type":"plus1"},
+    {"q":0,"r":0,"type":"floor"},
+    {"q":1,"r":0,"type":"floor"},
+    {
+      "q": 2,
+      "r": 0,
+      "type": "passage",
+      "noOut": ["NE"]
+    },
+    {
+      "q": 3,
+      "r": 0,
+      "type": "passage",
+      "noOut": ["NW"]
+    },
+    {"q":-3,"r":1,"type":"floor"},
+    {"q":-2,"r":1,"type":"floor"},
+    {"q":-1,"r":1,"type":"floor"},
+    {"q":0,"r":1,"type":"floor"},
+    {"q":1,"r":1,"type":"floor"},
+    {"q":2,"r":1,"type":"floor"},
+    {"q":-3,"r":2,"type":"floor"},
+    {"q":-2,"r":2,"type":"floor"},
+    {"q":-1,"r":2,"type":"floor"},
+    {"q":0,"r":2,"type":"floor"},
+    {"q":1,"r":2,"type":"floor"},
+    {"q":-3,"r":3,"type":"floor"},
+    {"q":-2,"r":3,"type":"floor"},
+    {"q":-1,"r":3,"type":"floor"},
+    {"q":0,"r":3,"type":"floor"}
+  ],
+  "meta": {
+    "slot": 47,
+    "author": "Lumen v2 (Claude)",
+    "solution": {
+      "solvable": true,
+      "minBudget": 5,
+      "solutions": 1,
+      "shortest": ["SW","SW","W","W","SE","SE"]
+    }
+  }
+}

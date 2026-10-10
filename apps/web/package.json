@@ -8,7 +8,9 @@
     "dev": "npm run assets && vite",
     "build": "npm run assets && tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "level:check": "tsx scripts/level-check.ts"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -23,6 +25,8 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "sharp": "0.34.5",
-    "typescript": "latest"
+    "tsx": "4.23.15",
+    "typescript": "latest",
+    "vitest": "5.0.2"
   }
 }
