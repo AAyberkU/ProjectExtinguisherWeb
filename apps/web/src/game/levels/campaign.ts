@@ -70,6 +70,9 @@ function buildCampaign(): readonly CampaignLevel[] {
 
 export const CAMPAIGN: readonly CampaignLevel[] = buildCampaign();
 
+/** Campaign level ids in play order (the save and progress functions work on these). */
+export const CAMPAIGN_IDS: readonly string[] = CAMPAIGN.map((level) => level.id);
+
 export function getCampaignLevel(index: number): CampaignLevel {
   const level = CAMPAIGN[index];
 

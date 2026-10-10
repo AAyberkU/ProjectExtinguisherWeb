@@ -1,38 +1,23 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { CSSProperties } from 'react';
 import { initAssets, loadGameAssets, resolveAssetUrl, subscribeGameAssetProgress } from './game/assets';
 import { gameAudio } from './game/audio';
-import type { Dir, EngineEvent, LossReason, PuzzleLabLevel } from './game/engine';
-import { CAMPAIGN, createAdHocLevel, getCampaignLevel, isFinalCampaignLevel, type PlayableLevel } from './game/levels';
-import { PixiStage, type PixiStageHandle } from './game/renderer/PixiStage';
+import type { PuzzleLabLevel } from './game/engine';
+import { CAMPAIGN, CAMPAIGN_IDS, createAdHocLevel, getCampaignLevel, type PlayableLevel } from './game/levels';
+import { continueIndex, hasProgress, isUnlocked } from './game/progress';
 import { setBoardFill } from './game/renderer/layout';
-import { canUndo, createSession, sessionMove, sessionRestart, sessionUndo, type Session } from './game/session';
+import { saveStore, type SaveData } from './game/save';
+import { GameScreen, type GameScreenHandle } from './ui/GameScreen';
+import { hasModifier, isEditableTarget } from './ui/keys';
+import { LevelSelect, type LevelSelectEntry } from './ui/LevelSelect';
+import { MainMenu } from './ui/MainMenu';
 
 type GameShellStyle = CSSProperties & Readonly<{
   '--game-background-image'?: string;
 }>;
 
 const MENU_TRANSITION_MS = 900;
-const RESTART_INTRO_DELAY_MS = 80;
-const HUD_BOARD_GAP_PX = 10;
-const DEFAULT_TOP_INSET_PX = 96;
 const LOAD_ERROR_MESSAGE = 'Some game files could not be loaded.';
-
-const KEY_DIRS: Readonly<Record<string, Dir>> = {
-  w: 'NW',
-  e: 'NE',
-  a: 'W',
-  arrowleft: 'W',
-  d: 'E',
-  arrowright: 'E',
-  z: 'SW',
-  x: 'SE',
-};
-
-const LOSS_REASON_TEXT: Readonly<Record<LossReason, string>> = {
-  'out-of-steps': 'Out of steps',
-  stuck: 'Stuck — no moves left',
-};
 
 let backgroundImagePromise: Promise<string> | null = null;
 
@@ -64,15 +49,26 @@ function preloadBackgroundImage(): Promise<string> {
 }
 
 type AppPhase = 'menu' | 'starting' | 'playing';
-type Outcome = Readonly<{ result: 'won' | 'final' } | { result: 'lost'; reason: LossReason }>;
+/** The level select overlay; `currentIndex` is the level in play, or the continue level from the menu. */
+type LevelSelectState = Readonly<{ currentIndex: number | null }>;
 
-function isEditableTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement
-    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+const subscribeSave = (listener: () => void) => saveStore.subscribe(listener);
+const readSave = (): SaveData => saveStore.data;
+
+/** The save does not touch audio; the toggles are applied here at startup and on every change. */
+function applySavedAudio() {
+  gameAudio.setMusicEnabled(saveStore.data.music);
+  gameAudio.setSfxEnabled(saveStore.data.sfx);
 }
 
-function firstSession(): Session {
-  return createSession(getCampaignLevel(0));
+function toggleMusic() {
+  saveStore.setMusic(!saveStore.data.music);
+  applySavedAudio();
+}
+
+function toggleSfx() {
+  saveStore.setSfx(!saveStore.data.sfx);
+  applySavedAudio();
 }
 
 type DebugApi = Readonly<{
@@ -82,55 +78,52 @@ type DebugApi = Readonly<{
   cellScreenPoint: (q: number, r: number) => { x: number; y: number } | null;
   /** Share of the free area the board fills (0.3-1); returns the applied value. */
   setBoardFill: (value: number) => number;
+  /** Marks every campaign level completed. */
+  unlockAll: () => void;
+  /** Clears the save (progress and audio toggles). */
+  resetSave: () => void;
 }>;
 
 export function App() {
+  const save = useSyncExternalStore(subscribeSave, readSave);
   const [phase, setPhase] = useState<AppPhase>('menu');
-  const [session, setSession] = useState<Session>(firstSession);
-  const [hudSteps, setHudSteps] = useState(() => session.state.steps);
-  const [outcome, setOutcome] = useState<Outcome | null>(null);
-  const [loadKey, setLoadKey] = useState(0);
-  const [introDelayMs, setIntroDelayMs] = useState(0);
-  const [topInset, setTopInset] = useState(DEFAULT_TOP_INSET_PX);
+  const [startIndex, setStartIndex] = useState(0);
+  const [levelSelect, setLevelSelect] = useState<LevelSelectState | null>(null);
   const [stageReady, setStageReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
   const [assetProgress, setAssetProgress] = useState(0);
-  const [stageMountKey, setStageMountKey] = useState(0);
+  const [gameMountKey, setGameMountKey] = useState(0);
   const transitionTimeoutRef = useRef<number | null>(null);
   const transitionResolveRef = useRef<(() => void) | null>(null);
   const startRequestRef = useRef(0);
   const stageReadyRef = useRef(false);
   const phaseRef = useRef<AppPhase>('menu');
-  const sessionRef = useRef<Session>(session);
-  const busyRef = useRef(true);
-  const panelRef = useRef<HTMLElement | null>(null);
-  const hudRef = useRef<HTMLElement | null>(null);
-  const stageRef = useRef<PixiStageHandle | null>(null);
+  const levelSelectRef = useRef<LevelSelectState | null>(null);
+  const gameRef = useRef<GameScreenHandle | null>(null);
   const assetsReady = assetProgress >= 1 && backgroundUrl !== null;
   // The board initializes hidden during the menu transition; the panel only covers real waits.
   const showLoadingOverlay = loadError !== null
     || (phase === 'starting' && !assetsReady)
     || (phase === 'playing' && !stageReady);
   const gameShellStyle: GameShellStyle = backgroundUrl === null ? {} : { '--game-background-image': `url(${backgroundUrl})` };
+  const completed = useMemo(() => new Set(save.completed), [save.completed]);
+  const levelEntries = useMemo<readonly LevelSelectEntry[]>(() => CAMPAIGN.map((level) => ({
+    index: level.index,
+    label: level.label,
+    chapter: level.chapter,
+    position: level.position,
+    unlocked: isUnlocked(CAMPAIGN_IDS, level.index, completed),
+    completed: completed.has(level.id),
+  })), [completed]);
 
   phaseRef.current = phase;
+  levelSelectRef.current = levelSelect;
 
-  function commitSession(next: Session) {
-    sessionRef.current = next;
-    setSession(next);
+  function commitLevelSelect(next: LevelSelectState | null) {
+    levelSelectRef.current = next;
+    setLevelSelect(next);
   }
-
-  /** Written straight to the DOM so input locks and tests see it in the same task as the input. */
-  function markBusy(busy: boolean) {
-    busyRef.current = busy;
-    panelRef.current?.setAttribute('data-busy', busy ? 'true' : 'false');
-  }
-
-  const attachPanel = useCallback((element: HTMLElement | null) => {
-    panelRef.current = element;
-    element?.setAttribute('data-busy', busyRef.current ? 'true' : 'false');
-  }, []);
 
   function clearTransitionTimeout() {
     if (transitionTimeoutRef.current === null) {
@@ -152,14 +145,16 @@ export function App() {
 
   useEffect(() => {
     void preloadBackgroundImage().then(setBackgroundUrl, () => {
-      // Start Game owns the visible retry state.
+      // Starting the game owns the visible retry state.
     });
     void loadGameAssets().catch(() => {
-      // Start Game owns the visible retry state. This attempt only warms the cache.
+      // Starting the game owns the visible retry state. This attempt only warms the cache.
     });
   }, []);
 
   useEffect(() => {
+    // The saved toggles must be in place before music first starts.
+    applySavedAudio();
     gameAudio.startMusic();
 
     function unlockAudio() {
@@ -175,157 +170,87 @@ export function App() {
     };
   }, []);
 
-  // The board fit reserves the HUD's actual height (it differs between landscape and portrait).
-  useLayoutEffect(() => {
-    const hud = hudRef.current;
-    const panel = panelRef.current;
-
-    if (phase !== 'playing' || hud === null || panel === null) {
-      return undefined;
-    }
-
-    const measure = () => {
-      const inset = hud.getBoundingClientRect().bottom - panel.getBoundingClientRect().top + HUD_BOARD_GAP_PX;
-      setTopInset(Math.max(0, Math.round(inset)));
-    };
-    const observer = new ResizeObserver(measure);
-
-    measure();
-    observer.observe(hud);
-    observer.observe(panel);
-
-    return () => observer.disconnect();
-  }, [phase]);
-
-  function isPlayable(): boolean {
-    return phaseRef.current === 'playing' && stageReadyRef.current && stageRef.current !== null;
+  function isGameReady(): boolean {
+    return phaseRef.current === 'playing' && stageReadyRef.current;
   }
 
-  function handleMove(dir: Dir) {
-    if (!isPlayable() || busyRef.current) {
-      return;
+  function openLevelSelect() {
+    if (phaseRef.current === 'menu') {
+      commitLevelSelect({ currentIndex: continueIndex(CAMPAIGN_IDS, saveStore.completedSet()) });
+    } else if (isGameReady()) {
+      commitLevelSelect({ currentIndex: gameRef.current?.levelIndex() ?? null });
     }
-
-    const moved = sessionMove(sessionRef.current, dir);
-
-    if (moved === null) {
-      return;
-    }
-
-    commitSession(moved.session);
-    markBusy(true);
-    stageRef.current?.playMove(moved.events, moved.session.state);
   }
 
-  function handleUndo() {
-    if (!isPlayable() || busyRef.current) {
-      return;
-    }
-
-    const previous = sessionUndo(sessionRef.current);
-
-    if (previous === null) {
-      return;
-    }
-
-    commitSession(previous);
-    setOutcome(null);
-    setHudSteps(previous.state.steps);
-    stageRef.current?.showState(previous.state);
+  function closeLevelSelect() {
+    commitLevelSelect(null);
   }
 
-  function loadSession(next: Session, delayMs: number) {
-    commitSession(next);
-    setOutcome(null);
-    setHudSteps(next.state.steps);
-    setIntroDelayMs(delayMs);
-    setLoadKey((key) => key + 1);
-    markBusy(true);
-  }
-
-  function handleRestart() {
-    if (!isPlayable()) {
-      return;
-    }
-
-    gameAudio.play('restart');
-    loadSession(sessionRestart(sessionRef.current), RESTART_INTRO_DELAY_MS);
-  }
-
-  function handleLoadLevel(level: PlayableLevel) {
-    if (!isPlayable()) {
-      return;
-    }
-
-    loadSession(createSession(level), 0);
-  }
-
-  function handleNextLevel() {
-    if (outcome?.result !== 'won') {
-      return;
-    }
-
-    const nextIndex = sessionRef.current.level.index + 1;
-    handleLoadLevel(getCampaignLevel(nextIndex < CAMPAIGN.length ? nextIndex : 0));
-  }
-
-  function handleReturnToMenu() {
+  function returnToMenu() {
     clearTransitionTimeout();
-    commitSession(firstSession());
-    setOutcome(null);
+    commitLevelSelect(null);
     stageReadyRef.current = false;
     setStageReady(false);
-    markBusy(true);
     setPhase('menu');
   }
 
-  function handleTimelineEnd() {
-    const { level, state } = sessionRef.current;
+  /** In game a level loads at once, like the next badge; from the menu it starts with the transition. */
+  function handleSelectLevel(index: number) {
+    commitLevelSelect(null);
 
-    setHudSteps(state.steps);
-
-    if (state.status === 'won') {
-      setOutcome({ result: isFinalCampaignLevel(level) ? 'final' : 'won' });
-    } else if (state.status === 'lost') {
-      setOutcome({ result: 'lost', reason: state.lossReason ?? 'stuck' });
+    if (phaseRef.current === 'menu') {
+      void startGame(index);
+    } else if (isGameReady()) {
+      gameRef.current?.loadLevel(getCampaignLevel(index));
     }
   }
 
-  function handleEventStart(event: EngineEvent) {
-    gameAudio.playEvent(event);
-
-    if (event.type === 'steps') {
-      setHudSteps(event.after);
+  function handleLevelSelectMainMenu() {
+    if (phaseRef.current === 'menu') {
+      closeLevelSelect();
+    } else {
+      returnToMenu();
     }
   }
 
-  // Keyboard: one listener; handlers are read through a ref so it always sees the current state.
-  const keyHandlersRef = useRef({ handleMove, handleUndo, handleRestart });
-  keyHandlersRef.current = { handleMove, handleUndo, handleRestart };
+  function handlePlay() {
+    const index = continueIndex(CAMPAIGN_IDS, saveStore.completedSet());
+
+    // Every level is completed: there is nothing to continue, so the player picks one.
+    if (index === null) {
+      openLevelSelect();
+    } else {
+      void startGame(index);
+    }
+  }
+
+  // Shell keys work on every screen: Esc for the level select, M and V for the audio toggles.
+  const shellKeysRef = useRef({ openLevelSelect, closeLevelSelect });
+  shellKeysRef.current = { openLevelSelect, closeLevelSelect };
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (phaseRef.current !== 'playing' || event.repeat) {
-        return;
-      }
-
-      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || isEditableTarget(event.target)) {
+      if (event.repeat || hasModifier(event) || isEditableTarget(event.target)) {
         return;
       }
 
       const key = event.key.toLowerCase();
-      const dir = KEY_DIRS[key];
-      const handlers = keyHandlersRef.current;
+      const shell = shellKeysRef.current;
 
-      if (dir !== undefined) {
+      if (key === 'escape') {
         event.preventDefault();
-        handlers.handleMove(dir);
-      } else if (key === 'backspace') {
+
+        if (levelSelectRef.current !== null) {
+          shell.closeLevelSelect();
+        } else if (phaseRef.current === 'playing') {
+          shell.openLevelSelect();
+        }
+      } else if (key === 'm') {
         event.preventDefault();
-        handlers.handleUndo();
-      } else if (key === 'r') {
+        toggleMusic();
+      } else if (key === 'v') {
         event.preventDefault();
-        handlers.handleRestart();
+        toggleSfx();
       }
     }
 
@@ -334,9 +259,19 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Developer access to any level (docs/levels.md); not part of release builds.
-  const debugHandlersRef = useRef({ handleLoadLevel });
-  debugHandlersRef.current = { handleLoadLevel };
+  /** Debug level loads work from the game only; an open level select closes. */
+  function debugLoadLevel(level: PlayableLevel) {
+    if (!isGameReady()) {
+      return;
+    }
+
+    commitLevelSelect(null);
+    gameRef.current?.loadLevel(level);
+  }
+
+  // Developer access to any level and to the save (docs/levels.md); not part of release builds.
+  const debugHandlersRef = useRef({ loadLevel: debugLoadLevel });
+  debugHandlersRef.current = { loadLevel: debugLoadLevel };
 
   useEffect(() => {
     if (!import.meta.env.DEV) {
@@ -344,14 +279,19 @@ export function App() {
     }
 
     const api: DebugApi = {
-      goTo: (levelNumber) => debugHandlersRef.current.handleLoadLevel(getCampaignLevel(levelNumber - 1)),
-      loadLevel: (level) => debugHandlersRef.current.handleLoadLevel(createAdHocLevel(level)),
-      stats: () => stageRef.current?.stats() ?? null,
-      cellScreenPoint: (q, r) => stageRef.current?.cellScreenPoint(q, r) ?? null,
+      goTo: (levelNumber) => debugHandlersRef.current.loadLevel(getCampaignLevel(levelNumber - 1)),
+      loadLevel: (level) => debugHandlersRef.current.loadLevel(createAdHocLevel(level)),
+      stats: () => gameRef.current?.stats() ?? null,
+      cellScreenPoint: (q, r) => gameRef.current?.cellScreenPoint(q, r) ?? null,
       setBoardFill: (value) => {
         const applied = setBoardFill(value);
         window.dispatchEvent(new Event('resize'));
         return applied;
+      },
+      unlockAll: () => saveStore.markAllCompleted(CAMPAIGN_IDS),
+      resetSave: () => {
+        saveStore.reset();
+        applySavedAudio();
       },
     };
     const target = window as unknown as { extinguisherDebug?: DebugApi };
@@ -374,7 +314,7 @@ export function App() {
     });
   }
 
-  async function handleStartGame() {
+  async function startGame(index: number) {
     const requestId = startRequestRef.current + 1;
 
     startRequestRef.current = requestId;
@@ -382,13 +322,10 @@ export function App() {
     setLoadError(null);
     stageReadyRef.current = false;
     setStageReady(false);
-    markBusy(true);
-    commitSession(firstSession());
-    setOutcome(null);
-    setHudSteps(sessionRef.current.state.steps);
-    setIntroDelayMs(0);
-    setLoadKey((key) => key + 1);
-    setStageMountKey((key) => key + 1);
+    commitLevelSelect(null);
+    setStartIndex(index);
+    // A fresh game screen per start: new session, new stage.
+    setGameMountKey((key) => key + 1);
     setPhase('starting');
 
     try {
@@ -423,39 +360,27 @@ export function App() {
   }
 
   function handleRetryLoad() {
-    void handleStartGame();
+    void startGame(startIndex);
   }
-
-  const level = session.level;
-  const lost = outcome?.result === 'lost' ? outcome : null;
 
   return (
     <main className={`app-shell app-shell--${phase}`} style={gameShellStyle}>
       {phase !== 'menu' ? (
-        <section
-          ref={attachPanel}
-          className={phase === 'playing' ? 'game-panel' : 'game-panel game-panel--pending'}
-          aria-label="Playable Project Extinguisher board"
-          aria-hidden={phase !== 'playing'}
-        >
-          <PixiStage
-            key={stageMountKey}
-            ref={stageRef}
-            active={phase === 'playing'}
-            level={level.compiled}
-            state={session.state}
-            loadKey={loadKey}
-            introDelayMs={introDelayMs}
-            topInset={topInset}
-            onReady={handleStageReady}
-            onLoadError={handleStageLoadError}
-            onBusyChange={markBusy}
-            onIntroStart={() => gameAudio.play('levelIntro')}
-            onEventStart={handleEventStart}
-            onTimelineEnd={handleTimelineEnd}
-            onMoveRequest={handleMove}
-          />
-        </section>
+        <GameScreen
+          key={gameMountKey}
+          ref={gameRef}
+          active={phase === 'playing'}
+          initialLevel={getCampaignLevel(startIndex)}
+          paused={levelSelect !== null}
+          music={save.music}
+          sfx={save.sfx}
+          onToggleMusic={toggleMusic}
+          onToggleSfx={toggleSfx}
+          onReady={handleStageReady}
+          onLoadError={handleStageLoadError}
+          onOpenLevelSelect={openLevelSelect}
+          onFinish={returnToMenu}
+        />
       ) : null}
 
       {showLoadingOverlay ? (
@@ -475,88 +400,17 @@ export function App() {
       ) : null}
 
       {phase === 'menu' ? (
-        <section className="main-menu" aria-label="Main menu">
-          <button className="menu-start-button" type="button" onClick={handleStartGame}>
-            Start Game
-          </button>
-
-          <div className="credits-card" aria-label="Credits">
-            <p className="credit-role">Artist</p>
-            <p className="credit-name credit-name--artist">Elif Ilgin Tilev</p>
-            <p className="credit-role">Designer</p>
-            <p className="credit-name credit-name--designer">Defne Gurcu</p>
-            <p className="credit-role">Developer</p>
-            <p className="credit-name credit-name--developer">Ahmet Ayberk Uzun</p>
-            <p className="credit-role">Music</p>
-            <p className="credit-name credit-name--music">Onurhan Karabag</p>
-          </div>
-        </section>
+        <MainMenu hasProgress={hasProgress(CAMPAIGN_IDS, completed)} onPlay={handlePlay} onLevelSelect={openLevelSelect} />
       ) : null}
 
-      {phase === 'playing' ? (
-        <header
-          ref={hudRef}
-          className={stageReady ? 'game-hud' : 'game-hud game-hud--hidden'}
-          aria-label="Game HUD"
-          data-level-id={level.id}
-          data-steps={hudSteps}
-        >
-          <p className="hud-steps">Steps: {hudSteps}</p>
-          <p className="hud-level">{level.label}</p>
-          <div className="hud-actions">
-            <button
-              className="hud-button hud-undo"
-              type="button"
-              onClick={handleUndo}
-              disabled={!canUndo(session)}
-              aria-label="Undo last move"
-            >
-              Undo
-            </button>
-            <button className="hud-button hud-reset" type="button" onClick={handleRestart} aria-label="Reset current level">
-              R Reset
-            </button>
-          </div>
-        </header>
-      ) : null}
-
-      {phase === 'playing' && stageReady && outcome !== null ? (
-        <section
-          className="completion-overlay"
-          data-result={outcome.result}
-          aria-label={outcome.result === 'lost' ? 'Level failed' : 'Level complete'}
-        >
-          <div className="completion-panel">
-            {lost !== null ? (
-              <>
-                <p className="completion-title">Level Failed</p>
-                <p className="completion-copy">{LOSS_REASON_TEXT[lost.reason]}</p>
-                <div className="completion-actions">
-                  <button className="completion-button completion-button--secondary" type="button" data-action="undo" onClick={handleUndo}>
-                    Undo
-                  </button>
-                  <button className="completion-button" type="button" data-action="retry" onClick={handleRestart}>
-                    Try Again
-                  </button>
-                </div>
-              </>
-            ) : outcome.result === 'final' ? (
-              <>
-                <p className="completion-title">You Finished The Game</p>
-                <button className="completion-button" type="button" data-action="menu" onClick={handleReturnToMenu}>
-                  Return to Main Menu
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="completion-title">You Won</p>
-                <button className="completion-button" type="button" data-action="next" onClick={handleNextLevel}>
-                  Next Level
-                </button>
-              </>
-            )}
-          </div>
-        </section>
+      {levelSelect !== null ? (
+        <LevelSelect
+          entries={levelEntries}
+          currentIndex={levelSelect.currentIndex}
+          onSelect={handleSelectLevel}
+          onClose={closeLevelSelect}
+          onMainMenu={handleLevelSelectMainMenu}
+        />
       ) : null}
     </main>
   );

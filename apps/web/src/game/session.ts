@@ -34,11 +34,12 @@ export function sessionMove(session: Session, dir: Dir): SessionMove | null {
   };
 }
 
+/** Undo stays available after a loss and after a win (the win badge waits; there is no auto-advance). */
 export function canUndo(session: Session): boolean {
-  return session.history.length > 0 && session.state.status !== 'won';
+  return session.history.length > 0;
 }
 
-/** Returns to the state before the last move (also after a loss), or null when nothing to undo. */
+/** Returns to the state before the last move (also after a win or a loss), or null when nothing to undo. */
 export function sessionUndo(session: Session): Session | null {
   if (!canUndo(session)) {
     return null;
