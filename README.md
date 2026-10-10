@@ -9,8 +9,8 @@ being built into a full release of about 60 levels for Coolmath Games, with Stea
 
 ## Status
 
-The playable build is still the jam port (5 levels on the jam rules) running on the new board and
-asset pipeline. Next up is the hex-steps rules engine and the Puzzle Lab level pipeline. See
+The game runs the hex-steps rules on a temporary 60-level campaign picked from the level designer's
+pool, with placeholder art. Next up are menus, level select, and saving. See
 `docs/progress.md` and `docs/roadmap.md`.
 
 ## How it is made
@@ -42,9 +42,14 @@ Other commands:
 ```bash
 npm run assets     # rebuild game assets after adding or changing art in art-source/
 npm run typecheck
+npm test           # rules, oracle (every level's stored solution), validation, campaign
+npm run level:check  # validate level files with the editor's rules
 npm run build      # assets + typecheck + production build in apps/web/dist
 npm run preview
 ```
+
+Controls: tap or click a highlighted neighbour, or use W/E/A/D/Z/X (Left/Right arrows also work);
+Backspace undoes, R restarts.
 
 ## Documentation and agent workflow
 

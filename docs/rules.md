@@ -10,8 +10,9 @@ On 2026-10-10 an independent simulator built from this specification, and the ed
 logic, both reproduced all 180 pool levels: stored shortest solution, `minBudget`, solution count,
 and the exact `shortest` path matched 180/180.
 
-> Status: the shipped code still runs the old jam rules (`apps/web/src/game/core`). Replacing them
-> with this ruleset is roadmap step 1. See `docs/roadmap.md`.
+> Status: the game runs this ruleset in `apps/web/src/game/engine` (since 2026-10-10). Oracle tests
+> reproduce every pool level's stored solution, `minBudget`, and solution count, and an independent
+> review fuzzed 2,520 random levels against the editor's own core with zero mismatches.
 
 ## Grid
 
@@ -161,3 +162,8 @@ Useful defaults until our own art and tuning exist:
 - A launch landing ignores the landing passage's `noIn`.
 - The "no moves left" check ignores step cost, so a swamp neighbour you cannot afford still counts
   as a legal move.
+- Loop validation has gaps (same in the editor and in our engine): it only starts from cells authored
+  as movers or launchers and only with no `+1` collected. A chain can therefore still hit the 32-link
+  limit at runtime, for example when a collected `+1` lets two movers face each other, or when swap
+  phase 1 brings movers onto cells authored as floor. The player then simply stops where the chain
+  limit leaves them. No pool level is affected; worth reporting to Uğur.

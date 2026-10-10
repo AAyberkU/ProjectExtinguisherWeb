@@ -6,31 +6,48 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
 
 - The project is moving from the jam web port to the full product (about 60 levels, Coolmath first,
   Steam later). See `docs/roadmap.md`.
-- The playable build is still the jam port: 5 jam levels on the old jam rules, a main menu, HUD,
-  completion overlays, music and SFX, on the new pointy-top board and the new asset pipeline.
-- The gameplay rules are decided: Puzzle Lab **hex-steps** (`docs/rules.md`), verified against all
-  180 pool levels with an independent simulator.
-- A pool of 180 candidate levels exists (10 chapters x 6 slots x 3 alternatives), none final
-  (`docs/levels.md`).
-- **Next: roadmap step 1**, the hex-steps engine with oracle tests, Puzzle Lab level loading,
-  `level:check`, and the new renderer.
+- **Roadmap step 1 is done on branch `level-pipeline`** and waits for the user's play test before it
+  goes to `main`: the game runs the Puzzle Lab hex-steps rules on a temporary 60-level campaign with
+  a rewritten renderer.
+- The jam rules and the 5 jam levels are gone. Placeholder art is still the rotated jam art plus
+  code-drawn glyphs.
+- A pool of 180 candidate levels lives in `apps/web/levels/pool/` (none final; selection happens in
+  the editor).
+- **Next:** user play test of step 1, then roadmap step 2 (menus and save).
 
 ## Recent work (2026-10-10)
 
+Roadmap step 1 (branch `level-pipeline`):
+
+- Imported the 180-level pool as fixtures and a temporary campaign (base alternative per slot,
+  approved `c01-l01-v1` first); renamed placeholder art to the Puzzle Lab vocabulary
+  (`tile_floor_*`, `tile_blocker_*`, `tile_launcher_<dir>`, `tile_finish`, `tile_plus1`).
+- hex-steps engine (`apps/web/src/game/engine/`): rules, solver, validation, ordered events.
+- Tests: 289 Vitest tests in about 2 s; oracle 180/180 pool and 60/60 campaign; mechanic and quirk
+  tests; validation and campaign tests. `npm run level:check`: 0 errors, 0 warnings.
+- Independent review: 2,520 random levels compared with the editor's own core, about 4 million step
+  comparisons, zero mismatches. Fixed two robustness issues it found (prototype-key directions in
+  `step`, malformed `campaign.json` in `level:check`); documented a loop-validation gap shared with
+  the editor (`docs/rules.md`).
+- Renderer rewrite (`apps/web/src/game/renderer/`): persistent tiles, event timeline, idle ticker,
+  board fit for 19-91 cells in both orientations, seeded variants, placeholder glyphs
+  (`/glyph-preview.html` in dev), mechanic animations, input lock, overlays after motion.
+- Controls: tap a highlighted neighbour; W/E/A/D/Z/X and Left/Right arrows; Backspace or the Undo
+  button; R or the Reset button. Loss panel with a reason (out of steps or stuck) and Undo.
+- Removed the jam core, jam levels, old loader, and the portrait block. Dev-only
+  `window.extinguisherDebug` (`goTo`, `loadLevel`, `stats`, `cellScreenPoint`).
+- GitHub Actions workflow: typecheck, tests, `level:check` on every push.
+- End-to-end browser run: all 60 campaign levels won with their stored solutions via the keyboard,
+  no page errors.
+
+Earlier the same day:
+
 - Reviewed the port against the PuzzlePanic (Echo Rail) experience; kept Pixi.js and React; agreed
   the roadmap and decisions (`docs/roadmap.md`).
-- Rotated the board to pointy-top cells so the board's flat edges face up and down; catapult
-  directions renamed to on-screen names; jam levels 3-5 converted; flat-top jam tiles rotated 30
-  degrees as placeholders.
-- Added the `art-source/` asset pipeline (`npm run assets`): resize, WebP atlas, MP3 audio, Pixi
-  manifest, alias-based loading with a loading percentage. Build about 53 MB to 4.7 MB. Build outputs
-  (dist zip, tsbuildinfo, emitted Vite config) are no longer tracked.
-- Start transition: Pixi initializes during the menu zoom; normal starts reach the board in about
-  0.9 s with no loading panel; the panel only shows for slow downloads or failures.
-- Analysed the level designer's pool and the Puzzle Lab editor: format, mechanics, board sizes,
-  exact hex-steps rules, the edge-blocker question (decided: walls), and the selection workflow.
-- Rewrote the documentation around the new plan (this file, `game.md`, `design.md`, `bugs.md`,
-  README, AGENTS) and added `rules.md`, `levels.md`, `art.md`, and `roadmap.md`.
+- Rotated the board to pointy-top cells; added the `art-source/` asset pipeline (build about 53 MB to
+  4.7 MB); start transition without a loading panel.
+- Analysed the level designer's pool and the Puzzle Lab editor (format, mechanics, board sizes, exact
+  rules, edge-blocker decision, selection workflow) and rewrote the documentation around the plan.
 
 ## Jam port history (before 2026-10-10)
 
@@ -55,15 +72,16 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
 
 ## Next steps
 
-1. Roadmap step 1: hex-steps engine and oracle tests first, then level loading and `level:check`,
-   then the renderer.
-2. Tell the artist the new tile list in `docs/art.md` early.
-3. Push the local `main` commits when the user asks (several commits are not on `origin` yet).
+1. User play test of step 1 on branch `level-pipeline`; merge to `main` on approval.
+2. Roadmap step 2: screens, save adapter, settings, chapter tutorials.
+3. Tell the artist the new tile list in `docs/art.md`; report the loop-validation gap
+   (`docs/rules.md`) to Uğur.
+4. Replace the temporary campaign when the editor's Final export exists (`docs/levels.md`).
 
 ## Notes
 
-- Root commands: `npm run assets`, `npm run dev`, `npm run typecheck`, `npm run build`,
-  `npm run preview`. `dev` and `build` run `assets` first.
+- Root commands: `npm run assets`, `npm run dev`, `npm run typecheck`, `npm test`,
+  `npm run level:check`, `npm run build`, `npm run preview`. `dev` and `build` run `assets` first.
 - Level pool source: `havuz.zip` from the level designer (2026-10-10), the same data as the editor's
-  Pool workspace. It is not in the repository yet; Final exports will be added in step 1.
+  Pool workspace; stored in `apps/web/levels/pool/`.
 - No backend.

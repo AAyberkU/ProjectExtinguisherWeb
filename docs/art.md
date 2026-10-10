@@ -36,22 +36,21 @@
 
 ## Naming
 
-Current aliases (jam placeholders):
+Current aliases (jam placeholders, Puzzle Lab vocabulary):
 
 | Alias | Use |
 | --- | --- |
-| `tile_path_01` .. `tile_path_10` | Floor variants |
-| `tile_blocked_01` .. `tile_blocked_03` | Wall (blocker) variants |
-| `tile_catapult_<dir>` | Launcher, one per direction |
-| `tile_start`, `tile_goal`, `tile_health` | Start, finish, plus1 |
+| `tile_floor_01` .. `tile_floor_10` | Floor variants |
+| `tile_blocker_01` .. `tile_blocker_03` | Wall (blocker) variants |
+| `tile_launcher_<dir>` | Launcher, one per direction: `e`, `se`, `sw`, `w`, `nw`, `ne` (the art faces that screen direction) |
+| `tile_start`, `tile_finish`, `tile_plus1` | Start, finish, +1 |
 | `larry` | Player character |
 | `background` | Full-screen background |
 | `music`, `sfx_<name>` | Audio |
 
-The catapult aliases still use the jam renderer's on-screen names (`right`, `up_right`, `up_left`,
-`left`, `down_left`, `down_right`). When the hex-steps engine lands (roadmap step 1), tile aliases
-move to the Puzzle Lab vocabulary, for example `tile_launcher_e`, `tile_mover_ne`, `tile_swamp`. New
-names are fixed in this document at that time.
+New mechanic art should follow the same pattern, for example `tile_swamp`, `tile_mover_<dir>`,
+`tile_portal`, `tile_switch_<a|b|c>`, `tile_door_<a|b|c>`. Mechanics without art use code-drawn glyphs
+from `apps/web/src/game/renderer/glyphs.ts` (preview in dev at `/glyph-preview.html`).
 
 ## Art still needed for the hex-steps mechanics
 
@@ -81,32 +80,34 @@ presentation reference).
 - Board size varies per level (19 to 91 cells); the board scales to fit. If 91-cell boards look too
   busy on phones, edge walls may be drawn quieter (gameplay is unaffected because walls and edges
   behave the same).
-- Current placeholder art is the flat-top jam art rotated 30 degrees in `PixiStage.tsx`
+- Current placeholder art is the flat-top jam art rotated 30 degrees in `renderer/layout.ts`
   (`PLACEHOLDER_TILE_ROTATION`); set it to 0 when pointy-top art arrives.
 
 ## Code animation
 
 Two layers of animation, both driven only by engine events (rules never wait on animation):
 
-1. **Mechanic motion** (roadmap step 1, needed for readability): walk (editor reference 110 ms),
-   launch (190 ms), slide (160 ms), teleport, swap exchange, level intro.
+1. **Mechanic motion** (done in step 1): walk hop 160 ms, launch arc 240 ms, slide 90 ms per cell,
+   teleport 220 ms, swap exchange 180 ms, pickups 260 ms, door and switch fades 200 ms, level intro
+   (tiles drop by diagonal lines, then Larry appears). Constants live in
+   `apps/web/src/game/renderer/boardView.ts`.
 2. **Polish / juice** (roadmap step 4, grows with art): launcher object stretch on launch, `plus1`
    and refill pickups lifting off and fading with a number pop, walls dropping in during the intro,
    portal pull and glow, door opening on a switch press, swap exchange effect, Larry shadow and
    squash, idle breathing, win and fail effects, menu transitions.
 
-Prerequisites (step 1): persistent tile objects instead of rebuilding the board on every move, and an
-event-driven presentation layer. Richer per-object effects need layered art.
+The prerequisites are in place since step 1: persistent tile objects and an event-driven timeline.
+Richer per-object effects need layered art.
 
 ## Audio
 
 - `apps/web/src/game/audio.ts` resolves the `audio` manifest aliases after asset initialization.
 - Music: looping `HTMLAudioElement`, volume 0.4, starts on mount and retries on the first pointer or
   key input if autoplay is blocked.
-- SFX: fetched and decoded into Web Audio buffers up front, with an HTMLAudio fallback; scheduled
-  from ordered engine events.
-- Current cues: `sfx_jump`, `sfx_catapult`, `sfx_heal`, `sfx_passed`, `sfx_lose`, `sfx_restart`,
-  `sfx_level_intro`. New mechanics will need cues (launch, slide, teleport, switch, door, refill,
-  swap, swamp step).
+- SFX: fetched and decoded into Web Audio buffers up front, with an HTMLAudio fallback; played by
+  the animation timeline when each event's animation starts.
+- Current mapping: walk `sfx_jump`, launch `sfx_catapult`, +1 and refill `sfx_heal`, win
+  `sfx_passed`, loss `sfx_lose`, restart `sfx_restart`, level intro `sfx_level_intro`. Slide,
+  teleport, swap, switch, door, and swamp steps are silent until cues exist.
 - Planned (step 2): master, music, and SFX gain buses for settings, mute, and pausing during portal
   ads.

@@ -45,11 +45,10 @@ How levels are authored, chosen, and brought into the game. Rules live in `docs/
 
 ## Coordinate convention
 
-Puzzle Lab uses pointy-top axial coordinates with `r` growing downward and compass direction names
-(`E`, `SE`, `SW`, `W`, `NW`, `NE`). The game's current renderer (from the jam port) uses `r` growing
-upward with on-screen names (`right`, `up_right`, ...). Roadmap step 1 switches the game to the
-Puzzle Lab convention so exports load without conversion. On-screen meaning: `E` right, `SE`
-down-right, `SW` down-left, `W` left, `NW` up-left, `NE` up-right.
+The game uses the Puzzle Lab convention directly: pointy-top axial coordinates with `r` growing
+downward and compass direction names (`E`, `SE`, `SW`, `W`, `NW`, `NE`), so exports load without
+conversion. On-screen meaning: `E` right, `SE` down-right, `SW` down-left, `W` left, `NW` up-left,
+`NE` up-right.
 
 ## Current pool (received 2026-10-10, not canon)
 
@@ -95,23 +94,27 @@ export carries the change and the oracle tests re-verify it.
 
 All blockers are drawn (see `docs/art.md`).
 
-## Planned in-game pipeline (roadmap step 1)
+## In-game pipeline
 
-- Level files from the editor's Final export live in the repository as-is (location to be fixed in
-  step 1, for example `apps/web/src/game/levels/`), collected automatically with `import.meta.glob`.
-- Campaign order comes from the Final export's slot data (`meta.slot`). A separate campaign file is
-  only added if the first real Final export lacks the needed order.
-- `npm run level:check` validates every level with the editor's rules (see `docs/rules.md`) and
-  fails on errors.
-- Oracle tests: the TypeScript engine must reproduce every level's stored `shortest` path,
-  `minBudget`, and solution count. They run in CI and whenever levels or rules change.
-- The jam levels (`level-001` to `level-005`, old ruleset) are retired when the new engine lands.
-- Developer access to any level: a console debug command (as in Echo Rail's
-  `echoRailDebug.unlockAll()`), disabled in release builds. No in-game level browser; reviewing
-  alternatives is done in the editor.
+- **Pool** `apps/web/levels/pool/`: all 180 pool levels, byte-for-byte as exported. Used as oracle
+  test fixtures and as the source for picking levels. Not bundled into the game.
+- **Campaign** `apps/web/src/game/levels/campaign/`: the levels the game ships (copies of exported
+  files, never edited) plus `campaign.json` (chapters and order). `campaign.ts` loads them with
+  `import.meta.glob`, compiles them with the engine, and exposes the ordered list.
+- **Current campaign is temporary** (`campaign.json` status `temporary`): the base alternative
+  (`Lumen v2`) of every slot, except `c01-l01`, which uses the approved `c01-l01-v1`.
+- **When the Final export arrives:** replace the files in `campaign/` with the export and rewrite
+  `campaign.json` from its slot data (`meta.slot`; the export may need a small script if it lacks an
+  order), then run `npm run level:check` and `npm test`.
+- **`npm run level:check -- [files or folders]`** (default: pool and campaign): the editor's validation
+  errors and warnings, solver consistency (solvable within steps, solution count, `minBudget` versus
+  steps), a check that `meta.solution` matches the computed values, file name equals level id, and
+  `campaign.json` integrity. Exit code 1 on any error.
+- **`npm test`**: oracle tests on every pool and campaign level, focused rule tests, validation tests,
+  and campaign integrity. GitHub Actions runs typecheck, tests, and `level:check` on every push.
+- **Developer access:** in dev builds only, `window.extinguisherDebug` offers `goTo(n)`,
+  `loadLevel(json)`, `stats()`, and `cellScreenPoint(q, r)`. It is absent from production builds.
+- The jam levels and the jam ruleset were removed on 2026-10-10.
+- Level names come straight from the export (for example `v2 · Halka`); final names should be set in
+  the editor.
 
-## Legacy: jam level format
-
-Until step 1 lands, the game still loads `apps/web/src/game/levels/level-00N.json` (jam format:
-`moveLimit`, `start`, `goal`, sparse `cells` with `blocked`, `catapultDirection`, `moveBonus`,
-`variant`), converted from the Unity `LevelData.asset` files. This format is deprecated.

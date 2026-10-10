@@ -17,35 +17,41 @@ the Puzzle Lab editor; this repository integrates them into the game.
 - [x] Start transition: Pixi initializes during the menu zoom; no loading panel on normal starts
   (2026-10-10).
 
-## 1. Level pipeline and hex-steps engine (next)
+## 1. Level pipeline and hex-steps engine (done, branch `level-pipeline`, awaiting user test)
 
-- [ ] hex-steps engine in TypeScript, pure and deterministic, following `docs/rules.md`, with an
+- [x] hex-steps engine in TypeScript, pure and deterministic, following `docs/rules.md`, with an
   ordered event stream (walk, launch, slide, teleport, swap, pickup, switch, refill, win and loss
   reason) plus undo and restart.
-- [ ] Switch coordinates to the Puzzle Lab convention (`r` grows downward, `E`/`SE`/... directions).
-- [ ] Oracle tests: reproduce every level's stored `shortest`, `minBudget`, and solution count.
-- [ ] Load Puzzle Lab files directly; campaign order from the Final export's slot data.
-- [ ] `npm run level:check` with the editor's validation rules.
-- [ ] Renderer: variable board size, seeded wall variants, code-drawn placeholder glyphs for new
+- [x] Switch coordinates to the Puzzle Lab convention (`r` grows downward, `E`/`SE`/... directions).
+- [x] Oracle tests: reproduce every level's stored `shortest`, `minBudget`, and solution count
+  (180/180 pool, 60/60 campaign); independent fuzz review with zero mismatches.
+- [x] Load Puzzle Lab files directly (temporary 60-level campaign until the Final export).
+- [x] `npm run level:check` with the editor's validation rules.
+- [x] Renderer: variable board size, seeded wall variants, code-drawn placeholder glyphs for new
   tiles, mechanic motion (walk, launch, slide, teleport, swap), steps in the HUD.
-- [ ] Renderer cleanup: persistent tiles instead of rebuilding the board on every move, presentation
-  driven only by engine events, no endless ticker, honest device resolution, no input during
-  motion, win or loss overlay after motion ends.
-- [ ] Retire the jam ruleset and jam levels 1-5.
+- [x] Renderer cleanup: persistent tiles, presentation driven only by engine events, idle ticker,
+  device resolution 1-3x, no input during motion, outcome overlays after motion ends.
+- [x] Keyboard moves, undo (Backspace and a button), restart, loss reasons.
+- [x] Retire the jam ruleset and jam levels 1-5.
+- [x] GitHub Actions CI (typecheck, tests, `level:check`).
+- [x] End-to-end browser run wins all 60 campaign levels with their stored solutions.
+- [ ] Replace the temporary campaign with the Puzzle Lab Final export when it exists.
 
 ## 2. Menus and save
 
 - [ ] Screen system (menu, chapter and level select, game, settings); split `App.tsx`.
 - [ ] Save adapter keyed by stable `levelId` (localStorage on web, Steam Cloud later).
-- [ ] Settings with separate music and SFX volume, pause, undo button.
+- [ ] Settings with separate music and SFX volume, pause. (Undo button done in step 1.)
 - [ ] A short tutorial at the start of each chapter for its new mechanic.
-- [ ] Touch-friendly copy (no "Press R" on touch devices).
-- [ ] Console debug command to unlock and jump to levels, disabled in release builds.
+- [x] Touch-friendly copy (no "Press R" text; done in step 1).
+- [ ] Console debug command to unlock levels once saving exists. (Dev-only `window.extinguisherDebug`
+  with `goTo` and `loadLevel` exists since step 1 and is absent from production builds.)
 
 ## 3. Landscape and portrait
 
-- [ ] Board fit computed from the actual board and screen.
-- [ ] Two HUD layouts; remove the mobile "rotate your device" screen.
+- [x] Board fit computed from the actual board and screen (step 1).
+- [x] Remove the mobile "rotate your device" screen (step 1).
+- [ ] Two HUD layouts; portrait currently leaves large empty areas above and below big boards.
 - [ ] Check 91-cell boards on phones in portrait; quieter edge walls if needed.
 
 ## 4. Art integration and code polish (continuous, as art arrives)
@@ -86,3 +92,6 @@ the Puzzle Lab editor; this repository integrates them into the game.
 | 2026-10-10 | Levels come from the Puzzle Lab editor as-is; selection and approval happen in the editor; the game uses the Final export. No in-game level browser; a console debug command covers developer access. |
 | 2026-10-10 | Edge blockers stay walls; every blocker is drawn with a seeded variant. Board size varies per level. |
 | 2026-10-10 | Code polish animations are a roadmap item tied to art integration; their prerequisites (persistent tiles, event-driven presentation) are part of step 1. |
+| 2026-10-10 | Temporary campaign: the base alternative of each slot (approved `c01-l01-v1` for the first slot) until the Final export. The 180-level pool lives in the repository as test fixtures. |
+| 2026-10-10 | Controls follow the editor: W/E/A/D/Z/X (plus Left/Right arrows), Backspace undo, R restart; tapping a neighbour also moves. One loss panel with a reason line (out of steps or stuck). |
+| 2026-10-10 | GitHub Actions runs typecheck, tests, and `level:check` on every push; it reports and never blocks. |

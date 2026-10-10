@@ -22,37 +22,55 @@ No backend. Hosting is a static build (Coolmath upload, any static host, or a de
 ProjectExtinguisherWeb/
   AGENTS.md            agent workflow and documentation rules
   README.md
+  .github/workflows/   GitHub Actions CI
   docs/                living documentation (see AGENTS.md for the reading order)
   art-source/          original art and audio (Git, no LFS)
     images/tiles/  images/characters/  images/backgrounds/  audio/
   apps/web/            the game (npm workspace)
-    scripts/build-assets.mjs
+    levels/pool/       the 180-level Puzzle Lab pool (test fixtures, not bundled)
+    scripts/           build-assets.mjs, level-check.ts
+    test/              Vitest suites (oracle, rules, validation, campaign)
     public/            static files; public/game-assets/ is generated
+    glyph-preview.html dev-only glyph preview page
     src/
       main.tsx, App.tsx          React entry and app shell
       styles/main.scss
       game/
-        core/                    rules engine (pure TypeScript, no DOM or Pixi)
-        levels/                  level files and loader
-        renderer/PixiStage.tsx   Pixi board renderer
+        engine/                  hex-steps rules, solver, validation (pure TypeScript)
+        levels/                  campaign loader; campaign/ holds the shipped level files
+        renderer/                Pixi stage, board view, timeline, layout, art, glyphs
+        session.ts               play session and undo history
         assets.ts                asset manifest loading and URL resolution
         audio.ts                 music and SFX
         ui/                      (empty; screens land here in roadmap step 2)
 ```
 
-## Current architecture (jam port, until roadmap step 1)
+## Current architecture
 
-- `game/core` is a pure, immutable reducer: `applyCommand(state, command)` returns the new state,
-  whether it was accepted, and an ordered `GameEvent[]`. Events drive both animation and audio.
-- It implements the **jam rules** (tile activation, no revisits, catapult with an extra move cost).
-  These rules are retired in step 1 and replaced by hex-steps (`docs/rules.md`).
-- `App.tsx` owns the phase state machine (`menu`, `starting`, `playing`), the game state, the HUD,
-  overlays, keyboard reset, and audio triggers.
-- `PixiStage` receives the game state as props and renders the board and Larry. It currently
-  rebuilds every tile on each state change and runs ad-hoc ticker animations.
-- Coordinates: pointy-top cells with `r` growing upward (`x = s*sqrt(3)*(q + r/2)`, `y = -1.5*s*r`)
-  and on-screen direction names (`right`, `up_right`, ...). Step 1 switches to the Puzzle Lab
-  convention (`r` downward, `E`/`SE`/...).
+- **Engine** (`game/engine/`): hex-steps rules, pure and deterministic (`docs/rules.md`).
+  `compileLevel`, `initialState`, `step` (returns the next state and ordered events), `legalMoves`,
+  `cellContent`, solver (`bfsSolve`, `minBudget`, `countSolutions`), and `validateLevel`.
+- **Levels** (`game/levels/campaign.ts`): loads and compiles the campaign (`docs/levels.md`).
+- **Session** (`game/session.ts`): current level, play state, and undo history; every change goes
+  through the engine. Undo also works after a loss; restart returns to the initial state.
+- **App** (`App.tsx`): phase state machine (`menu`, `starting`, `playing`), session, keyboard input,
+  HUD, outcome overlays, and the dev-only `window.extinguisherDebug` API.
+- **Renderer** (`game/renderer/`):
+  - `PixiStage.tsx`: React wrapper; `stageController.ts`: the Pixi application and resize.
+  - `layout.ts`: board bounds from all cells, fitted below the measured HUD height (up to 1.6x).
+  - `boardView.ts`: persistent tile views built once per level load or restart, updated in place;
+    Larry, legal-move highlights, and every event animation.
+  - `timeline.ts`: plays engine events in order and calls audio cues as each animation starts.
+  - `animator.ts`: runs the Pixi ticker only while something animates; otherwise renders on demand.
+  - `tileArt.ts`: base sprites and seeded floor and wall variants (seeded by level id and the cell
+    whose content is shown, so swapped tiles keep their look); `glyphs.ts`: placeholder glyphs.
+- **Input**: tap or click a highlighted neighbour, or keys `W` (NW), `E` (NE), `A`/Left (W), `D`/Right
+  (E), `Z` (SW), `X` (SE); `Backspace` undo; `R` restart. Input is locked while motion plays
+  (`data-busy` on `.game-panel`) and during the level intro.
+- **HUD**: steps, level label (`chapter-position · name`), Undo and Reset buttons. Overlays appear
+  after motion ends: win (Next Level), final level (Return to Main Menu), loss (reason line, Undo,
+  Try Again).
+- Render resolution is the device pixel ratio clamped to 1-3.
 
 ## Start and loading flow
 
@@ -65,25 +83,18 @@ ProjectExtinguisherWeb/
   after the transition, or on failure. It fades in after 300 ms, so fast starts never show it.
   Retry remounts the stage.
 
-## Target architecture (roadmap steps 1-3)
+## Target architecture (roadmap steps 2-3)
 
-- **Engine** (`game/core`): hex-steps rules, pure and deterministic. State is plain data; a move
-  returns the next state and an ordered event list (walk, launch, slide, teleport, swap, pickup,
-  switch, refill, win or loss reason). Undo is a history of states. The same engine powers tests,
-  `level:check`, and hints.
-- **Presentation**: persistent tile objects updated from events, never rebuilt per move. Animation
-  timelines consume events; the engine never waits for animation. Input is locked while motion
-  plays. Win or loss overlays appear after motion ends.
-- **Input**: one action layer ("move in direction D" or "select neighbour cell") fed by pointer,
-  touch, keyboard, and later gamepad.
+- **Input**: one action layer fed by pointer, touch, keyboard, and later gamepad (today the keyboard
+  and pointer paths live in `App.tsx` and `boardView.ts`).
 - **Screens**: menu, chapter and level select, game, settings, as separate components instead of a
   single `App.tsx`.
 - **Save**: an adapter (`get`/`set`) keyed by stable `levelId`. localStorage on web with a namespace
   per portal build; Steam Cloud later. Play continues without saving if storage is unavailable.
 - **Platform adapters**: Coolmath (ad-break pause and mute hooks, SDK after acceptance) and Steam
   (wrapper, achievements, cloud save) behind one interface, so the game code stays platform-free.
-- **Responsive layout**: board fit computed from the actual board bounds and screen; separate HUD
-  layouts for landscape and portrait.
+- **Responsive layout**: separate HUD layouts for landscape and portrait (the board already fits any
+  screen).
 
 ## Technical principles
 
@@ -97,9 +108,13 @@ ProjectExtinguisherWeb/
 
 ## Build and run
 
-- Root commands: `npm run assets`, `npm run dev`, `npm run typecheck`, `npm run build`,
-  `npm run preview`. `dev` and `build` run `assets` first.
+- Root commands: `npm run assets`, `npm run dev`, `npm run typecheck`, `npm test`,
+  `npm run level:check`, `npm run build`, `npm run preview`. `dev` and `build` run `assets` first.
+- Tests use Vitest (`apps/web/test/`, config `apps/web/vitest.config.ts`); `level:check` runs with tsx
+  (`apps/web/scripts/level-check.ts`).
+- GitHub Actions (`.github/workflows/ci.yml`) runs typecheck, tests, and `level:check` on every push
+  and pull request. It reports results; it never blocks a push.
 - `apps/web/public/manifest.json` and icons provide basic PWA install metadata; there is no service
-  worker. The CSS currently blocks portrait on phones (`main.scss`); step 3 removes this.
+  worker. Portrait is no longer blocked on phones.
 - The fonts currently load from Google Fonts (`index.html`); this must be self-hosted before a
   Coolmath or Steam release.

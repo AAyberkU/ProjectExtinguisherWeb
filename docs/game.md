@@ -41,7 +41,7 @@ uses exactly the given steps.
 - Board size varies per level (19, 37, 61, or 91 cells).
 - Levels are authored and approved in the Puzzle Lab editor and used as exported.
 - Current state: a pool of 180 candidate levels (3 alternatives per slot), none final yet. The game
-  still ships the 5 jam levels on the old jam rules until roadmap step 1 lands.
+  plays a temporary 60-level campaign (one alternative per slot) on the hex-steps rules.
 
 ## Level design intent
 
