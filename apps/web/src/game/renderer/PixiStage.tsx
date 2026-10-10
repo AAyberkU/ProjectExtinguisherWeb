@@ -2,7 +2,7 @@ import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } fro
 import type { Ref } from 'react';
 import { Application } from 'pixi.js';
 import { getRenderResolution, loadGameAssets } from '../assets';
-import type { CompiledLevel, Dir, EngineEvent, PlayState } from '../engine';
+import type { CompiledLevel, Dir, EngineEvent, LossReason, PlayState } from '../engine';
 import { StageController, type StageCallbacks, type StageStats } from './stageController';
 
 export interface PixiStageHandle {
@@ -10,6 +10,16 @@ export interface PixiStageHandle {
   playMove(events: readonly EngineEvent[], state: PlayState): void;
   /** Shows a state at once (undo). */
   showState(state: PlayState): void;
+  /**
+   * Win celebration on the board (Larry + particles from the finish). Resolves when the main beat is
+   * over (about 1 s; 1.4 s when final) so the UI can show the next badge; an ambient tail may continue
+   * briefly. Also resolves at once if the outcome is cleared first.
+   */
+  celebrate(final: boolean): Promise<void>;
+  /** Loss feedback on the board: 'stuck' shakes the board and Larry; 'out-of-steps' makes Larry slump/fade a little. */
+  showLoss(reason: LossReason): void;
+  /** Stops and removes any outcome effect at once and restores the normal board (undo, restart, level load). */
+  clearOutcome(): void;
   stats(): StageStats | null;
   /** Screen point of cell (q, r) inside the canvas; diagnostics only. */
   cellScreenPoint(q: number, r: number): { x: number; y: number } | null;
@@ -54,6 +64,9 @@ export function PixiStage(props: PixiStageProps) {
   useImperativeHandle(ref, () => ({
     playMove: (events, nextState) => controllerRef.current?.playMove(events, nextState),
     showState: (nextState) => controllerRef.current?.showState(nextState),
+    celebrate: (final) => controllerRef.current?.celebrate(final) ?? Promise.resolve(),
+    showLoss: (reason) => controllerRef.current?.showLoss(reason),
+    clearOutcome: () => controllerRef.current?.clearOutcome(),
     stats: () => controllerRef.current?.stats ?? null,
     cellScreenPoint: (q, r) => controllerRef.current?.cellScreenPoint(q, r) ?? null,
   }), []);

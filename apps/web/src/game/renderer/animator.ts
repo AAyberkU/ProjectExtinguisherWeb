@@ -46,10 +46,15 @@ export class Animator {
 
   /**
    * Runs `update(t)` with t from 0 to 1 over `durationMs`. Resolves true when finished, false when
-   * cancelled. `update(1)` always runs on completion.
+   * cancelled (by `cancelAll` or by aborting `signal`). `update(1)` always runs on completion.
    */
-  public tween(durationMs: number, update: (t: number) => void, ease: Ease = linear): Promise<boolean> {
-    if (this.destroyed) {
+  public tween(
+    durationMs: number,
+    update: (t: number) => void,
+    ease: Ease = linear,
+    signal?: AbortSignal,
+  ): Promise<boolean> {
+    if (this.destroyed || signal?.aborted === true) {
       return Promise.resolve(false);
     }
 
@@ -65,14 +70,22 @@ export class Animator {
       this.tweens.add(tween);
       this.idleFrames = 0;
 
+      // Cancels only this tween; the ticker stops by itself once nothing else runs.
+      signal?.addEventListener('abort', () => {
+        if (this.tweens.delete(tween)) {
+          tween.resolve(false);
+          this.requestRender();
+        }
+      }, { once: true });
+
       if (!this.app.ticker.started) {
         this.app.ticker.start();
       }
     });
   }
 
-  public wait(durationMs: number): Promise<boolean> {
-    return this.tween(durationMs, () => undefined);
+  public wait(durationMs: number, signal?: AbortSignal): Promise<boolean> {
+    return this.tween(durationMs, () => undefined, linear, signal);
   }
 
   /** Cancels every running tween (each resolves false) and renders the current pose. */

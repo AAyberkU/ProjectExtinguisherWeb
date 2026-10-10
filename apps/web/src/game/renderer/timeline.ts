@@ -32,10 +32,9 @@ function presentEvent(board: BoardView, event: EngineEvent): Promise<boolean> {
       return board.pickupRefill(event.cell, event.value);
     case 'switch':
       return board.pressSwitch(event.cell, colorBit(event.color));
+    // The outcome effects (StageController.celebrate / showLoss) start once the timeline ends.
     case 'win':
-      return board.celebrate();
     case 'lose':
-      return board.shake();
     case 'steps':
       return Promise.resolve(true);
   }

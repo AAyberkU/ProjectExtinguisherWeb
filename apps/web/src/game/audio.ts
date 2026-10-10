@@ -30,13 +30,16 @@ class GameAudioController {
   private readonly fallbackAudio = new Map<SoundName, HTMLAudioElement>();
   private audioContext: AudioContext | null = null;
   private isPrimed = false;
+  private musicOn = true;
+  private sfxOn = true;
+  private suspended = false;
 
   public constructor() {
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
           this.music?.pause();
-        } else if (this.isPrimed) {
+        } else if (this.isPrimed && this.musicAllowed) {
           void this.music?.play().catch(() => {
             // Autoplay might be blocked if unlocked state was lost
           });
@@ -67,9 +70,51 @@ class GameAudioController {
       });
   }
 
+  public get musicEnabled(): boolean {
+    return this.musicOn;
+  }
+
+  public get sfxEnabled(): boolean {
+    return this.sfxOn;
+  }
+
+  private get musicAllowed(): boolean {
+    return this.musicOn && !this.suspended;
+  }
+
+  public setMusicEnabled(on: boolean) {
+    this.musicOn = on;
+    this.syncMusic();
+  }
+
+  public setSfxEnabled(on: boolean) {
+    this.sfxOn = on;
+  }
+
+  /** Master mute (e.g. portal ad breaks); leaves the two player toggles untouched. */
+  public setSuspended(suspended: boolean) {
+    this.suspended = suspended;
+    this.syncMusic();
+  }
+
+  private syncMusic() {
+    if (!this.musicAllowed) {
+      this.music?.pause();
+    } else if (this.isPrimed && !document.hidden) {
+      void this.music?.play().catch(() => {
+        // Autoplay may still be blocked; the next gesture retries via startMusic().
+      });
+    }
+  }
+
   public startMusic() {
     this.prime();
     void this.unlock();
+
+    if (!this.musicAllowed) {
+      return;
+    }
+
     void this.music?.play().catch(() => {
       // Browsers may block autoplay until the first user gesture.
     });
@@ -123,6 +168,10 @@ class GameAudioController {
   }
 
   public play(soundName: SoundName) {
+    if (!this.sfxOn || this.suspended) {
+      return;
+    }
+
     const buffer = this.buffers.get(soundName);
 
     if (buffer !== undefined) {

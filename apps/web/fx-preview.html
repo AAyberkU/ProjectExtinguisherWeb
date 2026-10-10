@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Outcome effects preview</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #2a2733 center / cover no-repeat; font: 14px Arial, sans-serif; }
+      #stage { position: fixed; inset: 0; }
+      #controls { position: fixed; top: 8px; left: 8px; right: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; z-index: 1; }
+      #controls button { padding: 6px 10px; border: 0; border-radius: 6px; background: #0007; color: #fff; cursor: pointer; }
+      #controls button:hover { background: #000a; }
+      #status { color: #fff; background: #0008; padding: 4px 8px; border-radius: 6px; font-family: monospace; }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="controls">
+      <button data-fx="prev">&lt; Level</button>
+      <button data-fx="next">Level &gt;</button>
+      <button data-fx="celebrate">Celebrate</button>
+      <button data-fx="celebrate-final">Celebrate final</button>
+      <button data-fx="stuck">Loss stuck</button>
+      <button data-fx="out-of-steps">Loss out-of-steps</button>
+      <button data-fx="clear">Clear</button>
+      <span id="status"></span>
+    </div>
+    <script type="module" src="/src/fx-preview.ts"></script>
+  </body>
+</html>

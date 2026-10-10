@@ -28,7 +28,6 @@ const TELEPORT_MS = 220;
 const SWAP_MS = 180;
 const PICKUP_MS = 260;
 const STATE_FADE_MS = 200;
-const END_HOLD_MS = 220;
 
 const INTRO_DROP_OFFSET = TILE_VISUAL_RADIUS * 9;
 const INTRO_FALL_MS = 180;
@@ -40,6 +39,26 @@ const HIGHLIGHT_COLOR = 0x00ff88;
 const SWAP_SOCKET_COLOR = 0x2a1050;
 const HIGHLIGHT_ALPHA = 0.85;
 const HIGHLIGHT_WIDTH = 2.5;
+
+/**
+ * What the outcome effects (effects.ts) may animate. Every handle is restored by
+ * `BoardView.restoreOutcomePose`, so effects never leave the board changed.
+ */
+export interface OutcomeRig {
+  /** Tiles, highlights and Larry; offset to shake the board and tinted to dim it. */
+  readonly scene: Container;
+  /** Board-space layer above the tiles and below Larry (glows). */
+  readonly under: Container;
+  /** Board-space layer above everything (particles); not dimmed or shaken with the scene. */
+  readonly over: Container;
+  readonly larry: Sprite;
+  readonly larryCell: number;
+  /** Larry's resting foot point and scale on his cell. */
+  readonly larryRest: Point;
+  readonly larryScale: number;
+  tileHome(cell: number): Point;
+  tileBase(cell: number): Container;
+}
 
 interface TileView {
   readonly cell: number;
@@ -59,6 +78,9 @@ function clamp01(value: number): number {
 
 export class BoardView {
   public readonly root = new Container();
+  private readonly scene = new Container();
+  private readonly outcomeUnder = new Container();
+  private readonly outcomeOver = new Container();
   private readonly tileLayer = new Container();
   private readonly fxLayer = new Container();
   private readonly highlight = new Graphics();
@@ -81,12 +103,16 @@ export class BoardView {
     private readonly resolution: number,
   ) {
     this.root.label = 'Hex Board';
+    this.scene.label = 'Scene';
+    this.outcomeUnder.label = 'Outcome Glow';
+    this.outcomeOver.label = 'Outcome Effects';
     this.tileLayer.label = 'Tiles';
     this.fxLayer.label = 'Tile Effects';
     this.highlight.label = 'Move Highlights';
     this.larryLayer.label = 'Larry';
     this.popLayer.label = 'Pops';
-    this.root.addChild(this.tileLayer, this.fxLayer, this.highlight, this.larryLayer, this.popLayer);
+    this.scene.addChild(this.tileLayer, this.fxLayer, this.outcomeUnder, this.highlight, this.larryLayer, this.popLayer);
+    this.root.addChild(this.scene, this.outcomeOver);
     this.visual = { phase: state.phase, mask: state.mask, sw: state.sw };
     this.larryCell = state.pos;
 
@@ -144,7 +170,53 @@ export class BoardView {
     this.visual = { phase: state.phase, mask: state.mask, sw: state.sw };
     this.refreshTiles();
     this.placeLarry(state.pos);
+    this.resetLarryLook();
+  }
+
+  // ---------- outcome effects ----------
+
+  public get outcomeRig(): OutcomeRig {
+    const tiles = this.tiles;
+
+    return {
+      scene: this.scene,
+      under: this.outcomeUnder,
+      over: this.outcomeOver,
+      larry: this.larry,
+      larryCell: this.larryCell,
+      larryRest: this.larryPoint(this.larryCell),
+      larryScale: this.larryScale,
+      tileHome: (cell) => tiles[cell].home,
+      tileBase: (cell) => tiles[cell].base,
+    };
+  }
+
+  /** Undoes every outcome effect change: Larry's pose, the scene offset and dim, tile bounces, effect layers. */
+  public restoreOutcomePose(touchedCells: Iterable<number>) {
+    if (this.destroyed) return;
+
+    for (const layer of [this.outcomeUnder, this.outcomeOver]) {
+      for (const child of layer.removeChildren()) {
+        child.destroy({ children: true });
+      }
+    }
+
+    for (const cell of touchedCells) {
+      const base = this.tiles[cell]?.base;
+      base?.position.set(0, 0);
+      base?.scale.set(1);
+    }
+
+    this.scene.position.set(0, 0);
+    this.scene.tint = 0xffffff;
+    this.placeLarry(this.larryCell);
+    this.resetLarryLook();
+  }
+
+  private resetLarryLook() {
     this.larry.alpha = 1;
+    this.larry.tint = 0xffffff;
+    this.larry.rotation = 0;
     this.larry.scale.set(this.larryScale);
   }
 
@@ -347,28 +419,6 @@ export class BoardView {
     this.larry.alpha = 1;
     this.larry.scale.set(this.larryScale);
     return back;
-  }
-
-  public async celebrate(): Promise<boolean> {
-    const start = this.larryPoint(this.larryCell);
-    const done = await this.animator.tween(END_HOLD_MS, (t) => {
-      this.larry.y = start.y - Math.sin(t * Math.PI) * WALK_HOP * 0.8;
-    });
-    if (this.destroyed) return false;
-    this.placeLarry(this.larryCell);
-    return done;
-  }
-
-  public async shake(): Promise<boolean> {
-    const start = this.larryPoint(this.larryCell);
-    const done = await this.animator.tween(END_HOLD_MS, (t) => {
-      this.larry.x = start.x + Math.sin(t * Math.PI * 6) * (1 - t) * TILE_VISUAL_RADIUS * 0.12;
-      this.larry.tint = t < 1 ? 0xffb0b0 : 0xffffff;
-    });
-    if (this.destroyed) return false;
-    this.larry.tint = 0xffffff;
-    this.placeLarry(this.larryCell);
-    return done;
   }
 
   // ---------- tile effects ----------

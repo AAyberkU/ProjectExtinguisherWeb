@@ -1,0 +1,415 @@
+// Main menu, credits box and level select.
+// Art seam (docs/art.md "UI art"): override the --menu-* / --level-* custom properties, or style the
+// class hooks (.level-card, .level-card-lock, .level-card-tick, .level-select-panel,
+// .level-select-arrow, .level-select-close) with background-image once real art exists.
+
+.main-menu,
+.level-select {
+  --menu-ink: #fff7fb;
+  --menu-ink-dark: #2b0d4f;
+  --menu-surface: rgba(20, 28, 42, 0.78);
+  --menu-surface-hover: rgba(25, 34, 50, 0.92);
+  --menu-surface-strong: rgba(20, 28, 42, 0.94);
+  --menu-accent: #f2b21a;
+  --menu-focus: rgba(255, 247, 251, 0.45);
+  --menu-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+  --level-card-size: clamp(44px, 8.5vh, 64px);
+  --level-card-open: #fff7fb;
+  --level-card-completed: #83cbbb;
+  --level-card-locked: rgba(255, 247, 251, 0.14);
+  --level-card-current: #f2b21a;
+
+  font-family: var(--game-font-family);
+}
+
+// ---------------------------------------------------------------- main menu
+
+.main-menu {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(5rem, 24vh, 18rem) 1rem 1rem;
+  pointer-events: none;
+
+  .menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.6rem, 1.6vh, 1rem);
+    width: min(22rem, 100%);
+  }
+
+  .menu-button {
+    min-height: 3.25rem;
+    padding: clamp(0.7rem, 1.6vh, 1.1rem) 1.5rem;
+    border: 0;
+    background: var(--menu-surface);
+    box-shadow: var(--menu-shadow);
+    backdrop-filter: blur(2px);
+    color: var(--menu-ink);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: clamp(1.3rem, 2.4vw, 2.2rem);
+    font-weight: 900;
+    line-height: 1;
+    pointer-events: auto;
+    text-shadow: 0 3px 0 rgba(255, 255, 255, 0.1);
+    transition: background-color 0.12s ease, transform 0.12s ease;
+  }
+
+  .menu-play {
+    padding-block: clamp(1rem, 2.2vh, 1.45rem);
+    font-size: clamp(1.8rem, 3vw, 3.2rem);
+  }
+
+  .menu-button:hover,
+  .menu-button:focus-visible {
+    background: var(--menu-surface-hover);
+    outline: 4px solid var(--menu-focus);
+    transform: translateY(-1px);
+  }
+
+  .menu-button:active {
+    transform: translateY(1px);
+  }
+
+  .menu-credits[aria-expanded='true'] {
+    outline: 3px solid var(--menu-accent);
+  }
+}
+
+.menu-credits-box {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(26rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1.4rem 1.5rem 1.2rem;
+  overflow-y: auto;
+  background: var(--menu-surface-strong);
+  box-shadow: var(--menu-shadow), 0 0 0 100vmax rgba(8, 10, 16, 0.4);
+  color: var(--menu-ink);
+  pointer-events: auto;
+  text-align: center;
+  transform: translate(-50%, -50%);
+
+  .credit-role,
+  .credit-name {
+    margin: 0;
+    font-weight: 900;
+    line-height: 1.1;
+  }
+
+  .credit-role {
+    color: var(--menu-ink);
+    font-size: clamp(1.05rem, 1.6vw, 1.5rem);
+  }
+
+  .credit-name {
+    margin-top: 0.25rem;
+    font-size: clamp(1.1rem, 1.6vw, 1.5rem);
+  }
+
+  .credit-name + .credit-role {
+    margin-top: clamp(0.7rem, 1.8vh, 1.2rem);
+  }
+
+  .credit-name--artist {
+    color: #f2b21a;
+  }
+
+  .credit-name--designer {
+    color: #326fe8;
+  }
+
+  .credit-name--developer {
+    color: #e238a6;
+  }
+
+  .credit-name--music {
+    color: #83cbbb;
+  }
+}
+
+.menu-credits-close {
+  min-width: 8rem;
+  min-height: 2.75rem;
+  margin-top: 1.2rem;
+  padding: 0.5rem 1.4rem;
+  border: 0;
+  background: rgba(255, 247, 251, 0.14);
+  color: var(--menu-ink);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 900;
+
+  &:hover,
+  &:focus-visible {
+    background: rgba(255, 247, 251, 0.26);
+    outline: 3px solid var(--menu-focus);
+  }
+}
+
+// ------------------------------------------------------------- level select
+
+.level-select {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  background: rgba(8, 10, 16, 0.55);
+  animation: level-select-fade 0.16s ease-out;
+}
+
+.level-select-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(44rem, 100%);
+  max-height: 100%;
+  padding: 0.75rem clamp(0.75rem, 2vw, 1.25rem) 0.75rem;
+  background: var(--menu-surface-strong);
+  box-shadow: var(--menu-shadow);
+  color: var(--menu-ink);
+  animation: level-select-pop 0.18s ease-out;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.level-select-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.level-select-title {
+  margin: 0;
+  font-size: clamp(1.3rem, 2.2vw, 1.9rem);
+  font-weight: 900;
+}
+
+.level-select-close,
+.level-select-arrow {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: rgba(255, 247, 251, 0.14);
+  color: var(--menu-ink);
+  cursor: pointer;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: rgba(255, 247, 251, 0.28);
+    outline: 3px solid var(--menu-focus);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.3;
+  }
+}
+
+.level-select-body {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 0;
+  overflow-y: auto;
+  animation: level-select-page 0.16s ease-out;
+}
+
+.level-chapter-title {
+  margin: 0 0 0.2rem;
+  color: rgba(255, 247, 251, 0.8);
+  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.level-chapter-cards {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(4px, 1vw, 8px);
+}
+
+.level-card {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: var(--level-card-size);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: var(--level-card-open);
+  color: var(--menu-ink-dark);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: clamp(1.05rem, 2.2vh, 1.5rem);
+  font-weight: 900;
+  line-height: 1;
+  transition: transform 0.1s ease;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    outline: 3px solid var(--menu-focus);
+    transform: translateY(-1px);
+  }
+
+  &[data-state='completed'] {
+    background: var(--level-card-completed);
+  }
+
+  &[data-state='locked'] {
+    background: var(--level-card-locked);
+    color: rgba(255, 247, 251, 0.55);
+    cursor: default;
+  }
+
+  &[data-current='true'] {
+    box-shadow: 0 0 0 3px var(--level-card-current);
+  }
+
+  // Locked cards show the lock instead of the number's weight; completed keep the number and a tick badge.
+  &[data-state='locked'] .level-card-number {
+    font-size: 0.8em;
+    opacity: 0.7;
+  }
+}
+
+.level-card-glyph {
+  position: absolute;
+  width: 38%;
+  height: 38%;
+}
+
+.level-card-lock {
+  right: 6%;
+  bottom: 6%;
+}
+
+.level-card-tick {
+  top: 4%;
+  right: 4%;
+  color: var(--menu-ink-dark);
+}
+
+.level-select-footer {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.level-select-pager {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.level-select-dots {
+  display: flex;
+}
+
+.level-select-dot {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  &::before {
+    width: 12px;
+    height: 12px;
+    background: rgba(255, 247, 251, 0.35);
+    border-radius: 50%;
+    content: '';
+  }
+
+  &[data-active='true']::before {
+    background: var(--menu-accent);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--menu-focus);
+  }
+}
+
+.level-select-menu {
+  min-height: 44px;
+  padding: 0.5rem 1.4rem;
+  border: 0;
+  background: rgba(255, 247, 251, 0.14);
+  color: var(--menu-ink);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 900;
+
+  &:hover,
+  &:focus-visible {
+    background: rgba(255, 247, 251, 0.28);
+    outline: 3px solid var(--menu-focus);
+  }
+}
+
+@keyframes level-select-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes level-select-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes level-select-page {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .level-select,
+  .level-select-panel,
+  .level-select-body {
+    animation: none;
+  }
+
+  .main-menu .menu-button,
+  .level-card {
+    transition: none;
+  }
+}

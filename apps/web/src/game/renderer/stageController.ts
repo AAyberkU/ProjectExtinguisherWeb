@@ -2,9 +2,10 @@
 // and on-demand rendering. Framework-free; PixiStage.tsx wires it into React.
 
 import { Application, Rectangle, type FederatedPointerEvent } from 'pixi.js';
-import { legalMoves, type CompiledLevel, type Dir, type EngineEvent, type PlayState } from '../engine';
+import { legalMoves, type CompiledLevel, type Dir, type EngineEvent, type LossReason, type PlayState } from '../engine';
 import { Animator } from './animator';
 import { BoardView } from './boardView';
+import { OutcomeEffects, type OutcomeKind } from './effects';
 import { boardBounds, cellAtPoint, cellCenter, fitBoard, type Bounds } from './layout';
 import { playTimeline } from './timeline';
 
@@ -21,11 +22,21 @@ export interface StageStats {
   tickerStarted: boolean;
   frames: number;
   busy: boolean;
+  /** Outcome effect shown on the board (animating or resting), or null. */
+  outcome: OutcomeKind | null;
+}
+
+/** An outcome requested while a timeline still runs; it starts when the timeline ends. */
+interface PendingOutcome {
+  start(): void;
+  drop(): void;
 }
 
 export class StageController {
   private readonly animator: Animator;
   private board: BoardView | null = null;
+  private outcome: OutcomeEffects | null = null;
+  private pendingOutcomes: PendingOutcome[] = [];
   private bounds: Bounds | null = null;
   private state: PlayState | null = null;
   private generation = 0;
@@ -46,7 +57,12 @@ export class StageController {
   }
 
   public get stats(): StageStats {
-    return { tickerStarted: this.animator.running, frames: this.animator.frames, busy: this.busy };
+    return {
+      tickerStarted: this.animator.running,
+      frames: this.animator.frames,
+      busy: this.busy,
+      outcome: this.outcome?.kind ?? null,
+    };
   }
 
   /** Screen point (CSS pixels within the canvas) of a cell centre, or null; diagnostics only. */
@@ -64,19 +80,57 @@ export class StageController {
 
   public destroy() {
     this.generation += 1;
+    this.clearOutcome();
+    this.outcome?.destroy();
+    this.outcome = null;
     this.animator.destroy();
     this.board?.destroy();
     this.board = null;
+  }
+
+  /**
+   * Win celebration on the board. Resolves after the main beat (about 1 s; 1.4 s when `final`), or
+   * at once if the outcome is cleared first, so callers must still check their own state. Requested
+   * during a timeline, it starts when the timeline ends. Never changes busy or gameplay state.
+   */
+  public celebrate(final: boolean): Promise<void> {
+    return new Promise((resolve) => {
+      this.whenSettled({
+        start: () => void (this.outcome?.celebrate(final) ?? Promise.resolve()).then(resolve),
+        drop: resolve,
+      });
+    });
+  }
+
+  /** Loss feedback on the board; the board then rests in a dimmed, ended state until cleared. */
+  public showLoss(reason: LossReason) {
+    this.whenSettled({ start: () => this.outcome?.showLoss(reason), drop: () => undefined });
+  }
+
+  /** Stops and removes any outcome effect at once and restores the normal board. */
+  public clearOutcome() {
+    const pending = this.pendingOutcomes;
+
+    this.pendingOutcomes = [];
+
+    for (const outcome of pending) {
+      outcome.drop();
+    }
+
+    this.outcome?.clear();
   }
 
   /** Builds the board for a level state and plays the intro (level start or restart). */
   public load(level: CompiledLevel, state: PlayState, introDelayMs = 0) {
     const generation = ++this.generation;
 
+    this.clearOutcome();
     this.setBusy(true);
     this.animator.cancelAll();
+    this.outcome?.destroy();
     this.board?.destroy();
     this.board = new BoardView(level, state, this.animator, this.resolution());
+    this.outcome = new OutcomeEffects(this.board, this.animator);
     this.bounds = boardBounds(level);
     this.state = state;
     this.app.stage.addChild(this.board.root);
@@ -103,6 +157,7 @@ export class StageController {
 
     const generation = ++this.generation;
 
+    this.clearOutcome();
     this.state = state;
     this.setBusy(true);
     board.clearHighlights();
@@ -125,6 +180,7 @@ export class StageController {
     }
 
     this.generation += 1;
+    this.clearOutcome();
     this.animator.cancelAll();
     this.state = state;
     this.board.showState(state);
@@ -184,7 +240,28 @@ export class StageController {
     this.updateHighlights();
     this.setBusy(false);
     this.animator.requestRender();
+    this.startPendingOutcomes();
     this.callbacks().onTimelineEnd();
+  }
+
+  private whenSettled(outcome: PendingOutcome) {
+    if (this.board === null || this.outcome === null) {
+      outcome.drop();
+    } else if (this.busy) {
+      this.pendingOutcomes.push(outcome);
+    } else {
+      outcome.start();
+    }
+  }
+
+  private startPendingOutcomes() {
+    const pending = this.pendingOutcomes;
+
+    this.pendingOutcomes = [];
+
+    for (const outcome of pending) {
+      outcome.start();
+    }
   }
 
   private updateHighlights() {
