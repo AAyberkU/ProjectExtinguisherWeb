@@ -36,6 +36,7 @@ const callbacks: StageCallbacks = {
   onEventStart: () => undefined,
   onTimelineEnd: () => undefined,
   onMoveRequest: () => undefined,
+  onLayout: () => undefined,
 };
 const controller = new StageController(app, host, () => callbacks, getRenderResolution);
 

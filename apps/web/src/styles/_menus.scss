@@ -1,7 +1,8 @@
 // Main menu, credits box and level select.
 // Art seam (docs/art.md "UI art"): override the --menu-* / --level-* custom properties, or style the
 // class hooks (.level-card, .level-card-lock, .level-card-tick, .level-select-panel,
-// .level-select-arrow, .level-select-close) with background-image once real art exists.
+// .level-select-arrow, .level-select-close) with background-image once real art exists. The logo
+// seam is .menu-logo: set --menu-logo-image and add the .menu-logo--image modifier.
 
 .main-menu,
 .level-select {
@@ -31,8 +32,34 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: clamp(5rem, 24vh, 18rem) 1rem 1rem;
+  padding: clamp(1.5rem, 11vh, 8rem) 1rem 1rem;
   pointer-events: none;
+
+  // Placeholder title until the artist's logo exists. With --menu-logo-image set and the
+  // .menu-logo--image modifier, the image shows and the text stays only for screen readers.
+  .menu-logo {
+    --menu-logo-image: none;
+
+    width: min(40rem, 100%);
+    margin: 0 0 clamp(1.2rem, 6vh, 3.5rem);
+    background-image: var(--menu-logo-image);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    color: var(--menu-ink);
+    font-size: clamp(2.2rem, min(8vw, 10vh), 4.6rem);
+    font-weight: 950;
+    letter-spacing: 0.01em;
+    line-height: 1.02;
+    text-align: center;
+    text-shadow: 0 4px 0 #e238a6, 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+
+  .menu-logo--image {
+    min-height: clamp(6rem, 22vh, 14rem);
+    color: transparent;
+    text-shadow: none;
+  }
 
   .menu-buttons {
     display: flex;

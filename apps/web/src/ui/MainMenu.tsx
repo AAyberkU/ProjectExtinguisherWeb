@@ -11,6 +11,8 @@ export function MainMenu({ hasProgress, onPlay, onLevelSelect }: MainMenuProps) 
 
   return (
     <section className="main-menu" aria-label="Main menu">
+      {/* Placeholder title; the artist's logo replaces it through --menu-logo-image and .menu-logo--image (_menus.scss). */}
+      <h1 className="menu-logo">Project Extinguisher</h1>
       <nav className="menu-buttons">
         <button className="menu-button menu-play" type="button" data-action="play" onClick={onPlay}>
           {hasProgress ? 'Continue' : 'Play'}

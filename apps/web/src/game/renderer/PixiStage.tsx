@@ -3,7 +3,7 @@ import type { Ref } from 'react';
 import { Application } from 'pixi.js';
 import { getRenderResolution, loadGameAssets } from '../assets';
 import type { CompiledLevel, Dir, EngineEvent, LossReason, PlayState } from '../engine';
-import { StageController, type StageCallbacks, type StageStats } from './stageController';
+import { StageController, type HintAnchor, type StageCallbacks, type StageStats } from './stageController';
 
 export interface PixiStageHandle {
   /** Plays a move's engine events and settles on `state`. */
@@ -20,6 +20,13 @@ export interface PixiStageHandle {
   showLoss(reason: LossReason): void;
   /** Stops and removes any outcome effect at once and restores the normal board (undo, restart, level load). */
   clearOutcome(): void;
+  /**
+   * Tutorial glow on board cells: fades in, pulses three times, then stays steady (reduced motion:
+   * steady at once). Null fades it out. A level load or restart removes it.
+   */
+  setHint(cells: readonly number[] | null): void;
+  /** Screen placement of the glowing hint's first cell, or null when no hint glows. */
+  hintAnchor(): HintAnchor | null;
   stats(): StageStats | null;
   /** Screen point of cell (q, r) inside the canvas; diagnostics only. */
   cellScreenPoint(q: number, r: number): { x: number; y: number } | null;
@@ -44,6 +51,8 @@ type PixiStageProps = Readonly<{
   onEventStart: (event: EngineEvent) => void;
   onTimelineEnd: () => void;
   onMoveRequest: (dir: Dir) => void;
+  /** The board's screen placement changed (load, resize, HUD inset). */
+  onLayout?: () => void;
 }>;
 
 function toError(error: unknown): Error {
@@ -67,6 +76,8 @@ export function PixiStage(props: PixiStageProps) {
     celebrate: (final) => controllerRef.current?.celebrate(final) ?? Promise.resolve(),
     showLoss: (reason) => controllerRef.current?.showLoss(reason),
     clearOutcome: () => controllerRef.current?.clearOutcome(),
+    setHint: (cells) => controllerRef.current?.setHint(cells),
+    hintAnchor: () => controllerRef.current?.hintAnchor() ?? null,
     stats: () => controllerRef.current?.stats ?? null,
     cellScreenPoint: (q, r) => controllerRef.current?.cellScreenPoint(q, r) ?? null,
   }), []);
@@ -91,6 +102,7 @@ export function PixiStage(props: PixiStageProps) {
       onEventStart: (event) => propsRef.current.onEventStart(event),
       onTimelineEnd: () => propsRef.current.onTimelineEnd(),
       onMoveRequest: (dir) => propsRef.current.onMoveRequest(dir),
+      onLayout: () => propsRef.current.onLayout?.(),
     });
 
     const scheduleResize = () => {

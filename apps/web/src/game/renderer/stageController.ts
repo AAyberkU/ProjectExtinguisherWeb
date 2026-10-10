@@ -6,7 +6,8 @@ import { legalMoves, type CompiledLevel, type Dir, type EngineEvent, type LossRe
 import { Animator } from './animator';
 import { BoardView } from './boardView';
 import { OutcomeEffects, type OutcomeKind } from './effects';
-import { boardBounds, cellAtPoint, cellCenter, fitBoard, type Bounds } from './layout';
+import { HintGlow } from './hintGlow';
+import { boardBounds, cellAtPoint, cellCenter, fitBoard, TILE_VISUAL_RADIUS, type Bounds } from './layout';
 import { playTimeline } from './timeline';
 
 export interface StageCallbacks {
@@ -16,6 +17,16 @@ export interface StageCallbacks {
   /** The intro or a move timeline finished; the presented state is now final. */
   onTimelineEnd(): void;
   onMoveRequest(dir: Dir): void;
+  /** The board's screen placement changed (load, resize, HUD inset). */
+  onLayout(): void;
+}
+
+/** Screen placement (CSS pixels within the canvas) of the tutorial hint's anchor cell. */
+export interface HintAnchor {
+  x: number;
+  y: number;
+  /** Drawn tile radius on screen. */
+  radius: number;
 }
 
 export interface StageStats {
@@ -36,6 +47,7 @@ export class StageController {
   private readonly animator: Animator;
   private board: BoardView | null = null;
   private outcome: OutcomeEffects | null = null;
+  private hint: HintGlow | null = null;
   private pendingOutcomes: PendingOutcome[] = [];
   private bounds: Bounds | null = null;
   private state: PlayState | null = null;
@@ -78,9 +90,34 @@ export class StageController {
     return { x: board.root.x + x * board.root.scale.x, y: board.root.y + y * board.root.scale.y };
   }
 
+  /**
+   * Tutorial glow on `cells` (fades in, pulses three times, then stays steady), or fades it out for
+   * null. A level load removes it. Never changes busy or gameplay state.
+   */
+  public setHint(cells: readonly number[] | null) {
+    this.hint?.show(cells);
+  }
+
+  /** Where the glowing hint's first cell is on screen, or null when no hint glows. */
+  public hintAnchor(): HintAnchor | null {
+    const board = this.board;
+    const cell = this.hint?.anchorCell ?? -1;
+
+    if (board === null || cell < 0) {
+      return null;
+    }
+
+    const { x, y } = cellCenter(board.level, cell);
+    const scale = board.root.scale.x;
+
+    return { x: board.root.x + x * scale, y: board.root.y + y * board.root.scale.y, radius: TILE_VISUAL_RADIUS * scale };
+  }
+
   public destroy() {
     this.generation += 1;
     this.clearOutcome();
+    this.hint?.destroy();
+    this.hint = null;
     this.outcome?.destroy();
     this.outcome = null;
     this.animator.destroy();
@@ -127,10 +164,12 @@ export class StageController {
     this.clearOutcome();
     this.setBusy(true);
     this.animator.cancelAll();
+    this.hint?.destroy();
     this.outcome?.destroy();
     this.board?.destroy();
     this.board = new BoardView(level, state, this.animator, this.resolution());
     this.outcome = new OutcomeEffects(this.board, this.animator);
+    this.hint = new HintGlow(this.board.hintRig.layer, this.board.hintRig.tileHome, this.animator);
     this.bounds = boardBounds(level);
     this.state = state;
     this.app.stage.addChild(this.board.root);
@@ -226,6 +265,7 @@ export class StageController {
 
     this.board.root.position.set(fit.x, fit.y);
     this.board.root.scale.set(fit.scale);
+    this.callbacks().onLayout();
   }
 
   private finishTimeline() {

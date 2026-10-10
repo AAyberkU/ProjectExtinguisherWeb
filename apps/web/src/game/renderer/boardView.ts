@@ -82,6 +82,7 @@ export class BoardView {
   private readonly outcomeUnder = new Container();
   private readonly outcomeOver = new Container();
   private readonly tileLayer = new Container();
+  private readonly hintLayer = new Container();
   private readonly fxLayer = new Container();
   private readonly highlight = new Graphics();
   private readonly larryLayer = new Container();
@@ -107,11 +108,12 @@ export class BoardView {
     this.outcomeUnder.label = 'Outcome Glow';
     this.outcomeOver.label = 'Outcome Effects';
     this.tileLayer.label = 'Tiles';
+    this.hintLayer.label = 'Tutorial Hint';
     this.fxLayer.label = 'Tile Effects';
     this.highlight.label = 'Move Highlights';
     this.larryLayer.label = 'Larry';
     this.popLayer.label = 'Pops';
-    this.scene.addChild(this.tileLayer, this.fxLayer, this.outcomeUnder, this.highlight, this.larryLayer, this.popLayer);
+    this.scene.addChild(this.tileLayer, this.hintLayer, this.fxLayer, this.outcomeUnder, this.highlight, this.larryLayer, this.popLayer);
     this.root.addChild(this.scene, this.outcomeOver);
     this.visual = { phase: state.phase, mask: state.mask, sw: state.sw };
     this.larryCell = state.pos;
@@ -171,6 +173,15 @@ export class BoardView {
     this.refreshTiles();
     this.placeLarry(state.pos);
     this.resetLarryLook();
+  }
+
+  // ---------- tutorial hint ----------
+
+  /** Board-space layer above the tiles and below the move highlights and Larry (tutorial glow). */
+  public get hintRig(): { readonly layer: Container; tileHome(cell: number): Point } {
+    const tiles = this.tiles;
+
+    return { layer: this.hintLayer, tileHome: (cell) => tiles[cell].home };
   }
 
   // ---------- outcome effects ----------

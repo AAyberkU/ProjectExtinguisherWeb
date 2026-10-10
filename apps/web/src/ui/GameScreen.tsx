@@ -1,16 +1,18 @@
-import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { Ref } from 'react';
 import { gameAudio } from '../game/audio';
 import type { Dir, EngineEvent, LossReason } from '../game/engine';
 import { CAMPAIGN_IDS, getCampaignLevel, isFinalCampaignLevel, type PlayableLevel } from '../game/levels';
 import { continueIndex, nextIndex } from '../game/progress';
 import { PixiStage, type PixiStageHandle } from '../game/renderer/PixiStage';
-import type { StageStats } from '../game/renderer/stageController';
+import type { HintAnchor, StageStats } from '../game/renderer/stageController';
 import { saveStore } from '../game/save';
 import { canUndo, createSession, sessionMove, sessionRestart, sessionUndo, type Session } from '../game/session';
+import { CAMPAIGN_HINTS, HINT_TEXT, hintCells, usesHint, type TutorialKind } from '../game/tutorial';
 import { Hud } from './Hud';
 import { hasModifier, isEditableTarget } from './keys';
 import { NextBadge } from './NextBadge';
+import { TutorialHint } from './TutorialHint';
 
 const RESTART_INTRO_DELAY_MS = 80;
 const HUD_BOARD_GAP_PX = 10;
@@ -62,6 +64,19 @@ function badgeVisible(outcome: Outcome | null): boolean {
   return outcome !== null && outcome.result !== 'lost' && outcome.badge;
 }
 
+const NO_HINTS: readonly TutorialKind[] = [];
+const subscribeSave = (listener: () => void) => saveStore.subscribe(listener);
+const readTutorialsSeen = () => saveStore.data.tutorialsSeen;
+
+/** Tutorial hints of a level that are not saved as seen, in the order they are shown. */
+function pendingHints(levelIndex: number, seen: readonly string[]): TutorialKind[] {
+  return (CAMPAIGN_HINTS[levelIndex] ?? NO_HINTS).filter((kind) => !seen.includes(kind));
+}
+
+function sameAnchor(a: HintAnchor | null, b: HintAnchor | null): boolean {
+  return a === b || (a !== null && b !== null && a.x === b.x && a.y === b.y && a.radius === b.radius);
+}
+
 export function GameScreen(props: GameScreenProps) {
   const { ref, active, initialLevel, paused, music, sfx, onToggleMusic, onToggleSfx, onOpenLevelSelect } = props;
   const [session, setSession] = useState<Session>(() => createSession(initialLevel));
@@ -71,6 +86,10 @@ export function GameScreen(props: GameScreenProps) {
   const [introDelayMs, setIntroDelayMs] = useState(0);
   const [topInset, setTopInset] = useState(DEFAULT_TOP_INSET_PX);
   const [stageReady, setStageReady] = useState(false);
+  // Hints appear once the board settles (after the intro, or after the move that used a hint).
+  const [hintSettled, setHintSettled] = useState(false);
+  const [hintAnchor, setHintAnchor] = useState<HintAnchor | null>(null);
+  const tutorialsSeen = useSyncExternalStore(subscribeSave, readTutorialsSeen);
   const propsRef = useRef(props);
   const activeRef = useRef(active);
   const pausedRef = useRef(paused);
@@ -211,6 +230,7 @@ export function GameScreen(props: GameScreenProps) {
     setHudSteps(next.state.steps);
     setIntroDelayMs(delayMs);
     setLoadKey((key) => key + 1);
+    setHintSettled(false);
     markBusy(true);
   }
 
@@ -272,6 +292,7 @@ export function GameScreen(props: GameScreenProps) {
     const { state } = sessionRef.current;
 
     setHudSteps(state.steps);
+    setHintSettled(true);
 
     if (state.status === 'won') {
       startWin();
@@ -280,8 +301,25 @@ export function GameScreen(props: GameScreenProps) {
     }
   }
 
+  /** A hint is saved as seen as soon as its mechanic is used (also one queued behind another hint). */
+  function markUsedHints(event: EngineEvent) {
+    const { level, state } = sessionRef.current;
+    const used = pendingHints(level.index, saveStore.data.tutorialsSeen)
+      .filter((kind) => usesHint(level.compiled, kind, event, state.phase));
+
+    for (const kind of used) {
+      saveStore.markTutorialSeen(kind);
+    }
+
+    if (used.length > 0) {
+      // A following hint waits until this move has played.
+      setHintSettled(false);
+    }
+  }
+
   function handleEventStart(event: EngineEvent) {
     gameAudio.playEvent(event);
+    markUsedHints(event);
 
     if (event.type === 'steps') {
       setHudSteps(event.after);
@@ -294,6 +332,11 @@ export function GameScreen(props: GameScreenProps) {
     propsRef.current.onReady();
   }
 
+  function refreshHintAnchor() {
+    const next = stageRef.current?.hintAnchor() ?? null;
+    setHintAnchor((current) => (sameAnchor(current, next) ? current : next));
+  }
+
   function handleStageLoadError(error: Error) {
     stageReadyRef.current = false;
     setStageReady(false);
@@ -301,8 +344,8 @@ export function GameScreen(props: GameScreenProps) {
   }
 
   // Handlers are read through a ref so the long-lived listener and handle always see the current state.
-  const handlersRef = useRef({ handleMove, handleUndo, handleRestart, handleBadgeKey, loadLevel });
-  handlersRef.current = { handleMove, handleUndo, handleRestart, handleBadgeKey, loadLevel };
+  const handlersRef = useRef({ handleMove, handleUndo, handleRestart, handleBadgeKey, loadLevel, refreshHintAnchor });
+  handlersRef.current = { handleMove, handleUndo, handleRestart, handleBadgeKey, loadLevel, refreshHintAnchor };
 
   useImperativeHandle(ref, () => ({
     loadLevel: (level) => handlersRef.current.loadLevel(level),
@@ -346,6 +389,21 @@ export function GameScreen(props: GameScreenProps) {
 
   const level = session.level;
   const lossReason = outcome?.result === 'lost' ? outcome.reason : null;
+  const hintKind = pendingHints(level.index, tutorialsSeen)[0] ?? null;
+  const { phase, mask } = session.state;
+  const hintCellList = useMemo(
+    () => (hintKind === null ? [] : hintCells(level.compiled, hintKind, { phase, mask })),
+    [level, hintKind, phase, mask],
+  );
+  // Never shown over the level select or a win or loss; it comes back after undo or restart.
+  const hintShown = active && stageReady && hintSettled && !paused && outcome === null && hintCellList.length > 0;
+  const hintKey = hintShown ? hintCellList.join(',') : '';
+
+  // The handler ref is read inside, so this runs only when the glowing cells change.
+  useLayoutEffect(() => {
+    stageRef.current?.setHint(hintKey === '' ? null : hintKey.split(',').map(Number));
+    handlersRef.current.refreshHintAnchor();
+  }, [hintKey]);
 
   return (
     <>
@@ -372,6 +430,12 @@ export function GameScreen(props: GameScreenProps) {
           onEventStart={handleEventStart}
           onTimelineEnd={handleTimelineEnd}
           onMoveRequest={handleMove}
+          onLayout={refreshHintAnchor}
+        />
+        <TutorialHint
+          text={hintShown && hintKind !== null ? HINT_TEXT[hintKind] : null}
+          anchor={hintShown ? hintAnchor : null}
+          minTop={topInset}
         />
         <NextBadge
           visible={active && stageReady && badgeVisible(outcome)}
