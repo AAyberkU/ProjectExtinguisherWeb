@@ -1,212 +1,105 @@
-# Project Extinguisher Web Port Design
+# Technical Design
 
-## Goal
+Architecture, stack, and engineering rules. Gameplay rules are in `docs/rules.md`, level data in
+`docs/levels.md`, art and audio in `docs/art.md`, and the plan in `docs/roadmap.md`.
 
-Project Extinguisher'ın Unity jam prototipini web-native, hızlı açılan, mobil uyumlu, PWA (Progressive Web App) destekli ve portfolio değerine sahip bir tarayıcı oyununa portlamak.
+## Stack
 
-## Recommended Stack
+| Layer | Choice | Notes |
+| --- | --- | --- |
+| Language | TypeScript | Strict typecheck via `tsc -b`. |
+| Rendering | Pixi.js 8 | Board, tiles, Larry, motion. Kept on 2026-10-10: sprite art from an artist suits Pixi's batching; Echo Rail (PuzzlePanic) moved to Canvas2D only because its art was AI-drawn vector code. |
+| UI shell | React 19 + SCSS | Menus, HUD, overlays as DOM. React never runs in the per-frame loop. |
+| Build | Vite 8 | `base: './'` so the build works from any sub-path (portals, sub-directories). |
+| Assets | AssetPack 1.7 + sharp | See `docs/art.md`. |
+| Data | Puzzle Lab JSON | See `docs/levels.md`. |
 
-- TypeScript: Web portun ana dili. JavaScript'in tip güvenliği olan hali.
-- Pixi.js: Hex board, tile sprite'ları, Larry, background ve animasyonları çizecek 2D render katmanı.
-- Vite: Development server ve production build aracı.
-- React: Menü, HUD, progression, win/lose ekranı ve settings gibi canvas dışı UI katmanı.
-- SCSS: UI styling için seçilen ilk stil katmanı.
-- JSON: Unity `LevelData.asset` sisteminin web karşılığı level data formatı.
-- Cloudflare Pages, Vercel veya doğrudan alt-dizin hosting (ör. Astro tabanlı bir portfolio sitesinde).
-- PWA: "Install as App" özelliği için manifest.json ve mobil cihazlar için landscape oryantasyon kilidi.
+No backend. Hosting is a static build (Coolmath upload, any static host, or a desktop wrapper later).
 
-## Initial Architecture
+## Repository layout
 
 ```txt
 ProjectExtinguisherWeb/
-  docs/
-    design.md
-  apps/
-    web/
-      src/
-        game/
-          core/
-          renderer/
-          ui/
-          levels/
-          assets/
+  AGENTS.md            agent workflow and documentation rules
+  README.md
+  docs/                living documentation (see AGENTS.md for the reading order)
+  art-source/          original art and audio (Git, no LFS)
+    images/tiles/  images/characters/  images/backgrounds/  audio/
+  apps/web/            the game (npm workspace)
+    scripts/build-assets.mjs
+    public/            static files; public/game-assets/ is generated
+    src/
+      main.tsx, App.tsx          React entry and app shell
+      styles/main.scss
+      game/
+        core/                    rules engine (pure TypeScript, no DOM or Pixi)
+        levels/                  level files and loader
+        renderer/PixiStage.tsx   Pixi board renderer
+        assets.ts                asset manifest loading and URL resolution
+        audio.ts                 music and SFX
+        ui/                      (empty; screens land here in roadmap step 2)
 ```
 
-## Main Modules
+## Current architecture (jam port, until roadmap step 1)
 
-- `game/core`: Renderer'dan bağımsız oyun kuralları.
-- `game/renderer`: Pixi.js ile board, tile, Larry ve animasyon çizimi.
-- `game/ui`: React ile HUD, menu, buttons, overlays.
-- `game/levels`: JSON level dosyaları ve loader.
-- `game/assets`: Sprite, audio, atlas ve preload yönetimi.
+- `game/core` is a pure, immutable reducer: `applyCommand(state, command)` returns the new state,
+  whether it was accepted, and an ordered `GameEvent[]`. Events drive both animation and audio.
+- It implements the **jam rules** (tile activation, no revisits, catapult with an extra move cost).
+  These rules are retired in step 1 and replaced by hex-steps (`docs/rules.md`).
+- `App.tsx` owns the phase state machine (`menu`, `starting`, `playing`), the game state, the HUD,
+  overlays, keyboard reset, and audio triggers.
+- `PixiStage` receives the game state as props and renders the board and Larry. It currently
+  rebuilds every tile on each state change and runs ad-hoc ticker animations.
+- Coordinates: pointy-top cells with `r` growing upward (`x = s*sqrt(3)*(q + r/2)`, `y = -1.5*s*r`)
+  and on-screen direction names (`right`, `up_right`, ...). Step 1 switches to the Puzzle Lab
+  convention (`r` downward, `E`/`SE`/...).
 
-## Data Pipeline
+## Start and loading flow
 
-Unity tarafındaki `LevelData.asset` dosyaları web tarafında JSON'a çevrilecek.
+- On mount the app warms the asset manifest, the gameplay atlas, the background, and audio.
+- Start Game switches to `starting`: the menu disappears and the background zooms for 900 ms while
+  `PixiStage` mounts hidden (`active={false}`) and initializes WebGL in parallel.
+- When the phase becomes `playing`, the board is drawn and the intro plays; `onReady` then shows the
+  HUD and plays the intro cue.
+- The loading panel only appears while assets are still downloading, while the stage is not ready
+  after the transition, or on failure. It fades in after 300 ms, so fast starts never show it.
+  Retry remounts the stage.
 
-Current web build includes `Level_001.asset` through `Level_005.asset` as JSON files under `apps/web/src/game/levels`.
+## Target architecture (roadmap steps 1-3)
 
-Example level format:
+- **Engine** (`game/core`): hex-steps rules, pure and deterministic. State is plain data; a move
+  returns the next state and an ordered event list (walk, launch, slide, teleport, swap, pickup,
+  switch, refill, win or loss reason). Undo is a history of states. The same engine powers tests,
+  `level:check`, and hints.
+- **Presentation**: persistent tile objects updated from events, never rebuilt per move. Animation
+  timelines consume events; the engine never waits for animation. Input is locked while motion
+  plays. Win or loss overlays appear after motion ends.
+- **Input**: one action layer ("move in direction D" or "select neighbour cell") fed by pointer,
+  touch, keyboard, and later gamepad.
+- **Screens**: menu, chapter and level select, game, settings, as separate components instead of a
+  single `App.tsx`.
+- **Save**: an adapter (`get`/`set`) keyed by stable `levelId`. localStorage on web with a namespace
+  per portal build; Steam Cloud later. Play continues without saving if storage is unavailable.
+- **Platform adapters**: Coolmath (ad-break pause and mute hooks, SDK after acceptance) and Steam
+  (wrapper, achievements, cloud save) behind one interface, so the game code stays platform-free.
+- **Responsive layout**: board fit computed from the actual board bounds and screen; separate HUD
+  layouts for landscape and portrait.
 
-```json
-{
-  "id": "level_001",
-  "name": "Level 1",
-  "moveLimit": 8,
-  "start": { "q": -4, "r": 0 },
-  "goal": { "q": 4, "r": 0 },
-  "cells": [
-    {
-      "q": -3,
-      "r": 2,
-      "blocked": false,
-      "catapultDirection": null,
-      "moveBonus": 0,
-      "variant": 1
-    }
-  ]
-}
-```
+## Technical principles
 
-## Asset Pipeline
+- Rules stay separate from rendering and UI; rendering never decides gameplay.
+- Levels are data from the editor, never code, and never hand-edited here.
+- Deterministic engine; replay, undo, oracle tests, and hints build on it.
+- Assets are referenced by alias only and built by `npm run assets`.
+- Fast first load: about 2 MB for gameplay assets today; keep it small for portals.
+- No external requests in release builds (fonts self-hosted before the Coolmath release).
+- Small, verified steps; gameplay-affecting changes get a manual play check before merging.
 
-- Original art and audio live in root `art-source/` and stay in Git (plain PNG/WAV/MP3, no Git LFS; layered sources such as PSD stay outside the repository). Artists deliver large originals; the build shrinks them.
-- `npm run assets` (`apps/web/scripts/build-assets.mjs`) builds `apps/web/public/game-assets/`, which is generated and ignored by Git. `npm run dev` and `npm run build` run it first; AssetPack's cache in `apps/web/.assets-cache/` skips unchanged files.
-- Step 1 resizes each original to its group's @2x target with sharp: `images/tiles` to 256 px wide, `images/characters` to 192 px tall, `images/backgrounds` to 1920 px wide.
-- Step 2 runs AssetPack 1.7 (`pixiPipes`): tiles and Larry are packed into one atlas at @2x and @1x, images become WebP (quality 90) with a PNG fallback, audio becomes MP3 (SFX 96 kbps mono, music 128 kbps stereo), file names get cache-busting hashes, and a Pixi manifest is written.
-- Manifest bundles: `game` (atlas), `ui` (background), `audio`. `game/assets.ts` initializes Pixi `Assets` with the manifest, prefers WebP at the render resolution, reports `game` bundle progress to the loading screen, and resolves other aliases to absolute URLs (CSS resolves relative URLs against the stylesheet).
-- Code references art only by alias, the original file name without extension. Naming: `tile_path_01..10`, `tile_blocked_01..03`, `tile_catapult_<direction>`, `tile_start`, `tile_goal`, `tile_health`, `larry`, `background`, `music`, `sfx_<name>`. New art goes into the matching `art-source/` folder with the canonical name; adding a new variant also needs its alias in code.
-- A future Steam profile can raise the target sizes from the same originals.
-- Pixi renders tile art as sprites instead of procedural placeholder hex fills.
-- The web renderer maps path, blocked, start, goal, health, Larry, and direction-specific catapult aliases in `apps/web/src/game/renderer/PixiStage.tsx`.
-- Path and blocked tile variants are resolved deterministically so unspecified variants still distribute evenly.
-- Catapult art is selected from the same `catapultDirection` value used by gameplay logic.
-- The menu starts memoized background and Pixi texture preloads. Start Game mounts `PixiStage` hidden (`active={false}`) so WebGL initializes during the 900 ms background zoom; the board is drawn and the intro plays only once the phase becomes `playing`.
-- The loading panel appears only while assets are still downloading, while the stage is not ready after the transition, or on failure. It fades in after 300 ms, so fast starts never flash it. The HUD and level-intro cue wait for the Pixi stage ready callback; failures show a recoverable Retry state that remounts the stage.
+## Build and run
 
-## Progression Pipeline
-
-- The web version does not use a level-select flow for the current playable slice.
-- The app starts on the main menu, not directly in gameplay.
-- Pressing Start Game runs a short background zoom-out transition, then mounts Level 1 gameplay.
-- `App` owns the active `GameState` and listens for `level-won` events from `game/core`.
-- A win stores the completed `GameState` and opens a completion overlay instead of immediately advancing.
-- The completion overlay advances through `createNextLevelGameState()` only after the Next Level button is clicked.
-- Reset dispatches `reset-level`, which restarts only the currently active level.
-- Level 5 completion shows a final overlay and returns to the main menu only after Return to Main Menu is clicked.
-
-## UI Layer
-
-- The old two-column bootstrap layout has been removed.
-- Gameplay now uses a full-screen Pixi stage over the Unity background art.
-- HUD is a DOM overlay with Moves Left on the top-left, current level centered at the top, and an `R Reset` button on the top-right.
-- The `R` key also resets only the current level while gameplay is active.
-- Main menu credits match the Unity prototype roles, names, and color grouping.
-- Completion overlays show win/final-run messaging plus the `Press R to Reset` reminder.
-
-## Animation Pipeline
-
-- Larry's web movement mirrors Unity's `LarryController`: 220 ms horizontal interpolation with a hop-height curve.
-- Catapult movement uses the ordered `larry-moved` event path so Larry first hops onto the catapult tile, then hops from that tile to the landing tile.
-- Level loads mirror Unity's `LevelLoader` intro: tiles start above the board, drop by diagonal lines using a faster web-tuned fall/line delay, then Larry appears.
-- `PixiStage` receives an `introKey` from `App` so fresh level loads and resets can replay the tile drop-in animation.
-
-## Audio Pipeline
-
-- `game/audio.ts` resolves the `audio` manifest aliases after asset initialization and owns music/SFX playback.
-- `music` uses a looping `HTMLAudioElement`, starts when the app mounts, and retries on pointer/key interaction if browser autoplay blocks the first attempt.
-- Short SFX use Web Audio: files are fetched and decoded into `AudioBuffer`s up front, with preloaded `HTMLAudioElement` fallback for unsupported browsers.
-- Gameplay SFX are scheduled from ordered `GameEvent` output so audio follows movement/catapult/health timing with minimal play-time decode delay.
-- Manual movement plays `sfx_jump` at hop start.
-- Catapult launch movement plays `sfx_catapult` after Larry has first hopped onto the catapult tile.
-- Health pickup plays `sfx_heal` after Larry lands on the health tile.
-- `sfx_passed`, `sfx_lose`, `sfx_restart`, and `sfx_level_intro` are bound to level pass, lose, reset, and tile intro flows.
-
-## Coordinate Mapping
-
-- Web axial coordinates use the same `GridIndex` values as Unity `HexCell` objects, so Unity levels still convert 1:1.
-- The web board uses pointy-top cells: `x = size * sqrt(3) * (q + r / 2)` and `y = -size * 1.5 * r` (`game/core/hex.ts`). The board's flat edges face up and down.
-- This projection is the Unity flat-top layout rotated 30 degrees clockwise, so levels keep their shape, only rotated. Gameplay offsets are unchanged.
-- `catapultDirection` names are on-screen directions: `right` (1,0), `up_right` (0,1), `up_left` (-1,1), `left` (-1,0), `down_left` (0,-1), `down_right` (1,-1).
-- Converting Unity or legacy web levels maps `E`→`right`, `NE`→`down_right`, `NW`→`down_left`, `W`→`left`, `SW`→`up_left`, `SE`→`up_right` (same axial vectors).
-- The jam tile art is flat-top, so `PixiStage.tsx` rotates tile sprites 30 degrees (`PLACEHOLDER_TILE_ROTATION`) until pointy-top art arrives; set it to 0 for pointy-top art. Legacy catapult file names map to the new directions in `CATAPULT_TILE_TEXTURE_URLS`.
-
-## Development Pipeline
-
-1. Setup web project with TypeScript, Vite, Pixi.js, React, and SCSS.
-2. Create `game/core` with pure TypeScript board state and movement rules.
-3. Convert current Unity levels into JSON.
-4. Render the 61-cell hex board with Pixi.js.
-5. Add Larry sprite and hop movement.
-6. Add click input, adjacency check, move spending, win and fail state.
-7. Add blocked, catapult, and health/move-bonus tile behavior.
-8. Build React HUD and start/win/lose overlays.
-9. Add responsive layout for desktop and mobile web.
-10. Deploy static build to Cloudflare Pages or Vercel.
-
-## Milestones
-
-### Milestone 1: Playable Web Slice
-
-- Levels 1-5 load from JSON.
-- Board renders in Pixi.js.
-- Larry can move by clicking valid neighboring tiles.
-- Moves counter, reset, win, and fail work.
-
-### Milestone 2: Full Current Game Port
-
-- Levels 1-5 are available.
-- Blocked, catapult, and health tiles work.
-- Start menu, level intro, HUD, audio, and outcome overlay are ported.
-- Desktop browser version is polished.
-
-### Milestone 3: Mobile Portfolio Polish (Completed)
-
-- Touch input feels good.
-- PWA desteği (Install as App, manifest.json).
-- Mobil cihazlarda portrait mod uyarı ekranı (Landscape force).
-- Assets are optimized for fast loading.
-- Google Fonts (Comic Neue) kullanılarak mobil cihazlarda font tutarlılığı sağlandı.
-- Astro portfolio projesinde alt dizin olarak host edilecek şekilde (`base: './'`) build pipeline hazırlandı.
-
-### Milestone 4: Optional Backend
-
-Backend is not needed for the first port. Add it only if the project needs:
-
-- Leaderboard
-- Daily puzzle
-- Analytics
-- User accounts
-- Shareable replays
-- Community level submissions
-
-Recommended backend if needed:
-
-- Node.js for API server.
-- PostgreSQL for persistent data.
-- Redis only if real-time cache or leaderboard speed becomes necessary.
-
-## PWA & Deployment
-
-Web portu, PWA standartlarına uygun olarak `manifest.json`, `theme-color` meta etiketleri ve dokunmatik cihazlarda sadece landscape oynamayı zorunlu kılan CSS uyarıları (`#portrait-warning`) içerir. 
-Ayrıca, build pipeline (Vite) projenin herhangi bir portfolio sitesinde alt dizin (sub-directory) olarak host edilebilmesi için `base: './'` ayarıyla yapılandırılmıştır. Böylece `dist/` klasörü doğrudan başka bir projenin `public/` klasörüne (örneğin Astro) taşınabilir.
-
-## Technical Principles
-
-- Keep game rules separate from Pixi rendering.
-- Keep UI separate from canvas rendering.
-- Store levels as data, not code.
-- Load JSON levels through `game/levels` and create runtime state through `game/core`.
-- Make the game deterministic so replay, undo, testing, and analytics are easier later.
-- Start without backend; add backend only when a feature requires it.
-- Optimize for fast load, clear mobile controls, and portfolio readability.
-
-## Current Recommendation
-
-The first real target is a static web build:
-
-```txt
-TypeScript + Pixi.js + Vite + React + SCSS + JSON levels
-```
-
-This gives the project a clean web-native structure without overbuilding the backend too early.
+- Root commands: `npm run assets`, `npm run dev`, `npm run typecheck`, `npm run build`,
+  `npm run preview`. `dev` and `build` run `assets` first.
+- `apps/web/public/manifest.json` and icons provide basic PWA install metadata; there is no service
+  worker. The CSS currently blocks portrait on phones (`main.scss`); step 3 removes this.
+- The fonts currently load from Google Fonts (`index.html`); this must be self-hosted before a
+  Coolmath or Steam release.

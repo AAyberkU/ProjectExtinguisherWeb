@@ -1,32 +1,55 @@
-# Bugs & Risks
+# Bugs and Risks
 
-## Confirmed Bugs
+## Confirmed bugs (jam build)
 
-- None currently confirmed.
+- Clicks are accepted while Larry is still hopping; the running animation is cancelled and Larry
+  snaps to the new tile.
+- The win or loss overlay is set in the same dispatch as the move, so it can appear before Larry
+  lands.
+- Jam rules softlock: loss only triggers at 0 moves, and visited tiles cannot be re-entered, so a
+  boxed-in player with moves left gets no loss state. (Goes away with the hex-steps engine, which
+  loses when no legal move exists.)
+- A jam level cell may carry both a catapult and a move bonus; it renders as a catapult but also
+  grants the bonus. (Jam format only.)
+- The completion overlays say "Press R to Reset" on touch devices.
 
-## Open Technical Risks
+## Open technical risks
 
-- Browser autoplay policy may block music until first user interaction despite the app attempting playback on initial mount.
-- Each SFX is still downloaded twice: once for the Web Audio buffer and once for the preloaded HTMLAudio fallback (about 100 KB total).
-- Mobile layout, main menu sizing, completion overlays, and touch input have not been validated yet.
-- Pixi rendering scale, camera framing, responsive board fit, Unity-matched vertical map orientation, HUD overlap, animation feel, and audio timing are still untested in browser.
-- Core reducer is implemented but not yet covered by automated unit tests; add focused tests once the first JSON level is introduced.
-- Five-level interactive state is wired, but manual browser gameplay parity still needs validation for click movement, win/loss, reset, manual next-level, and return-to-menu flow.
-- Catapult directional art is selected from on-screen `catapultDirection` names after the pointy-top board rotation; launch direction versus the rotated placeholder art still needs manual validation in Levels 3-5.
-- Initial production build passes, but Vite warns that the Pixi-driven app chunk is larger than 500 KB after minification. Monitor bundle size and consider code splitting or asset optimization later.
-- Backend should remain out of scope unless leaderboard, analytics, accounts, replays, or community levels are approved.
+- **Rules mismatch:** the shipped engine runs the jam rules, not hex-steps. Roadmap step 1.
+- **Renderer:** the board is destroyed and rebuilt on every state change; idle hover animations keep
+  the ticker rendering at 60 fps forever; render resolution is forced to at least 2x even on 1x
+  screens. All three are scheduled in roadmap step 1.
+- **Portrait:** phones in portrait see a "rotate your device" screen (`main.scss`); the board fit is
+  hard-coded for the 61-cell board (`BOARD_FIT_WIDTH`/`HEIGHT` in `PixiStage.tsx`). Roadmap step 3.
+- **Release blockers for portals:** fonts load from Google Fonts (`index.html`); there is no portal
+  adapter, ad-break pause, or save system yet.
+- **No automated tests, lint, or CI.** Typecheck and build are the only gates. Oracle tests arrive in
+  step 1.
+- **Dependencies:** nine packages in `apps/web/package.json` are pinned to `latest` (only the lockfile
+  keeps builds reproducible), and build tools sit in `dependencies` instead of `devDependencies`.
+- **Vite config shadowing:** `tsc -b` emits `apps/web/vite.config.js`, and Vite prefers
+  `vite.config.js` over `vite.config.ts`. A stale emitted file could hide edits to the TS config
+  until the next typecheck. (The file is no longer tracked, but it still exists after builds.)
+- **Audio:** each SFX is downloaded twice (Web Audio buffer plus HTMLAudio fallback, about 100 KB);
+  iOS Safari ignores `HTMLAudioElement.volume`, so music may play at full volume there; there is no
+  gain-bus structure for settings or ad pauses; the AudioContext is not suspended when the page is
+  hidden. Autoplay may still block music until the first input.
+- **Large boards:** 91-cell levels may be hard to read on phones in portrait with every wall drawn.
+- **Placeholder art:** the flat-top jam tiles are rotated 30 degrees; final pointy-top art is
+  pending.
+- **Bundle:** the JS chunk is about 680 KB minified (about 200 KB gzip), mostly Pixi and React. Vite
+  warns above 500 KB. Acceptable for now; revisit with portal size budgets.
 
 ## Fixed
 
-- Replaced direct imports of full-size PNG/WAV files with the `npm run assets` pipeline. The production build dropped from about 53 MB to 4.7 MB, and a first gameplay load now downloads about 2 MB (atlas, background, audio) plus the JS bundle.
-- Fixed intermittent cold-load startup behavior where the large background could remain on the pink fallback while gameplay appeared, slow tile delivery could leave a HUD-only screen, and one failed texture request could permanently prevent the Pixi canvas from mounting. Startup now waits for background and texture readiness, synchronizes the first intro cue with the mounted board, and exposes a Retry path for load failures.
-- Replaced placeholder procedural tile fills with Unity-exported tile art sprites.
-- Replaced Larry's placeholder marker with the Unity-exported Larry sprite.
-- Converted Unity Levels 1-5 to JSON and removed the pending-level import risk.
-- Corrected web axial-to-pixel rendering to match Unity scene `HexCell` indexing and world-position orientation.
-- Replaced the temporary two-column bootstrap UI with a full-screen background, main menu, and gameplay HUD.
-- Added manual completion overlays, Larry hop animation, and tile drop-in level intro animation.
-- Sped up the web tile drop-in intro animation and fixed catapult movement to animate through the catapult tile instead of lerping directly to the final landing tile.
-- Added looping music plus jump, catapult, heal, pass, lose, restart, and level-intro SFX wiring.
-- Replaced per-play SFX `new Audio()` creation with Web Audio preload/decode playback to reduce intermittent sound delay.
-- Fixed background music continually resetting to the beginning on every pointer/keyboard interaction.
+- Asset delivery: full-size PNG and WAV imports replaced by the `npm run assets` pipeline (build
+  about 53 MB to 4.7 MB; first gameplay load about 2 MB plus JS). A production-only bug where the
+  CSS background URL resolved against the stylesheet was fixed before merge (2026-10-10).
+- Start transition: the "Loading Game 100%" panel no longer shows on normal starts (2026-10-10).
+- Cold-load startup: waits for background and textures, synchronizes the first intro cue with the
+  mounted board, and offers Retry on load failure.
+- Music no longer restarts on every pointer or key input.
+- SFX moved from per-play `new Audio()` to pre-decoded Web Audio buffers.
+- Catapult movement animates through the catapult tile.
+- Earlier jam-port fixes: placeholder tiles replaced by Unity art; Unity Levels 1-5 converted; board
+  orientation corrected; bootstrap UI replaced by the full-screen menu and HUD.

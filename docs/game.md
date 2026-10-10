@@ -1,98 +1,73 @@
 # Game Brief
 
-This document defines what Project Extinguisher is as a game. Agents should read it before implementing mechanics, UI, levels, or polish.
+What Project Extinguisher is as a product. Read this before working on mechanics, UI, levels, or
+polish. Exact rules are in `docs/rules.md`; the plan is in `docs/roadmap.md`.
 
-## One-Liner
+## One-liner
 
-Project Extinguisher is a short, hex-based puzzle game where the player guides Larry across a dangerous board by opening adjacent tiles before running out of moves.
+A hex puzzle game where Larry crosses the board to the finish on a tight step budget, using
+launchers, movers, portals, switches, and other mechanics. Every level has exactly one solution that
+uses exactly the given steps.
 
-## Player Fantasy
+## Origin and direction
 
-The player is not controlling Larry freely. They are preparing safe steps for him under pressure, choosing the next tile carefully and reacting to special board effects.
+- Started as a Unity game-jam prototype (`ProjectExtinguisher`, 5 levels, fixed 61-cell board).
+- This repository first ported the jam game to the web. It is now becoming the full product: about
+  60 levels in 10 chapters, released on Coolmath Games first and Steam later.
+- Team: an artist (all art), a level designer (levels in the Puzzle Lab editor), Uğur (Puzzle Lab
+  editor and its rules), and Ayberk (integration and game code).
 
-## Core Loop
+## Core loop
 
-1. Open on the main menu.
-2. Press Start Game.
-3. Read the board, move limit, start, goal, and special tiles.
-4. Click a valid neighboring tile.
-5. Larry hops to that tile and spends a move.
-6. Resolve special tile effects.
-7. Repeat until Larry reaches the goal or moves run out.
+1. Pick a level (chapter and level select, roadmap step 2).
+2. Read the board: start, finish, step budget, special tiles.
+3. Move Larry one neighbouring cell at a time (tap or click a neighbour, or use the keyboard).
+4. Each move spends steps; special tiles launch, slide, teleport, refill, open doors, or swap cells.
+5. Reach the finish before the steps run out, or retry, undo, and rethink.
 
-## Core Rules
+## Rules summary (hex-steps)
 
-- The board is a 61-cell axial hex grid of pointy-top cells, so the board silhouette has flat top and bottom edges with corners on the left and right.
-- Larry starts on the level start tile.
-- The goal is to reach the goal tile within the move limit.
-- The player may only activate a tile adjacent to Larry's current tile.
-- A valid manual activation spends 1 move.
-- Blocked tiles cannot be entered.
-- The level is won when Larry reaches the goal.
-- The level is lost when moves reach 0 and Larry is not on the goal.
-- Reset restarts the current level.
-- Completing a level opens a win panel; Next Level must be clicked to load the next level.
-- Completing Level 5 opens a final panel; Return to Main Menu must be clicked before a new run starts.
+- Moving to a neighbour costs 1 step (2 into a swamp). Revisiting cells is allowed.
+- Win by reaching the finish, even with 0 steps left. Lose when steps reach 0 elsewhere, or when no
+  legal move exists.
+- Walls (blockers) cannot be entered; launchers fly over them.
+- Mechanics: +1 step, launcher, swamp, mover, swap pairs, portals, switches and doors, one-way
+  passages, refill. Full details in `docs/rules.md`.
 
-## Special Tiles
+## Content
 
-- Path Tile: Normal walkable tile.
-- Start Tile: Larry's spawn tile.
-- Goal Tile: Win target.
-- Blocked Tile: Non-walkable obstacle.
-- Catapult Tile: Launches Larry 2 cells in its configured direction if the landing tile is valid and a move is available.
-- Health Tile: Grants extra moves once, then becomes consumed until reset.
+- 10 chapters x 6 levels. Each chapter introduces one mechanic and chapter 10 mixes them (plan in
+  `docs/levels.md`).
+- Board size varies per level (19, 37, 61, or 91 cells).
+- Levels are authored and approved in the Puzzle Lab editor and used as exported.
+- Current state: a pool of 180 candidate levels (3 alternatives per slot), none final yet. The game
+  still ships the 5 jam levels on the old jam rules until roadmap step 1 lands.
 
-## Web Art Mapping
+## Level design intent
 
-- Path tiles use `tile_path_01` through `tile_path_10` with an even fallback distribution when a level cell does not specify `variant`.
-- Blocked tiles use `tile_blocked_01` through `tile_blocked_03` with an even fallback distribution.
-- Catapult tiles use the art matching their on-screen `catapultDirection`: `right`, `up_right`, `up_left`, `left`, `down_left`, or `down_right`.
-- Start, goal, health, and Larry use `tile_start`, `tile_goal`, `tile_health`, and `larry` from `art-source/`.
+- One clear idea per level; the budget makes the intended route the only route.
+- Early chapters teach each mechanic in isolation; later levels combine them.
+- No hidden knowledge: every rule is visible from the board.
+- Puzzles should feel clever, never random.
 
-## Current Content
+## UX goals
 
-- The current Unity prototype has 5 playable levels.
-- The shared board has 61 hex cells.
-- Levels 1-5 are data-driven JSON ports of the Unity `LevelData.asset` files.
-- Current mechanics include adjacency movement, move limit, reset, win/fail, blocked tiles, catapults, health tiles, start menu, level intro, HUD, and audio feedback.
+- Open on a main menu; music starts on load and loops.
+- Start Game zooms the background out and drops the board in; no loading panel on normal starts.
+- Movement feels toy-like: Larry hops between cells; launches, slides, and teleports are readable.
+- Valid moves are visually clear; failure is fast to retry; undo is always available.
+- Works on desktop and mobile browsers, in landscape and portrait.
+- Every new mechanic gets a short tutorial at the start of its chapter.
 
-## Level Design Intent
+## Platforms
 
-- Levels should be readable at a glance.
-- Early levels teach movement and move limits.
-- Later levels combine obstacles, catapults, and health tiles.
-- Catapults should feel clever, not random.
-- Health tiles should create route decisions, not simply make levels easier.
-- Every level should be solvable without hidden knowledge.
+- Coolmath Games (HTML5, iframe, no external requests or links, family-friendly).
+- Steam (desktop wrapper, achievements, cloud save, gamepad; later).
+- Static web build; no backend.
 
-## UX Goals
+## Non-goals
 
-- The game opens on the Unity-style main menu with Start Game and credits.
-- Main menu music starts on page load and loops continuously during menu and gameplay.
-- Starting the game removes the menu overlay, clears the dark background filter, zooms the background out, and then shows Level 1.
-- Returning to the main menu zooms the background in and restores the dark filter.
-- Level loading drops tiles in from above using a diagonal line cascade.
-- Larry moves between tiles with a short hop instead of instant teleporting.
-- Movement, catapult launches, health pickups, level pass, lose, restart, and level intro each have dedicated SFX.
-- Input should feel immediate and clear.
-- Valid next choices should be visually readable.
-- Movement should feel toy-like and satisfying.
-- Failure should feel fast to retry.
-- The game should work well on desktop and mobile browsers.
-
-## Portfolio Goals
-
-- Show a clean Unity-to-web port.
-- Show data-driven puzzle design.
-- Show custom TypeScript game logic.
-- Show Pixi.js rendering and responsive web UI.
-- Keep the first web version small, fast, and polished.
-
-## Non-Goals For First Web Version
-
-- No multiplayer.
-- No account system.
-- No backend dependency.
-- No procedural level generation.
-- No complex physics engine.
+- No multiplayer, accounts, or backend.
+- No procedural levels in the game (variant generation stays in the editor).
+- No physics engine.
+- No in-game level editor or level browser.
