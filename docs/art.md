@@ -140,7 +140,16 @@ Two layers of animation, both driven only by engine events (rules never wait on 
 2. **Polish / juice** (roadmap step 4, grows with art): launcher object stretch on launch, `plus1`
    and refill pickups lifting off and fading with a number pop, walls dropping in during the intro,
    portal pull and glow, door opening on a switch press, swap exchange effect, Larry shadow and
-   squash, idle breathing, win and fail effects, menu transitions.
+   squash, idle breathing, menu transitions.
+3. **Outcome and tutorial effects** (done in step 2, `renderer/effects.ts`, `renderer/hintGlow.ts`):
+   win celebration (Larry hop and spin, particle fountain, finish glow; a bigger version on the last
+   level), stuck loss (shake, red ring, dim), out-of-steps loss (slump, grey, dim), tutorial glow.
+   Reduced motion has calmer versions. Preview in dev at `/fx-preview.html?level=N`.
+
+Art seams for the step 2 placeholders: particle sprites by alias `fx_drop`, `fx_foam`, `fx_spark`
+(used automatically when present); CSS custom properties `--hud-button-image`, `--next-badge-image`,
+`--menu-logo-image` (with `.menu-logo--image`), and the level select `--level-card-*` and `--menu-*`
+properties and class hooks.
 
 The prerequisites are in place since step 1: persistent tile objects and an event-driven timeline.
 Richer per-object effects need layered art.
@@ -155,5 +164,6 @@ Richer per-object effects need layered art.
 - Current mapping: walk `sfx_jump`, launch `sfx_catapult`, +1 and refill `sfx_heal`, win
   `sfx_passed`, loss `sfx_lose`, restart `sfx_restart`, level intro `sfx_level_intro`. Slide,
   teleport, swap, switch, door, and swamp steps are silent until cues exist.
-- Planned (step 2): music and SFX on/off toggles in the HUD (saved), on gain buses that portal ad
-  breaks can also mute. New cues for win, loss, and buttons are decided later.
+- Music and SFX on/off toggles in the HUD (saved; keys `M` and `V`). `setSuspended` mutes both for
+  future portal ad breaks without changing the toggles. New cues for win, loss, and buttons are
+  decided later.

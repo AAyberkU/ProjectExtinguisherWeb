@@ -12,25 +12,26 @@
 - **Loop validation gap (editor and engine):** a mover/launcher chain can still hit the 32-link limit
   at runtime in rare layouts (collected `+1` between facing movers, or movers swapped onto floor
   cells). No pool level is affected. See `docs/rules.md`; to report to Uğur.
-- **Undo after a win (GDD acceptance 4):** keyboard Backspace and R work after a win, but the win
-  overlay only offers Next Level, so touch players cannot undo or restart from it.
 - **Missing rule fixtures:** the GDD's fixture files (`levels/fixtures/*.json`) are not in our tests
   yet.
-- **"Stuck" loss** is unreachable in every current campaign level, so its overlay is only covered by
-  a hand-made test level.
+- **"Stuck" loss** is unreachable in every current campaign level, so its animation is only covered
+  by a hand-made test level.
+- **Tutorial hint text** covers part of the tile row above (or below) the glowing tile on dense
+  boards (taps still reach the board), and the glow pulses again each time it reappears.
+- **Level 1 shows two hints in a row** (the goal, then +1), because +1 first appears there.
 - **Intro input lock:** input is ignored during the level intro (up to about 0.6 s on 91-cell
   boards). Letting a key press skip the intro would be a small improvement.
 - **Release blockers for portals:** fonts load from Google Fonts (`index.html`); there is no portal
-  adapter, ad-break pause, or save system yet.
+  adapter or ad-break pause yet, and saves have no per-portal namespace.
 - **Dependencies:** nine packages in `apps/web/package.json` are pinned to `latest` (only the lockfile
   keeps builds reproducible), and build tools sit in `dependencies` instead of `devDependencies`.
 - **Vite config shadowing:** `tsc -b` emits `apps/web/vite.config.js`, and Vite prefers
   `vite.config.js` over `vite.config.ts`. A stale emitted file could hide edits to the TS config
   until the next typecheck. (The file is not tracked, but it still exists after builds.)
 - **Audio:** each SFX is downloaded twice (Web Audio buffer plus HTMLAudio fallback, about 100 KB);
-  iOS Safari ignores `HTMLAudioElement.volume`, so music may play at full volume there; there is no
-  gain-bus structure for the music and SFX toggles or ad pauses; the AudioContext is not suspended when the page is
-  hidden; new mechanics have no cues yet.
+  iOS Safari ignores `HTMLAudioElement.volume`, so music may play at full volume there; the toggles
+  and `setSuspended` stop new sounds but do not cut one already playing (no gain buses); the
+  AudioContext is not suspended when the page is hidden; new mechanics have no cues yet.
 - **Placeholder art:** the flat-top jam tiles are rotated 30 degrees; final pointy-top art is
   pending. New mechanics use code-drawn glyphs.
 - **Bundle:** the JS chunk is about 800 KB minified (about 217 KB gzip), mostly Pixi and React. Vite
@@ -38,6 +39,11 @@
 
 ## Fixed
 
+- Roadmap step 2 review (2026-10-10): a win is saved when the engine reports it, not after its
+  animation (leaving mid-animation lost it); Enter or Space during the win celebration no longer
+  triggers a focused HUD button; two tabs no longer overwrite each other's progress; the level
+  select is a modal dialog with a focus trap; it fits short landscape phones; the credits box is
+  opaque.
 - Roadmap step 1 (2026-10-10):
   - The game runs the hex-steps rules (the jam rules and their softlock, where a boxed-in player
     with moves left never lost, are gone).

@@ -75,15 +75,18 @@ immersive. Feedback comes from animation wherever possible.
   ```
 
   The steps counter is large and shows only the number. Music and SFX are on/off toggles (keys `M`
-  and `V`) and are saved.
+  and `V`, which also work on the menu) and are saved. Undo stays available after a win.
 - **Win:** a celebration animation, then a "next" arrow badge in the centre; tap it or press Enter
   to continue. No auto-advance, so Undo and Restart remain available. The last level ends with an
   ending animation and a return to the main menu.
 - **Loss:** no panel and no auto-restart. Out of steps: the counter flashes red at 0. Stuck: Larry
   and the board shake. Undo and Restart pulse because one undo is usually the best way out.
-- **Tutorial (trial):** on a chapter's first level the new mechanic's tile glows and one line of text
-  appears next to it, without blocking play; it disappears once the mechanic is used and is not shown
-  again. Removed if it does not feel right.
+- **Tutorial (trial):** on the first level where a mechanic appears, its tile glows and one line of
+  text appears next to it, without blocking play; it disappears once the mechanic is used and is not
+  shown again. Level 1 first explains the goal ("Reach the goal before your steps run out"). The
+  list is derived from the campaign data (`src/game/tutorial.ts`), so the Final export needs no
+  changes. Removed if it does not feel right.
+- **No progress reset** for players (dev builds have `extinguisherDebug.resetSave()`).
 
 ## UX goals
 

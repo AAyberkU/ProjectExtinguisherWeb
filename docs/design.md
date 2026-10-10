@@ -32,17 +32,20 @@ ProjectExtinguisherWeb/
     test/              Vitest suites (oracle, rules, validation, campaign)
     public/            static files; public/game-assets/ is generated
     glyph-preview.html dev-only glyph preview page
+    fx-preview.html    dev-only outcome effect preview page
     src/
       main.tsx, App.tsx          React entry and app shell
-      styles/main.scss
+      ui/                        GameScreen, Hud, NextBadge, MainMenu, LevelSelect, TutorialHint, icons
+      styles/                    main.scss plus _hud, _menus, _tutorial partials
       game/
         engine/                  hex-steps rules, solver, validation (pure TypeScript)
         levels/                  campaign loader; campaign/ holds the shipped level files
         renderer/                Pixi stage, board view, timeline, layout, art, glyphs
         session.ts               play session and undo history
         assets.ts                asset manifest loading and URL resolution
-        audio.ts                 music and SFX
-        ui/                      (empty; screens land here in roadmap step 2)
+        audio.ts                 music and SFX with on/off toggles
+        save.ts, progress.ts     save adapter and unlock / continue logic
+        tutorial.ts              tutorial hints derived from the campaign
 ```
 
 ## Current architecture
@@ -53,8 +56,15 @@ ProjectExtinguisherWeb/
 - **Levels** (`game/levels/campaign.ts`): loads and compiles the campaign (`docs/levels.md`).
 - **Session** (`game/session.ts`): current level, play state, and undo history; every change goes
   through the engine. Undo also works after a loss; restart returns to the initial state.
-- **App** (`App.tsx`): phase state machine (`menu`, `starting`, `playing`), session, keyboard input,
-  HUD, outcome overlays, and the dev-only `window.extinguisherDebug` API.
+- **App** (`App.tsx`): phase state machine (`menu`, `starting`, `playing`), start transition and
+  loading, main menu, the level select overlay, global keys (`Esc`, `M`, `V`), audio toggles, and the
+  dev-only `window.extinguisherDebug` API (`goTo`, `loadLevel`, `stats`, `cellScreenPoint`,
+  `setBoardFill`, `unlockAll`, `resetSave`).
+- **GameScreen** (`ui/GameScreen.tsx`): session, Pixi stage, HUD, next badge, tutorial hint,
+  outcomes, and gameplay keys. A win is saved as soon as the engine reports it; presentation follows.
+- **Save** (`game/save.ts`, `game/progress.ts`): `SaveStore` over a storage adapter (localStorage on
+  web, memory in tests); completed level ids, music and SFX toggles, seen tutorials; merges with the
+  stored data on every write so two tabs do not overwrite each other. Unlock is linear.
 - **Renderer** (`game/renderer/`):
   - `PixiStage.tsx`: React wrapper; `stageController.ts`: the Pixi application and resize.
   - `layout.ts`: board bounds from all cells, fitted below the measured HUD height with no maximum
@@ -70,10 +80,13 @@ ProjectExtinguisherWeb/
 - **Input**: tap or click a highlighted neighbour, or keys `W` (NW), `E` (NE), `A`/Left (W), `D`/Right
   (E), `Z` (SW), `X` (SE); `Backspace` undo; `R` restart. Input is locked while motion plays
   (`data-busy` on `.game-panel`) and during the level intro.
-- **HUD**: steps, level label (`Level N`, the position in the whole campaign; no chapter or name),
-  Undo and Reset buttons. Overlays appear
-  after motion ends: win (Next Level), final level (Return to Main Menu), loss (reason line, Undo,
-  Try Again).
+- **HUD** (`ui/Hud.tsx`): left `Level N`, Undo, Restart; centre the steps counter; right Music, SFX,
+  Menu. There are no win or loss panels: after motion ends the stage plays `celebrate(final)` or
+  `showLoss(reason)` (`renderer/effects.ts`) and the HUD flashes the counter or pulses Undo and
+  Restart; after a win the next badge appears. Test hooks: `.game-panel[data-busy][data-outcome]
+  [data-loss-reason]`, `.game-hud[data-level-id][data-steps]`, `.next-badge[data-action]`.
+- **Tutorial**: `renderer/hintGlow.ts` draws the glow (`setHint`), `ui/TutorialHint.tsx` places the
+  text next to the cell (`hintAnchor`, `onLayout`).
 - Render resolution is the device pixel ratio clamped to 1-3.
 
 ## Start and loading flow
@@ -87,16 +100,11 @@ ProjectExtinguisherWeb/
   after the transition, or on failure. It fades in after 300 ms, so fast starts never show it.
   Retry remounts the stage.
 
-## Target architecture (roadmap steps 2-3)
+## Target architecture (roadmap steps 3-6)
 
 - **Input**: one action layer fed by pointer, touch, keyboard, and later gamepad (today the keyboard
   and pointer paths live in `App.tsx` and `boardView.ts`).
-- **Screens**: main menu, level select, and game as separate components instead of a single
-  `App.tsx`; no settings screen and no pause menu. Level select also opens over the game. Win and
-  loss become board animations plus a "next" badge instead of DOM overlays (`docs/game.md`).
-- **Save**: an adapter (`get`/`set`) keyed by stable `levelId`, storing completed level ids, the
-  music and SFX toggles, and seen tutorials. localStorage on web with a namespace per portal build;
-  Steam Cloud later. Play continues without saving if storage is unavailable.
+- **Save**: a separate save namespace per portal build; Steam Cloud behind the same adapter later.
 - **Platform adapters**: Coolmath (ad-break pause and mute hooks, SDK after acceptance) and Steam
   (wrapper, achievements, cloud save) behind one interface, so the game code stays platform-free.
 - **Responsive layout**: separate HUD layouts for landscape and portrait (the board already fits any

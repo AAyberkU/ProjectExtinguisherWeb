@@ -12,11 +12,32 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
   code-drawn glyphs.
 - A pool of 180 candidate levels lives in `apps/web/levels/pool/` (none final; selection happens in
   the editor).
-- **Next:** roadmap step 2 (menus and save). Its scope was agreed on 2026-10-10 (three screens, no
-  settings or pause, HUD layout, animations instead of win and loss panels, simple tutorial trial);
-  implementation has not started.
+- **Roadmap step 2 is done on branch `worktree-step2-menus`** and waits for the user's play test
+  before it goes to `main`: main menu, level select, saved progress, the new HUD with music and SFX
+  toggles, win and loss animations instead of panels, and the tutorial hint trial.
 
 ## Recent work (2026-10-10)
+
+Roadmap step 2 (branch `worktree-step2-menus`, 2026-10-10):
+
+- Three screens: main menu (title placeholder, Play/Continue, Level Select, Credits box), level
+  select (10 chapters on two pages, locked levels visible, modal with focus trap, opens over the
+  game), and the game. No settings screen and no pause menu.
+- Save (`src/game/save.ts`, `src/game/progress.ts`): completed level ids, music and SFX toggles,
+  and seen tutorials in localStorage; linear unlock; Continue goes to the first unfinished level;
+  a win is saved as soon as the engine reports it; saves merge across tabs; play continues when
+  storage is blocked.
+- HUD: left level, Undo, Restart; centre a large steps counter; right Music, SFX, Menu. Keys M, V,
+  Esc; Enter or Space on the next badge.
+- Win: celebration on the board, then a next badge (no auto-advance; Undo and Restart still work).
+  Loss: shake (stuck) or slump (out of steps), red counter, pulsing Undo and Restart; no panel.
+- Tutorial trial: the first level of each mechanic glows its tile with one line of text; it
+  disappears on first use and is saved as seen.
+- Built by subagents in four phases with an independent review; its findings (win saved only after
+  the animation, Enter during the celebration, two-tab save overwrite, dialog accessibility) and two
+  layout issues were fixed.
+- Verification: 340 Vitest tests; end-to-end run wins all 60 levels through the new UI on the dev
+  server and on the production build with no console errors; 34 extra flow checks pass on both.
 
 Step 2 planning (2026-10-10): agreed screens, HUD, win and loss feedback, level select, tutorial
 trial, and the UI art split with the user (the artist checklist in `docs/art.md` now lists every
@@ -85,8 +106,8 @@ Earlier the same day:
 
 ## Next steps
 
-1. Roadmap step 2 as agreed in `docs/roadmap.md`: three screens, save adapter, HUD with music and
-   SFX toggles, win and loss animations, tutorial trial.
+1. User play test of step 2 on branch `worktree-step2-menus`; merge to `main` on approval. Then
+   roadmap step 3 (landscape and portrait layouts).
 2. Send the artist the artist checklist in `docs/art.md`; report the loop-validation gap
    (`docs/rules.md`) to Uğur and ask for the GDD's rule fixtures.
 3. Replace the temporary campaign when the editor's Final export exists (`docs/levels.md`).
