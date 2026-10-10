@@ -74,6 +74,14 @@ describe('walking, winning, losing', () => {
     expect(legalMoves(L, state)).toEqual([]);
   });
 
+  it('rejects unknown and prototype-key directions from untyped input', () => {
+    const L = build({ '-2,0': 'start', '-1,0': 'floor', '0,0': 'finish' }, { steps: 2 });
+    const s = initialState(L);
+    for (const bad of ['N', 'constructor', 'toString', '__proto__']) {
+      expect(step(L, s, bad as Dir)).toBeNull();
+    }
+  });
+
   it('loses when steps run out off the finish', () => {
     const L = build({ '-2,0': 'start', '-1,0': 'floor', '0,0': 'floor', '1,0': 'finish' }, { steps: 1 });
     const { state, events } = play(L, 'E');

@@ -5,7 +5,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import {
-  bfsSolve,
+  bfsSearch,
   compileLevel,
   countSolutions,
   minBudget,
@@ -78,13 +78,16 @@ function checkLevel(file: string, raw: unknown): Row {
 
   const level = compileLevel(raw as PuzzleLabLevel);
   const budget = level.budget;
-  const shortest = bfsSolve(level, budget);
+  const search = bfsSearch(level, budget);
+  const aborted = search !== null && 'aborted' in search;
+  const shortest = search && 'path' in search ? search : null;
   const mb = minBudget(level);
   const count = countSolutions(level, budget);
   row.minBudget = String(mb ?? '-');
   row.moves = shortest ? String(shortest.moves) : '-';
   row.solutions = count.aborted ? 'aborted' : String(count.count) + (count.looped ? '*' : '');
-  if (!shortest) row.errors.push(`Not solvable within ${budget} steps`);
+  if (aborted) row.errors.push('Solver aborted: state space too large to verify');
+  else if (!shortest) row.errors.push(`Not solvable within ${budget} steps`);
   if (count.aborted) row.warnings.push('Solution count aborted (state space too large)');
   else if (shortest && count.count !== 1) row.warnings.push(`${count.count} solutions (the editor accepts exactly one)`);
   if (count.looped) row.notes.push('refill loop (not counted)');
@@ -114,12 +117,12 @@ function checkCampaign(folder: string, levelIds: Set<string>): { errors: string[
   } catch (e) {
     return { errors: [`campaign.json is not valid JSON: ${(e as Error).message}`], warnings };
   }
-  const chapters = (data as { chapters?: unknown }).chapters;
+  const chapters = data !== null && typeof data === 'object' ? (data as { chapters?: unknown }).chapters : undefined;
   if (!Array.isArray(chapters)) return { errors: ['campaign.json has no chapters array'], warnings };
   const seen = new Set<string>();
   const chapterIds = new Set<string>();
   chapters.forEach((ch: unknown, ci: number) => {
-    const c = ch as { id?: unknown; levels?: unknown };
+    const c = (ch !== null && typeof ch === 'object' ? ch : {}) as { id?: unknown; levels?: unknown };
     const name = typeof c.id === 'string' ? c.id : `#${ci + 1}`;
     if (typeof c.id !== 'string' || !c.id) errors.push(`Chapter #${ci + 1} has no id`);
     else if (chapterIds.has(c.id)) errors.push(`Chapter id ${c.id} is used twice`);
@@ -202,8 +205,17 @@ function main(): void {
     const folder = isDir ? target : dirname(target);
     if (isDir && existsSync(join(folder, CAMPAIGN_FILE))) {
       const c = checkCampaign(folder, ids);
-      const chapters = (readJson(join(folder, CAMPAIGN_FILE)) as { chapters?: Array<{ levels?: unknown[] }> }).chapters ?? [];
-      const levelCount = chapters.reduce((n, ch) => n + (Array.isArray(ch.levels) ? ch.levels.length : 0), 0);
+      let chapters: unknown[] = [];
+      try {
+        const data = readJson(join(folder, CAMPAIGN_FILE)) as { chapters?: unknown } | null;
+        if (data && Array.isArray(data.chapters)) chapters = data.chapters;
+      } catch {
+        // checkCampaign already reported the parse error.
+      }
+      const levelCount = chapters.reduce<number>((n, ch) => {
+        const levels = ch !== null && typeof ch === 'object' ? (ch as { levels?: unknown }).levels : undefined;
+        return n + (Array.isArray(levels) ? levels.length : 0);
+      }, 0);
       console.log(`campaign.json: ${chapters.length} chapters, ${levelCount} levels, ${c.errors.length} errors, ${c.warnings.length} warnings`);
       for (const e of c.errors) console.log(`    error: ${e}`);
       for (const w of c.warnings) console.log(`    warning: ${w}`);

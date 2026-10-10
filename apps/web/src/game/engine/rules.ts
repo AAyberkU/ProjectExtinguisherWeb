@@ -240,8 +240,9 @@ export function initialState(level: CompiledLevel, budget: number = level.budget
 /** One player move, or null when it is illegal (state unchanged, no phase flip). */
 export function step(level: CompiledLevel, state: PlayState, dir: Dir): StepResult | null {
   if (state.status !== 'playing' || state.steps <= 0) return null;
+  // Own-property check: untyped input such as "constructor" must not reach the prototype.
+  if (!Object.prototype.hasOwnProperty.call(DIR_INDEX, dir)) return null;
   const di = DIR_INDEX[dir];
-  if (di === undefined) return null;
   const events: EngineEvent[] = [];
   const m = moveCore(level, state, di, events);
   if (!m) return null;
