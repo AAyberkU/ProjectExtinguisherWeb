@@ -7,16 +7,14 @@ import { axialToPixel, type CompiledLevel } from '../engine';
 export const TILE_LAYOUT_RADIUS = 40;
 /** Drawn hex radius; slightly smaller than the layout radius so tiles keep a small gap. */
 export const TILE_VISUAL_RADIUS = 36.5;
-export const TILE_SPRITE_WIDTH = TILE_VISUAL_RADIUS * 2.1;
-export const TILE_SPRITE_HEIGHT = TILE_VISUAL_RADIUS * 1.86;
 /**
- * The jam tile art is flat-top; rotating it 30 degrees clockwise fits the pointy-top board until
- * pointy-top art replaces it. Set to 0 for art drawn pointy-top. Glyphs are never rotated.
+ * Height (corner to corner) of the drawn floor tile. The tile art is pointy-top; every other piece
+ * of board art is scaled by the same factor as the floor (tileArt.ts), keeping the authored sizes.
  */
-export const PLACEHOLDER_TILE_ROTATION = Math.PI / 6;
-/** Half extents of a drawn tile around its centre (the rotated sprite is a pointy-top hex). */
-const TILE_HALF_WIDTH = (TILE_SPRITE_WIDTH / 2) * Math.cos(Math.PI / 6);
-const TILE_HALF_HEIGHT = TILE_SPRITE_WIDTH / 2;
+export const TILE_SPRITE_HEIGHT = TILE_VISUAL_RADIUS * 2.1;
+/** Half extents of a drawn tile around its centre (a pointy-top hex). */
+const TILE_HALF_WIDTH = (TILE_SPRITE_HEIGHT / 2) * Math.cos(Math.PI / 6);
+const TILE_HALF_HEIGHT = TILE_SPRITE_HEIGHT / 2;
 
 // No maximum scale: every board, from 19 to 91 cells, fills the same share of the available area,
 // so smaller boards get bigger hexes. Tile art is built at 512 px (@2x) to stay sharp at large scales.

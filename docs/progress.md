@@ -21,6 +21,11 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
 
 - First final art: Larry from the artist (2026-10-11), delivered on an A4 page; the asset pipeline
   now crops stand-alone images (characters) to their visible pixels before resizing.
+- First art batch integrated (2026-10-11): floor, start, finish, swamp, wall, +1, launcher, mover,
+  portal, three-colour switches and doors, and the closed passage side. Shared-box cropping for
+  aligned sets, one drawing scale from the floor, seeded floor rotation, rotated duck and car,
+  hue-shifted portal pairs, code-made pressed switch. Jam tiles removed; build about 7 MB to 5.1 MB.
+  340 tests and the 60-level click-through run pass.
 
 Roadmap step 2 (merged to `main` on 2026-10-11 after the user's play test):
 

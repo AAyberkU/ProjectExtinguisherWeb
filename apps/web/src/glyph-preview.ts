@@ -1,49 +1,130 @@
-import { Application, Container, Graphics, Text } from 'pixi.js';
-import { createGlyph, createSwapMarker, hexCorners, type GlyphTile } from './game/renderer/glyphs';
+// Dev-only preview of every tile look (glyph-preview.html; vite builds only index.html): the board
+// art with its code-made variants (floor turns, headings, portal pairs, pressed switches, passage
+// crayons) and the code-drawn glyphs. Query: ?zoom=<scale> (default 1.4).
 
-const R = 44;
-const items: { name: string; tile?: GlyphTile; swap?: number }[] = [
-  { name: 'swamp', tile: { type: 'swamp' } },
-  ...(['E', 'SE', 'SW', 'W', 'NW', 'NE'] as const).map((d) => ({ name: `mover ${d}`, tile: { type: 'mover', dir: d } as GlyphTile })),
-  ...[1, 2, 3, 4].map((p) => ({ name: `portal ${p}`, tile: { type: 'portal', pair: p } as GlyphTile })),
-  ...([1, 2, 3] as const).flatMap((c) => [
-    { name: `switch ${c}`, tile: { type: 'switch', color: c } as GlyphTile },
-    { name: `switch ${c} on`, tile: { type: 'switch', color: c, switchPressed: true } as GlyphTile },
-  ]),
-  ...([1, 2, 3] as const).flatMap((c) => [
-    { name: `door ${c}`, tile: { type: 'door', color: c } as GlyphTile },
-    { name: `door ${c} open`, tile: { type: 'door', color: c, doorOpen: true } as GlyphTile },
-  ]),
-  { name: 'pass bar E', tile: { type: 'passage', noIn: ['E'], noOut: ['E'] } },
-  { name: 'pass bar NW', tile: { type: 'passage', noIn: ['NW'], noOut: ['NW'] } },
-  { name: 'noIn E (out)', tile: { type: 'passage', noIn: ['E'] } },
-  { name: 'noOut SW (in)', tile: { type: 'passage', noOut: ['SW'] } },
-  { name: 'multi', tile: { type: 'passage', noIn: ['E', 'W', 'NE'], noOut: ['E', 'W', 'SE'] } },
-  ...[1, 5, 14, 99].map((v) => ({ name: `refill ${v}`, tile: { type: 'refill', value: v } as GlyphTile })),
-  { name: 'swap 1', swap: 1 },
-  { name: 'swap 2', swap: 2 },
+import { Application, Container, Graphics, Text } from 'pixi.js';
+import { getRenderResolution, initAssets, loadGameAssets } from './game/assets';
+import type { Dir, TileContent } from './game/engine';
+import { hexCorners } from './game/renderer/glyphs';
+import { TILE_LAYOUT_RADIUS } from './game/renderer/layout';
+import { createCellMarker, createTileBase, type TileLook } from './game/renderer/tileArt';
+
+const DIRS: Dir[] = ['E', 'SE', 'SW', 'W', 'NW', 'NE'];
+const zoom = Number(new URLSearchParams(window.location.search).get('zoom') ?? '1.4') || 1.4;
+
+interface Item {
+  name: string;
+  content?: Partial<TileContent>;
+  look?: Partial<TileLook>;
+  swap?: number;
+}
+
+const sections: Array<{ title: string; items: Item[] }> = [
+  {
+    title: 'Tiles',
+    items: [
+      ...[0, 1, 2, 3, 4, 5].map((turn) => ({ name: `floor turn ${turn}`, look: { floorTurn: turn } })),
+      { name: 'start', content: { type: 'start' } },
+      { name: 'finish', content: { type: 'finish' } },
+      { name: 'swamp', content: { type: 'swamp' } },
+      { name: 'blocker', content: { type: 'blocker' } },
+      { name: 'plus1', content: { type: 'plus1' } },
+      { name: 'plus1 collected', content: { type: 'plus1' }, look: { collected: true } },
+    ],
+  },
+  { title: 'Launcher', items: DIRS.map((dir) => ({ name: `launcher ${dir}`, content: { type: 'launcher', dir } })) },
+  { title: 'Mover', items: DIRS.map((dir) => ({ name: `mover ${dir}`, content: { type: 'mover', dir } })) },
+  {
+    title: 'Portal, switch, door',
+    items: [
+      ...[1, 2, 3].map((pair) => ({ name: `portal ${pair}`, content: { type: 'portal' as const, pair } })),
+      ...[1, 2, 3].flatMap((color) => [
+        { name: `switch ${color}`, content: { type: 'switch' as const, color } },
+        { name: `switch ${color} pressed`, content: { type: 'switch' as const, color }, look: { switchPressed: true } },
+      ]),
+      ...[1, 2, 3].flatMap((color) => [
+        { name: `door ${color}`, content: { type: 'door' as const, color } },
+        { name: `door ${color} open`, content: { type: 'door' as const, color }, look: { doorOpen: true } },
+      ]),
+    ],
+  },
+  {
+    title: 'Passage, refill, swap',
+    items: [
+      ...DIRS.map((dir) => ({ name: `closed ${dir}`, content: { type: 'passage' as const, noIn: [dir], noOut: [dir] } })),
+      { name: 'closed all', content: { type: 'passage', noIn: DIRS, noOut: DIRS } },
+      { name: 'noIn E (out)', content: { type: 'passage', noIn: ['E'] } },
+      { name: 'noOut SW (in)', content: { type: 'passage', noOut: ['SW'] } },
+      { name: 'mixed', content: { type: 'passage', noIn: ['E', 'W', 'NE'], noOut: ['E', 'W', 'SE'] } },
+      ...[1, 5, 14, 99].map((value) => ({ name: `refill ${value}`, content: { type: 'refill' as const, value } })),
+      { name: 'swap 1', swap: 1 },
+      { name: 'swap 2 launcher', swap: 2, content: { type: 'launcher', dir: 'SE' } },
+    ],
+  },
 ];
 
-const cols = 8;
-const cw = R * 2.2, ch = R * 2.4;
-const app = new Application();
-await app.init({ width: cols * cw + 20, height: Math.ceil(items.length / cols) * ch + 20, background: 0x2a2733, antialias: true, resolution: 1 });
-document.body.appendChild(app.canvas);
+await initAssets();
+await loadGameAssets();
 await document.fonts?.ready;
 
-items.forEach((it, i) => {
-  const cell = new Container();
-  cell.position.set(10 + (i % cols) * cw + cw / 2, 10 + Math.floor(i / cols) * ch + R * 1.1);
-  cell.addChild(new Graphics().poly(hexCorners(R)).fill(0xf1e9fb).stroke({ width: 2, color: 0xb9a8d8 }));
-  if (it.tile) {
-    const g = createGlyph(it.tile, R);
-    if (g) cell.addChild(g);
-  }
-  if (it.swap !== undefined) cell.addChild(createSwapMarker(it.swap, R));
-  const t = new Text({ text: it.name, style: { fontSize: 12, fill: 0xdddddd, fontFamily: 'Arial' } });
-  t.anchor.set(0.5, 0);
-  t.position.set(0, R + 4);
-  cell.addChild(t);
-  app.stage.addChild(cell);
+const cols = 8;
+const cw = TILE_LAYOUT_RADIUS * 2.2 * zoom;
+const ch = TILE_LAYOUT_RADIUS * 2.6 * zoom;
+const titleHeight = 28;
+const rows = sections.reduce((sum, section) => sum + Math.ceil(section.items.length / cols), 0);
+const resolution = getRenderResolution();
+const app = new Application();
+await app.init({
+  width: cols * cw + 20,
+  height: rows * ch + sections.length * titleHeight + 20,
+  background: 0xf4dfe9,
+  antialias: true,
+  resolution,
+  autoDensity: true,
 });
+document.body.appendChild(app.canvas);
+
+let y = 10;
+
+for (const section of sections) {
+  const title = new Text({ text: section.title, style: { fontSize: 16, fontWeight: '700', fill: 0x3a2350, fontFamily: 'Arial' } });
+  title.position.set(14, y + 4);
+  app.stage.addChild(title);
+  y += titleHeight;
+
+  section.items.forEach((item, i) => {
+    const cell = new Container();
+    const tile = new Container();
+    const content: TileContent = { type: 'floor', noIn: [], noOut: [], source: 0, ...item.content };
+    const look: TileLook = {
+      key: item.name,
+      content,
+      collected: false,
+      doorOpen: false,
+      switchPressed: false,
+      floorTurn: i % 6,
+      ...item.look,
+    };
+
+    cell.position.set(10 + (i % cols) * cw + cw / 2, y + Math.floor(i / cols) * ch + TILE_LAYOUT_RADIUS * zoom);
+    tile.scale.set(zoom);
+    tile.addChild(new Graphics().poly(hexCorners(TILE_LAYOUT_RADIUS)).stroke({ width: 1, color: 0xc9a8c0 }));
+    tile.addChild(createTileBase(look, resolution * zoom));
+
+    if (item.swap !== undefined) {
+      // The marker belongs to a board cell; a one-cell stand-in level carries the swap id.
+      const marker = createCellMarker({ cells: [{ q: 0, r: 0, swap: item.swap }] } as never, 0, resolution * zoom);
+      if (marker !== null) tile.addChild(marker);
+    }
+
+    const label = new Text({ text: item.name, style: { fontSize: 12, fill: 0x3a2350, fontFamily: 'Arial' } });
+    label.anchor.set(0.5, 0);
+    label.position.set(0, TILE_LAYOUT_RADIUS * zoom + 2);
+    cell.addChild(tile, label);
+    app.stage.addChild(cell);
+  });
+
+  y += Math.ceil(section.items.length / cols) * ch;
+}
+
 (window as unknown as { __ready: boolean }).__ready = true;

@@ -20,15 +20,16 @@
 - `npm run assets` (`apps/web/scripts/build-assets.mjs`) builds `apps/web/public/game-assets/`
   (generated, ignored by Git). `npm run dev` and `npm run build` run it first. AssetPack's cache in
   `apps/web/.assets-cache/` skips unchanged files.
-- Step 1 first crops originals in trimmed groups (today `images/characters`) to their visible
-  pixels, so a drawing delivered on a whole page still fills its texture. Only images that stand
-  alone are trimmed; images that replace or stack on each other (door states, tile layers, poses)
-  keep their shared canvas so they stay aligned (cropping them together to one shared box is the
-  planned extension when the first such set arrives).
-- Step 1 then resizes each original with sharp to its group's @2x target: `images/tiles` 512 px wide,
-  `images/characters` 384 px tall, `images/backgrounds` 1920 px wide (tiles and Larry were raised
-  from 256/192 so small boards, which are scaled up, stay sharp). Artists can always deliver
-  large originals.
+- Step 1 crops every original to its visible pixels, so a drawing delivered on a whole page still
+  fills its texture. Images that replace or stack on each other are cropped together with one
+  shared box so they stay aligned: the `alignedSets` table in `build-assets.mjs` lists them (today
+  `obj_door_*` and `obj_switch_*`). Floor, start, and finish are cropped to the solid hex body.
+- Board art (`images/tiles`, `images/objects`, table `BOARD_ART`) keeps the artist's relative
+  scale: one factor comes from the floor (its hex width becomes 512 px @2x, about 0.515 for the A4
+  pages) and applies to every page-sized drawing; start and finish are fitted to exactly the floor's
+  size. Art on another canvas gets its own size (`obj_plus1`, 300 px wide, set by eye).
+- Larry (`images/characters`) is fitted to 384 px tall; backgrounds to 1920 px wide. Artists can
+  always deliver large originals.
 - Step 2 runs AssetPack 1.7 (`pixiPipes`): tiles and Larry go into one atlas at @2x and @1x, images
   become WebP (quality 90) with a PNG fallback, audio becomes MP3 (SFX 96 kbps mono, music 128 kbps
   stereo), file names get cache-busting hashes, and a Pixi manifest is written.
@@ -36,6 +37,8 @@
   initializes Pixi `Assets`, prefers WebP at the render resolution, reports `game` bundle progress
   to the loading screen, and resolves other aliases to absolute URLs.
 - Code references art only by alias (file name without extension), never by path.
+- After the first art batch (2026-10-11) the @2x atlas is 1947x2367 (WebP about 440 KB) and the
+  production build about 5.1 MB.
 - Result on 2026-10-10: production build about 7 MB (was about 53 MB before the pipeline); a first
   gameplay load downloads about 2.3 MB (atlas @2x WebP about 820 KB, background 420 KB, audio about
   1.1 MB) plus the JS bundle.
@@ -45,21 +48,29 @@
 
 ## Naming
 
-Current aliases (jam placeholders, Puzzle Lab vocabulary):
+Aliases (the artist's first batch, 2026-10-11; Puzzle Lab vocabulary). Full tiles live in
+`art-source/images/tiles/`, things drawn on top of the floor in `art-source/images/objects/`.
+Colours: `a` blue, `b` pink, `c` green (editor colours 1, 2, 3).
 
-| Alias | Use |
-| --- | --- |
-| `tile_floor_01` .. `tile_floor_10` | Floor variants |
-| `tile_blocker_01` .. `tile_blocker_03` | Wall (blocker) variants |
-| `tile_launcher_<dir>` | Launcher, one per direction: `e`, `se`, `sw`, `w`, `nw`, `ne` (the art faces that screen direction) |
-| `tile_start`, `tile_finish`, `tile_plus1` | Start, finish, +1 |
-| `larry` | Player character |
-| `background` | Full-screen background |
-| `music`, `sfx_<name>` | Audio |
+| Alias | Use | Delivered as |
+| --- | --- | --- |
+| `tile_floor` | Every floor cell; seeded 60° rotations give variety | `duztile.png` |
+| `tile_start`, `tile_finish` | Start and finish (full tiles) | `Baslangictile.png`, `bitistile.png` |
+| `tile_swamp` | Semi-transparent slime drawn over the floor | `Slimetile.png` |
+| `obj_blocker` | Wall: one kind only, on the floor | `Blocker.png` |
+| `obj_plus1` | +1 on the floor; removed when collected | `Artibir.png` |
+| `obj_launcher` | Duck, rotated to the launcher's direction (drawn heading about 237°, NW) | `ordek.png` |
+| `obj_mover` | Car, rotated to the mover's direction (drawn heading about 238°, NW) | `Araba.png` |
+| `obj_portal` | Portal; pairs 2 and 3 are hue-shifted in code (0/120/240°) | `Portal.png` |
+| `obj_switch_<a\|b\|c>` | Switch; the pressed state is code (squashed to 62%, darker) | `Buton<mavi\|pembe\|yesil>.png` |
+| `obj_door_<a\|b\|c>_<closed\|open>` | Door states | `Kapi...` files |
+| `obj_passage_wall` | Crayon along each passage side closed both ways | `Pastelengel.png` |
+| `larry` | Player character | `Larry.png` |
+| `background` | Full-screen background (jam art) | |
+| `music`, `sfx_<name>` | Audio (jam) | |
 
-New mechanic art should follow the same pattern, for example `tile_swamp`, `tile_mover_<dir>`,
-`tile_portal`, `tile_switch_<a|b|c>`, `tile_door_<a|b|c>`. Mechanics without art use code-drawn glyphs
-from `apps/web/src/game/renderer/glyphs.ts` (preview in dev at `/glyph-preview.html`).
+Without art (code-drawn in `apps/web/src/game/renderer/glyphs.ts`, preview at `/glyph-preview.html`):
+refill, the swap marker, and one-way passage arrows.
 
 ## Artist checklist
 
@@ -87,21 +98,22 @@ Delivery rules:
 
 ### 1. Board and mechanics (required)
 
-- [ ] Floor, several variants.
-- [ ] Wall (blocker), at least 3 variants. Walls are now the most frequent tile and appear in large
-  adjacent groups, so the variants must sit well next to each other.
-- [ ] Start and finish.
-- [ ] `plus1` (+1 step pickup).
-- [ ] Launcher, 6 directions (E, SE, SW, W, NW, NE; the art faces that screen direction).
-- [ ] Swamp.
-- [ ] Mover, 6 directions.
-- [ ] Portal; pairs must be distinguishable (up to 3 pairs in one level).
-- [ ] Switch, 3 colours (A/B/C), each **up and pressed**.
-- [ ] Door, 3 colours (A/B/C), each **closed and open**.
-- [ ] Passage: per-side bars (closed both ways) and one-way arrows.
+- [x] Floor (one tile; variety from rotation, decided 2026-10-11).
+- [x] Wall (blocker): one kind only (three look-alike variants were confusing, decided 2026-10-11).
+- [x] Start and finish.
+- [x] `plus1` (+1 step pickup). Delivered on a different canvas; its size is set by eye.
+- [x] Launcher (one duck, rotated in code to the 6 directions).
+- [x] Swamp (semi-transparent; drawn over the floor for now, the artist may revisit).
+- [x] Mover (one car, rotated in code to the 6 directions).
+- [ ] Portal: delivered once; pairs are hue-shifted in code for now. Real colourways per pair (up to
+  3 pairs in one level) would look better.
+- [ ] Switch, 3 colours: up states delivered; the pressed state is code for now (drawn would be better).
+- [x] Door, 3 colours, closed and open. (The blue one has low contrast on the purple floor.)
+- [ ] Passage: closed side delivered (crayon); one-way side still needs one arrow drawing (code arrow
+  for now).
 - [ ] Refill: a plain base; the number (1-99) is drawn in code on top.
 - [ ] Swap: a marker that shows which cells are paired.
-- [ ] Larry.
+- [x] Larry.
 - [ ] Background (landscape and portrait).
 
 ### 2. Screens and HUD (required, roadmap step 2)
@@ -130,14 +142,17 @@ Delivery rules:
 
 ## Board presentation
 
-- Every blocker is drawn, including the walls that pad large boards. Each wall picks one of the
-  blocker variants with a seeded choice from the level id and cell coordinates, so a level always
-  looks the same and walls never change between moves.
+- Every blocker is drawn, including the walls that pad large boards: the floor tile with the cube on
+  top, one kind only.
+- Floor cells use one tile with a seeded rotation in 60° steps (seeded by level id and cell, so a
+  level always looks the same). The floor's bevel is lit evenly, so rotation keeps lighting
+  consistent.
+- Objects sit on the floor, centred, at the size the artist drew them relative to the floor.
 - Board size varies per level (19 to 91 cells); the board scales to fit. If 91-cell boards look too
   busy on phones, edge walls may be drawn quieter (gameplay is unaffected because walls and edges
   behave the same).
-- Current placeholder art is the flat-top jam art rotated 30 degrees in `renderer/layout.ts`
-  (`PLACEHOLDER_TILE_ROTATION`); set it to 0 when pointy-top art arrives.
+- The board art is pointy-top; the old 30° placeholder rotation is gone. Larry is drawn at about
+  0.75 of a tile's height (`LARRY_SPRITE_HEIGHT` in `boardView.ts`).
 
 ## Code animation
 

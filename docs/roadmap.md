@@ -83,8 +83,10 @@ Rail approach). The full screen and HUD spec is in `docs/game.md` (Screens and H
 
 ## 4. Art integration and code polish (continuous, as art arrives)
 
-- [ ] Pointy-top tiles replace the rotated jam placeholders (`PLACEHOLDER_TILE_ROTATION = 0`).
-- [ ] New mechanic art replaces placeholder glyphs; layered tiles combined in the renderer.
+- [x] Pointy-top tiles replace the rotated jam placeholders (first art batch, 2026-10-11).
+- [ ] New mechanic art replaces placeholder glyphs; objects drawn on the floor tile. Done for every
+  mechanic except refill, swap, and one-way passage arrows (no art yet); Larry done.
+- [ ] Background and UI art (artist checklist in `docs/art.md`).
 - [ ] Code polish animations (see `docs/art.md`).
 - [ ] Audio cues for new mechanics; master, music, and SFX buses.
 
@@ -125,5 +127,6 @@ Rail approach). The full screen and HUD spec is in `docs/game.md` (Screens and H
 | 2026-10-10 | HUD level label is only `Level N` (campaign order, no chapter or name). Every board fills the same screen area regardless of size; tile art built at 512 px for sharpness. Steps-counter placement (GDD: large, top-right, number only) and undo/restart buttons after a win are agreed but deferred. |
 | 2026-10-10 | Step 2 scope: three screens (main menu, level select, game); no settings screen and no pause menu; music and SFX on/off buttons in the HUD (Echo Rail style). HUD: left level, Undo, Restart; centre a large steps counter (deliberately differs from the GDD's top-right); right Music, SFX, Menu. The Menu button and `Esc` open level select, which also has a Main Menu button. Win and loss panels are replaced by animations; win waits for a "next" arrow tap (no auto-advance), loss never auto-restarts, and Undo and Restart work after both. Level select shows all 60 levels on two pages with locked levels visible. Tutorial is a very simple, non-blocking tile glow with one line of text, on trial. Credits keep their current content for now. UI art split: the artist draws static pieces, code does every animation and placeholder. Sound cues are decided later. |
 | 2026-10-10 | No player-facing progress reset (no settings screen to hold it). Undo also works after a win. Tutorial hints are derived from the campaign data: the first level where a mechanic appears shows it (level 1 also explains the goal). M, V, and Esc work on every screen. |
+| 2026-10-11 | First art batch: one floor tile (seeded rotation), one wall kind, swamp over the floor, duck and car rotated to the 6 directions, portal pairs and the pressed switch made in code until drawn, crayon only on sides closed both ways (one-way sides keep code arrows). The asset build crops art (aligned sets with one shared box) and keeps the artist's relative scale. |
 | 2026-10-11 | Keyboard movement removed (unintuitive): moves are taps or clicks only. `Z` undoes (Backspace no longer does); `R`, `M`, `V`, `Esc`, Enter/Space unchanged. |
 | 2026-10-10 | Uğur's GDD (rules 1-20) adopted as a source next to the editor code; copy in `docs/reference/`. The v1 and GPT sets used empty cells as walls on purpose; "full floor" levels come from the v2 set. Progress saves only completed level ids with linear unlock; no score or stars. |

@@ -32,8 +32,10 @@
   iOS Safari ignores `HTMLAudioElement.volume`, so music may play at full volume there; the toggles
   and `setSuspended` stop new sounds but do not cut one already playing (no gain buses); the
   AudioContext is not suspended when the page is hidden; new mechanics have no cues yet.
-- **Placeholder art:** the flat-top jam tiles are rotated 30 degrees; final pointy-top art is
-  pending. New mechanics use code-drawn glyphs.
+- **Art gaps (2026-10-11):** portal pairs are hue shifts of one drawing (the dark outer ring turns
+  brown or green); the pressed switch is made in code; the blue door has low contrast on the purple
+  floor and closed doors read as thin lines; +1's size is set by eye; refill, swap, and one-way
+  passage arrows are still code-drawn; the background and all UI art are still jam or placeholder.
 - **Bundle:** the JS chunk is about 800 KB minified (about 217 KB gzip), mostly Pixi and React. Vite
   warns above 500 KB. Acceptable for now; revisit with portal size budgets.
 

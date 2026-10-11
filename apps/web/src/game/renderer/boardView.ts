@@ -9,9 +9,11 @@ import { cellCenter, TILE_VISUAL_RADIUS, type Point } from './layout';
 import {
   createCellMarker,
   createPopText,
+  createPlusGhost,
   createTileBase,
-  createTileSprite,
+  findSwitchButton,
   rescaleText,
+  setSwitchPress,
   tileLook,
   type VisualState,
 } from './tileArt';
@@ -130,7 +132,7 @@ export class BoardView {
       const home = cellCenter(level, cell);
       const look = tileLook(level, cell, this.visual);
       const container = new Container();
-      const base = createTileBase(level, look, resolution);
+      const base = createTileBase(look, resolution);
       const marker = createCellMarker(level, cell, resolution);
 
       container.label = `Hex ${level.cells[cell].q},${level.cells[cell].r}`;
@@ -277,9 +279,10 @@ export class BoardView {
 
   /**
    * Rebuilds the base of every tile whose look changed. With `fadeMs`, the old base fades out over
-   * the new one. Resolves when the fade ends.
+   * the new one, except on `pressedCell`, whose switch button presses in instead. Resolves when the
+   * animation ends.
    */
-  public refreshTiles(fadeMs = 0, pulseCell = -1): Promise<boolean> {
+  public refreshTiles(fadeMs = 0, pressedCell = -1): Promise<boolean> {
     const fades: Array<Promise<boolean>> = [];
 
     for (const tile of this.tiles) {
@@ -290,14 +293,32 @@ export class BoardView {
       }
 
       const previous = tile.base;
-      const next = createTileBase(this.level, look, this.resolution);
+      const next = createTileBase(look, this.resolution);
+      const button = fadeMs > 0 && tile.cell === pressedCell ? findSwitchButton(next) : null;
 
       tile.container.addChildAt(next, 0);
       tile.base = next;
       tile.key = look.key;
 
-      if (fadeMs <= 0) {
+      if (fadeMs <= 0 || button !== null) {
         previous.destroy({ children: true });
+      }
+
+      if (button !== null) {
+        setSwitchPress(button, 0);
+        fades.push(
+          this.animator
+            .tween(fadeMs, (t) => setSwitchPress(button, t), easeOutBack)
+            .then((done) => {
+              if (this.destroyed) return false;
+              setSwitchPress(button, 1);
+              return done;
+            }),
+        );
+        continue;
+      }
+
+      if (fadeMs <= 0) {
         continue;
       }
 
@@ -306,12 +327,10 @@ export class BoardView {
         this.animator
           .tween(fadeMs, (t) => {
             previous.alpha = 1 - t;
-            if (tile.cell === pulseCell) next.scale.set(1 + Math.sin(t * Math.PI) * 0.12);
           }, easeInOutSine)
           .then((done) => {
             if (this.destroyed) return false;
             previous.destroy({ children: true });
-            next.scale.set(1);
             return done;
           }),
       );
@@ -508,7 +527,7 @@ export class BoardView {
   /** +1 pickup: the tile turns into floor while a ghost of the pickup pops and fades. */
   public async pickupPlus(cell: number, bit: number): Promise<boolean> {
     const home = this.tiles[cell].home;
-    const ghost = createTileSprite('tile_plus1');
+    const ghost = createPlusGhost();
     const label = createPopText('+1', 0x2f9e5b, this.resolution);
 
     ghost.position.set(home.x, home.y);
