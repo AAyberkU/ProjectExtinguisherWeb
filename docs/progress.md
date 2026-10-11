@@ -2,7 +2,7 @@
 
 Current state and work log. The plan is in `docs/roadmap.md`; read this file first in every session.
 
-## Status (2026-10-10)
+## Status (2026-10-11)
 
 - The project is moving from the jam web port to the full product (about 60 levels, Coolmath first,
   Steam later). See `docs/roadmap.md`.
@@ -12,13 +12,14 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
   code-drawn glyphs.
 - A pool of 180 candidate levels lives in `apps/web/levels/pool/` (none final; selection happens in
   the editor).
-- **Roadmap step 2 is done on branch `worktree-step2-menus`** and waits for the user's play test
-  before it goes to `main`: main menu, level select, saved progress, the new HUD with music and SFX
-  toggles, win and loss animations instead of panels, and the tutorial hint trial.
+- **Roadmap step 2 is done and merged to `main`** after the user's play test: main menu, level
+  select, saved progress, the new HUD with music and SFX toggles, tap-only moves, win and loss
+  animations instead of panels, and the tutorial hint trial.
+- **Next:** roadmap step 3 (landscape and portrait layouts).
 
-## Recent work (2026-10-10)
+## Recent work (2026-10-10 to 2026-10-11)
 
-Roadmap step 2 (branch `worktree-step2-menus`, 2026-10-10):
+Roadmap step 2 (merged to `main` on 2026-10-11 after the user's play test):
 
 - Three screens: main menu (title placeholder, Play/Continue, Level Select, Credits box), level
   select (10 chapters on two pages, locked levels visible, modal with focus trap, opens over the
@@ -109,8 +110,7 @@ Earlier the same day:
 
 ## Next steps
 
-1. User play test of step 2 on branch `worktree-step2-menus`; merge to `main` on approval. Then
-   roadmap step 3 (landscape and portrait layouts).
+1. Roadmap step 3: landscape and portrait layouts (`docs/roadmap.md`).
 2. Send the artist the artist checklist in `docs/art.md`; report the loop-validation gap
    (`docs/rules.md`) to Uğur and ask for the GDD's rule fixtures.
 3. Replace the temporary campaign when the editor's Final export exists (`docs/levels.md`).

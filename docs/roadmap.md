@@ -37,7 +37,7 @@ the Puzzle Lab editor; this repository integrates them into the game.
 - [x] End-to-end browser run wins all 60 campaign levels with their stored solutions.
 - [ ] Replace the temporary campaign with the Puzzle Lab Final export when it exists.
 
-## 2. Menus and save (done on branch `worktree-step2-menus`, awaiting the user's play test)
+## 2. Menus and save (done, merged 2026-10-11)
 
 Guiding idea: as few panels as possible, so the game feels like a game and not a web site (the Echo
 Rail approach). The full screen and HUD spec is in `docs/game.md` (Screens and HUD).
@@ -71,7 +71,7 @@ Rail approach). The full screen and HUD spec is in `docs/game.md` (Screens and H
 - Art: all screens start with code-drawn placeholders, so step 2 does not wait for the artist; the
   pieces are in the artist checklist in `docs/art.md`. New sound cues (win, loss, button) are decided later.
 
-## 3. Landscape and portrait
+## 3. Landscape and portrait (next)
 
 - [x] Board fit computed from the actual board and screen (step 1).
 - [x] Remove the mobile "rotate your device" screen (step 1).
