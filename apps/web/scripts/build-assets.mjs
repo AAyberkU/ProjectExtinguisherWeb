@@ -1,7 +1,8 @@
 // Builds runtime assets from the original art in /art-source.
 //
-// 1. Prepare: every original image is resized to its group's @2x target size and staged with
-//    AssetPack folder tags. Originals stay untouched, so artists can always deliver large files.
+// 1. Prepare: every original image is (in trimmed groups) cropped to its visible pixels, resized to
+//    its group's @2x target size, and staged with AssetPack folder tags. Originals stay untouched,
+//    so the artist can deliver whole pages at any size without cropping.
 // 2. Pack: AssetPack builds the tile atlas (@2x and @1x), WebP/PNG images, MP3 audio, and a
 //    Pixi manifest into apps/web/public/game-assets. AssetPack's cache skips unchanged files.
 //
@@ -23,10 +24,12 @@ const outputRoot = path.join(appRoot, 'public', 'game-assets');
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp']);
 const AUDIO_EXTENSIONS = new Set(['.wav', '.mp3', '.ogg']);
 
-// Target sizes are the @2x texture sizes; AssetPack derives the @1x copies.
+// Target sizes are the @2x texture sizes; AssetPack derives the @1x copies. `trim` crops each
+// image to its visible pixels first: only for images that stand alone. Images that replace or
+// stack on each other (door states, tile layers, poses) must keep a shared canvas instead.
 const IMAGE_GROUPS = [
   { source: 'images/tiles', staging: 'game{m}/atlas{tps}', resize: { width: 512 } },
-  { source: 'images/characters', staging: 'game{m}/atlas{tps}', resize: { height: 384 } },
+  { source: 'images/characters', staging: 'game{m}/atlas{tps}', resize: { height: 384 }, trim: true },
   { source: 'images/backgrounds', staging: 'ui{m}/backgrounds{nomip}', resize: { width: 1920 } },
 ];
 const AUDIO_GROUP = { source: 'audio', staging: 'audio{m}' };
@@ -52,7 +55,11 @@ async function prepareImages() {
     for (const name of await listFiles(sourceDir, IMAGE_EXTENSIONS)) {
       const outputName = `${path.parse(name).name}.png`;
 
-      await sharp(path.join(sourceDir, name))
+      const original = path.join(sourceDir, name);
+      // Trimming runs as its own pass so the resize target applies to the visible drawing.
+      const input = group.trim ? await sharp(original).trim({ threshold: 0 }).png().toBuffer() : original;
+
+      await sharp(input)
         .resize({ ...group.resize, fit: 'inside', withoutEnlargement: true })
         .png()
         .toFile(path.join(stagingDir, outputName));

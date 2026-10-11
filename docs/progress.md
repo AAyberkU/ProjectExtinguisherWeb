@@ -19,6 +19,9 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
 
 ## Recent work (2026-10-10 to 2026-10-11)
 
+- First final art: Larry from the artist (2026-10-11), delivered on an A4 page; the asset pipeline
+  now crops stand-alone images (characters) to their visible pixels before resizing.
+
 Roadmap step 2 (merged to `main` on 2026-10-11 after the user's play test):
 
 - Three screens: main menu (title placeholder, Play/Continue, Level Select, Credits box), level
