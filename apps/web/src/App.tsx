@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import type { CSSProperties } from 'react';
 import { initAssets, loadGameAssets, resolveAssetUrl, subscribeGameAssetProgress } from './game/assets';
 import { gameAudio } from './game/audio';
-import type { PuzzleLabLevel } from './game/engine';
+import type { Dir, PuzzleLabLevel } from './game/engine';
 import { CAMPAIGN, CAMPAIGN_IDS, createAdHocLevel, getCampaignLevel, type PlayableLevel } from './game/levels';
 import { continueIndex, hasProgress, isUnlocked } from './game/progress';
 import { setBoardFill } from './game/renderer/layout';
@@ -76,6 +76,8 @@ type DebugApi = Readonly<{
   loadLevel: (level: PuzzleLabLevel) => void;
   stats: () => unknown;
   cellScreenPoint: (q: number, r: number) => { x: number; y: number } | null;
+  /** Cells a tap would move to right now (for tap-driven test scripts). */
+  moveTargets: () => Array<{ dir: Dir; q: number; r: number }>;
   /** Share of the free area the board fills (0.3-1); returns the applied value. */
   setBoardFill: (value: number) => number;
   /** Marks every campaign level completed. */
@@ -283,6 +285,7 @@ export function App() {
       loadLevel: (level) => debugHandlersRef.current.loadLevel(createAdHocLevel(level)),
       stats: () => gameRef.current?.stats() ?? null,
       cellScreenPoint: (q, r) => gameRef.current?.cellScreenPoint(q, r) ?? null,
+      moveTargets: () => gameRef.current?.moveTargets() ?? [],
       setBoardFill: (value) => {
         const applied = setBoardFill(value);
         window.dispatchEvent(new Event('resize'));

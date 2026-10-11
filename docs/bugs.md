@@ -39,6 +39,11 @@
 
 ## Fixed
 
+- Browser zoom (2026-10-11): zooming in moved the board towards the bottom-right and taps missed.
+  Zoom keeps CSS size x pixel ratio constant, so Pixi skipped its resize and kept the old screen
+  and canvas size; `StageController.syncSize` now replays the resize, and pixel-ratio-only changes
+  (moving between monitors) are caught with a `matchMedia` resolution listener. The fix relies on
+  Pixi internals (`resizeCanvas`, the source `resize` event); recheck after a Pixi upgrade.
 - Roadmap step 2 review (2026-10-10): a win is saved when the engine reports it, not after its
   animation (leaving mid-animation lost it); Enter or Space during the win celebration no longer
   triggers a focused HUD button; two tabs no longer overwrite each other's progress; the level

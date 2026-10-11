@@ -95,6 +95,7 @@ export function PixiStage(props: PixiStageProps) {
     let controller: StageController | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let resizeFrame: number | null = null;
+    let pixelRatioQuery: MediaQueryList | null = null;
 
     const callbacks = (): StageCallbacks => ({
       onBusyChange: (busy) => propsRef.current.onBusyChange(busy),
@@ -118,6 +119,19 @@ export function PixiStage(props: PixiStageProps) {
         }
       });
     };
+
+    // A pixel ratio change without a size change (a move to another screen) fires no resize, so the
+    // render resolution follows a media query that matches only the current ratio.
+    function watchPixelRatio() {
+      pixelRatioQuery?.removeEventListener('change', handlePixelRatioChange);
+      pixelRatioQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+      pixelRatioQuery.addEventListener('change', handlePixelRatioChange);
+    }
+
+    function handlePixelRatioChange() {
+      watchPixelRatio();
+      scheduleResize();
+    }
 
     async function mount() {
       let initializingApp: Application | null = null;
@@ -159,6 +173,7 @@ export function PixiStage(props: PixiStageProps) {
         resizeObserver.observe(mountHost);
         window.addEventListener('resize', scheduleResize);
         window.addEventListener('orientationchange', scheduleResize);
+        watchPixelRatio();
         setPixiReady(true);
       } catch (error) {
         if (initializingApp !== null) {
@@ -182,6 +197,7 @@ export function PixiStage(props: PixiStageProps) {
       resizeObserver?.disconnect();
       window.removeEventListener('resize', scheduleResize);
       window.removeEventListener('orientationchange', scheduleResize);
+      pixelRatioQuery?.removeEventListener('change', handlePixelRatioChange);
 
       if (resizeFrame !== null) {
         window.cancelAnimationFrame(resizeFrame);

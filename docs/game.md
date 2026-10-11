@@ -21,7 +21,7 @@ uses exactly the given steps.
 
 1. Pick a level (level select, roadmap step 2).
 2. Read the board: start, finish, step budget, special tiles.
-3. Move Larry one neighbouring cell at a time (tap or click a neighbour, or use the keyboard).
+3. Move Larry one neighbouring cell at a time by tapping or clicking a highlighted cell.
 4. Each move spends steps; special tiles launch, slide, teleport, refill, open doors, or swap cells.
 5. Reach the finish before the steps run out, or retry, undo, and rethink.
 
@@ -74,7 +74,8 @@ immersive. Feedback comes from animation wherever possible.
             left                  centre               right
   ```
 
-  The steps counter is large and shows only the number. Music and SFX are on/off toggles (keys `M`
+  Moves are taps or clicks only; keys: `Z` undo, `R` restart. The steps counter is
+  large and shows only the number. Music and SFX are on/off toggles (keys `M`
   and `V`, which also work on the menu) and are saved. Undo stays available after a win.
 - **Win:** a celebration animation, then a "next" arrow badge in the centre; tap it or press Enter
   to continue. No auto-advance, so Undo and Restart remain available. The last level ends with an

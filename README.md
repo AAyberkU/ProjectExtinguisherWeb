@@ -48,8 +48,8 @@ npm run build      # assets + typecheck + production build in apps/web/dist
 npm run preview
 ```
 
-Controls: tap or click a highlighted neighbour, or use W/E/A/D/Z/X (Left/Right arrows also work);
-Backspace undoes, R restarts.
+Controls: tap or click a highlighted cell to move. Z undoes, R restarts, M and V toggle
+music and sound effects, Esc opens the level select.
 
 ## Documentation and agent workflow
 

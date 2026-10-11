@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { Ref } from 'react';
 import { gameAudio } from '../game/audio';
-import type { Dir, EngineEvent, LossReason } from '../game/engine';
+import { legalMoves, type Dir, type EngineEvent, type LossReason } from '../game/engine';
 import { CAMPAIGN_IDS, getCampaignLevel, isFinalCampaignLevel, type PlayableLevel } from '../game/levels';
 import { continueIndex, nextIndex } from '../game/progress';
 import { PixiStage, type PixiStageHandle } from '../game/renderer/PixiStage';
@@ -18,17 +18,6 @@ const RESTART_INTRO_DELAY_MS = 80;
 const HUD_BOARD_GAP_PX = 10;
 const DEFAULT_TOP_INSET_PX = 96;
 
-const KEY_DIRS: Readonly<Record<string, Dir>> = {
-  w: 'NW',
-  e: 'NE',
-  a: 'W',
-  arrowleft: 'W',
-  d: 'E',
-  arrowright: 'E',
-  z: 'SW',
-  x: 'SE',
-};
-
 /** `badge` turns true once the celebration's main beat is over and the next badge shows. */
 type Outcome = Readonly<{ result: 'won' | 'final'; badge: boolean } | { result: 'lost'; reason: LossReason }>;
 
@@ -39,6 +28,8 @@ export interface GameScreenHandle {
   levelIndex(): number | null;
   stats(): StageStats | null;
   cellScreenPoint(q: number, r: number): { x: number; y: number } | null;
+  /** Cells a tap would move to right now, with their direction; diagnostics only. */
+  moveTargets(): Array<{ dir: Dir; q: number; r: number }>;
 }
 
 type GameScreenProps = Readonly<{
@@ -367,6 +358,14 @@ export function GameScreen(props: GameScreenProps) {
     },
     stats: () => stageRef.current?.stats() ?? null,
     cellScreenPoint: (q, r) => stageRef.current?.cellScreenPoint(q, r) ?? null,
+    moveTargets: () => {
+      const { level: current, state } = sessionRef.current;
+
+      return legalMoves(current.compiled, state).map(({ dir, target }) => {
+        const { q, r } = current.compiled.cells[target];
+        return { dir, q, r };
+      });
+    },
   }), []);
 
   // Gameplay keys. Esc, M and V are shell keys owned by App (they also work outside the game).
@@ -377,13 +376,10 @@ export function GameScreen(props: GameScreenProps) {
       }
 
       const key = event.key.toLowerCase();
-      const dir = KEY_DIRS[key];
       const handlers = handlersRef.current;
 
-      if (dir !== undefined) {
-        event.preventDefault();
-        handlers.handleMove(dir);
-      } else if (key === 'backspace') {
+      // Moves are taps or clicks on the board only; keyboard movement was dropped as unintuitive.
+      if (key === 'z') {
         event.preventDefault();
         handlers.handleUndo();
       } else if (key === 'r') {

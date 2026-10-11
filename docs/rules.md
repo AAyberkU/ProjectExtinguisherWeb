@@ -152,7 +152,7 @@ cannot launch; unreachable tiles; budget looser than `minBudget`.
 Useful defaults until our own art and tuning exist:
 
 - Animation timing: walk 110 ms, launch 190 ms, slide 160 ms, teleport instant.
-- Keyboard (pointy): `d`/Right = E, `x` = SE, `z` = SW, `a`/Left = W, `w` = NW, `e` = NE;
+- Keyboard in the editor (pointy; our game moves by tap only): `d`/Right = E, `x` = SE, `z` = SW, `a`/Left = W, `w` = NW, `e` = NE;
   Backspace undoes; restart is available.
 - HUD messages: "Won! N moves, K steps left", "Out of steps", "No moves left".
 - Placeholder glyphs: start ring; finish ring with dot; plus1 "+1"; launcher arrow; blocker cross;

@@ -29,6 +29,9 @@ Roadmap step 2 (branch `worktree-step2-menus`, 2026-10-10):
   storage is blocked.
 - HUD: left level, Undo, Restart; centre a large steps counter; right Music, SFX, Menu. Keys M, V,
   Esc; Enter or Space on the next badge.
+- After the first play test (2026-10-11): keyboard movement removed (taps only); `Z` undoes and
+  Backspace no longer does; browser zoom no longer pushes the board off-centre. The end-to-end run
+  now plays all 60 levels by clicking cells (60/60).
 - Win: celebration on the board, then a next badge (no auto-advance; Undo and Restart still work).
   Loss: shake (stuck) or slump (out of steps), red counter, pulsing Undo and Restart; no panel.
 - Tutorial trial: the first level of each mechanic glows its tile with one line of text; it

@@ -238,14 +238,33 @@ export class StageController {
     this.renderIdle();
   }
 
-  /** Matches the renderer to the host size; renders at once so a resize never shows a blank canvas. */
+  /**
+   * Matches the renderer to the host size and the current device pixel ratio; renders at once so a
+   * resize never shows a blank canvas.
+   */
   public syncSize() {
     const { width, height } = this.host.getBoundingClientRect();
     const w = Math.max(1, Math.round(width));
     const h = Math.max(1, Math.round(height));
+    const resolution = this.resolution();
+    const renderer = this.app.renderer;
+    const source = renderer.view.texture.source;
 
-    this.app.renderer.resize(w, h, this.resolution());
-    this.app.stage.hitArea = new Rectangle(0, 0, w, h);
+    renderer.resize(w, h, resolution);
+
+    // Browser zoom changes the CSS size and the pixel ratio together, so the backing pixel size often
+    // stays the same. Pixi then skips its resize event and leaves the screen, the root render target,
+    // and the canvas CSS size at the old zoom (the board drifts off-centre). Replay the event.
+    if (renderer.screen.width !== source.width || renderer.screen.height !== source.height) {
+      source.emit('resize', source);
+      source.resizeCanvas();
+      renderer.resize(w, h, resolution);
+    }
+
+    const { screen } = renderer;
+
+    this.app.stage.hitArea = new Rectangle(0, 0, screen.width, screen.height);
+    this.board?.setResolution(resolution);
     this.applyFit();
     this.renderIdle();
   }

@@ -108,6 +108,17 @@ function sharpenText(node: Container, resolution: number) {
   }
 }
 
+/** Multiplies the resolution of every text under `node` (the render resolution changed). */
+export function rescaleText(node: Container, ratio: number) {
+  for (const child of node.children) {
+    if (child instanceof Text) {
+      child.resolution *= ratio;
+    } else {
+      rescaleText(child, ratio);
+    }
+  }
+}
+
 function glyphFor(look: TileLook): GlyphTile | null {
   const { content } = look;
 

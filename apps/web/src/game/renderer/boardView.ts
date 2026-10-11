@@ -11,6 +11,7 @@ import {
   createPopText,
   createTileBase,
   createTileSprite,
+  rescaleText,
   tileLook,
   type VisualState,
 } from './tileArt';
@@ -101,7 +102,7 @@ export class BoardView {
     public readonly level: CompiledLevel,
     state: PlayState,
     private readonly animator: Animator,
-    private readonly resolution: number,
+    private resolution: number,
   ) {
     this.root.label = 'Hex Board';
     this.scene.label = 'Scene';
@@ -158,6 +159,16 @@ export class BoardView {
   public destroy() {
     this.destroyed = true;
     this.root.destroy({ children: true });
+  }
+
+  /** Re-rasterizes the board's text for a new render resolution (browser zoom, another screen). */
+  public setResolution(resolution: number) {
+    if (resolution === this.resolution) {
+      return;
+    }
+
+    rescaleText(this.root, resolution / this.resolution);
+    this.resolution = resolution;
   }
 
   /** Legal target cell under a board point, with its direction. */

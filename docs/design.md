@@ -77,8 +77,8 @@ ProjectExtinguisherWeb/
   - `animator.ts`: runs the Pixi ticker only while something animates; otherwise renders on demand.
   - `tileArt.ts`: base sprites and seeded floor and wall variants (seeded by level id and the cell
     whose content is shown, so swapped tiles keep their look); `glyphs.ts`: placeholder glyphs.
-- **Input**: tap or click a highlighted neighbour, or keys `W` (NW), `E` (NE), `A`/Left (W), `D`/Right
-  (E), `Z` (SW), `X` (SE); `Backspace` undo; `R` restart. Input is locked while motion plays
+- **Input**: moves are only taps or clicks on a highlighted cell (keyboard movement was removed on
+  2026-10-11 as unintuitive); `Z` undo; `R` restart. Input is locked while motion plays
   (`data-busy` on `.game-panel`) and during the level intro.
 - **HUD** (`ui/Hud.tsx`): left `Level N`, Undo, Restart; centre the steps counter; right Music, SFX,
   Menu. There are no win or loss panels: after motion ends the stage plays `celebrate(final)` or
@@ -87,7 +87,8 @@ ProjectExtinguisherWeb/
   [data-loss-reason]`, `.game-hud[data-level-id][data-steps]`, `.next-badge[data-action]`.
 - **Tutorial**: `renderer/hintGlow.ts` draws the glow (`setHint`), `ui/TutorialHint.tsx` places the
   text next to the cell (`hintAnchor`, `onLayout`).
-- Render resolution is the device pixel ratio clamped to 1-3.
+- Render resolution is the device pixel ratio clamped to 1-3. Browser zoom and monitor changes
+  re-sync the canvas size, resolution, hit area, and text sharpness (`syncSize`, `docs/bugs.md`).
 
 ## Start and loading flow
 
