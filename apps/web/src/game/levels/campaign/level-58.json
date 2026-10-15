@@ -1,0 +1,62 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-58",
+  "name": "v3 · Uzak dolum",
+  "grid": {"size":7,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":3},
+  "tiles": [
+    {"q":0,"r":-3,"type":"floor"},
+    {"q":1,"r":-3,"type":"floor"},
+    {"q":2,"r":-3,"type":"floor"},
+    {"q":3,"r":-3,"type":"floor"},
+    {"q":-1,"r":-2,"type":"switch","color":1},
+    {"q":0,"r":-2,"type":"door","color":1},
+    {
+      "q": 1,
+      "r": -2,
+      "type": "passage",
+      "noIn": ["E"]
+    },
+    {"q":2,"r":-2,"type":"finish"},
+    {"q":3,"r":-2,"type":"floor"},
+    {"q":-2,"r":-1,"type":"floor"},
+    {"q":-1,"r":-1,"type":"mover","dir":"W"},
+    {"q":0,"r":-1,"type":"launcher","dir":"SE"},
+    {"q":1,"r":-1,"type":"blocker"},
+    {"q":2,"r":-1,"type":"blocker"},
+    {"q":3,"r":-1,"type":"floor"},
+    {"q":-3,"r":0,"type":"refill","value":5},
+    {"q":-2,"r":0,"type":"swamp"},
+    {"q":-1,"r":0,"type":"floor"},
+    {"q":0,"r":0,"type":"floor"},
+    {"q":1,"r":0,"type":"mover","dir":"SE"},
+    {"q":2,"r":0,"type":"floor"},
+    {"q":3,"r":0,"type":"floor"},
+    {"q":-3,"r":1,"type":"launcher","dir":"SE"},
+    {"q":-2,"r":1,"type":"mover","dir":"E"},
+    {"q":-1,"r":1,"type":"plus1"},
+    {"q":0,"r":1,"type":"refill","value":4},
+    {"q":1,"r":1,"type":"floor"},
+    {"q":2,"r":1,"type":"floor"},
+    {"q":-3,"r":2,"type":"start"},
+    {"q":-2,"r":2,"type":"floor"},
+    {"q":-1,"r":2,"type":"launcher","dir":"NE"},
+    {"q":0,"r":2,"type":"floor"},
+    {"q":1,"r":2,"type":"blocker"},
+    {"q":-3,"r":3,"type":"floor"},
+    {"q":-2,"r":3,"type":"floor"},
+    {"q":-1,"r":3,"type":"floor"},
+    {"q":0,"r":3,"type":"floor"}
+  ],
+  "meta": {
+    "slot": 58,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 3,
+      "solutions": 1,
+      "shortest": ["E","E","W","W","NW","W","W","NE","NE","E","E","E"]
+    }
+  }
+}

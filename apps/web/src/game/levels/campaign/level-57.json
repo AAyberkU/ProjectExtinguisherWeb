@@ -1,0 +1,44 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-57",
+  "name": "v3 · Evde park",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":8},
+  "tiles": [
+    {"q":0,"r":-2,"type":"swamp"},
+    {"q":1,"r":-2,"type":"mover","dir":"SW"},
+    {"q":2,"r":-2,"type":"finish"},
+    {
+      "q": -1,
+      "r": -1,
+      "type": "passage",
+      "noIn": ["E"]
+    },
+    {"q":0,"r":-1,"type":"launcher","dir":"E"},
+    {"q":1,"r":-1,"type":"mover","dir":"NW"},
+    {"q":2,"r":-1,"type":"launcher","dir":"SW"},
+    {"q":-2,"r":0,"type":"mover","dir":"E"},
+    {"q":-1,"r":0,"type":"floor"},
+    {"q":0,"r":0,"type":"floor","swap":1},
+    {"q":1,"r":0,"type":"plus1","swap":1},
+    {"q":2,"r":0,"type":"swamp"},
+    {"q":-2,"r":1,"type":"launcher","dir":"NW"},
+    {"q":-1,"r":1,"type":"floor"},
+    {"q":0,"r":1,"type":"switch","color":1},
+    {"q":1,"r":1,"type":"door","color":1},
+    {"q":-2,"r":2,"type":"start"},
+    {"q":-1,"r":2,"type":"mover","dir":"NE"},
+    {"q":0,"r":2,"type":"plus1"}
+  ],
+  "meta": {
+    "slot": 57,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 8,
+      "solutions": 1,
+      "shortest": ["NE","NW","NW","NE","E","NE","NW","NE"]
+    }
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-44",
+  "name": "v3 · Dolambaç",
+  "grid": {"size":7,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":10},
+  "tiles": [
+    {"q":0,"r":-3,"type":"blocker"},
+    {"q":1,"r":-3,"type":"floor"},
+    {"q":2,"r":-3,"type":"floor"},
+    {"q":3,"r":-3,"type":"floor"},
+    {"q":-1,"r":-2,"type":"floor"},
+    {"q":0,"r":-2,"type":"blocker"},
+    {"q":1,"r":-2,"type":"floor"},
+    {"q":2,"r":-2,"type":"floor"},
+    {"q":3,"r":-2,"type":"floor"},
+    {"q":-2,"r":-1,"type":"floor"},
+    {"q":-1,"r":-1,"type":"floor","swap":1},
+    {"q":0,"r":-1,"type":"blocker"},
+    {"q":1,"r":-1,"type":"swamp","swap":1},
+    {"q":2,"r":-1,"type":"plus1"},
+    {"q":3,"r":-1,"type":"floor"},
+    {"q":-3,"r":0,"type":"floor"},
+    {"q":-2,"r":0,"type":"plus1"},
+    {"q":-1,"r":0,"type":"launcher","dir":"SW"},
+    {"q":0,"r":0,"type":"floor"},
+    {"q":1,"r":0,"type":"blocker"},
+    {"q":2,"r":0,"type":"floor"},
+    {"q":3,"r":0,"type":"floor"},
+    {"q":-3,"r":1,"type":"start"},
+    {
+      "q": -2,
+      "r": 1,
+      "type": "passage",
+      "noIn": ["E","NE"],
+      "noOut": ["E","NE"]
+    },
+    {"q":-1,"r":1,"type":"floor"},
+    {
+      "q": 0,
+      "r": 1,
+      "type": "passage",
+      "noIn": ["E","NW","SW","SE"],
+      "noOut": ["NW","W","SW","SE"]
+    },
+    {"q":1,"r":1,"type":"launcher","dir":"SW"},
+    {"q":2,"r":1,"type":"finish"},
+    {"q":-3,"r":2,"type":"floor"},
+    {"q":-2,"r":2,"type":"blocker"},
+    {"q":-1,"r":2,"type":"swamp"},
+    {"q":0,"r":2,"type":"floor"},
+    {"q":1,"r":2,"type":"launcher","dir":"W"},
+    {"q":-3,"r":3,"type":"floor"},
+    {
+      "q": -2,
+      "r": 3,
+      "type": "passage",
+      "noIn": [],
+      "noOut": ["E"]
+    },
+    {"q":-1,"r":3,"type":"launcher","dir":"E"},
+    {"q":0,"r":3,"type":"plus1"}
+  ],
+  "meta": {
+    "slot": 44,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 10,
+      "solutions": 1,
+      "shortest": ["SE","SE","E","NE","NW","NE","NE","E","SE","SE"]
+    }
+  }
+}

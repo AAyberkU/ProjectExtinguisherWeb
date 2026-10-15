@@ -1,0 +1,45 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-46",
+  "name": "v3 · Yan kapı",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":7},
+  "tiles": [
+    {"q":0,"r":-2,"type":"floor"},
+    {"q":1,"r":-2,"type":"floor"},
+    {"q":2,"r":-2,"type":"mover","dir":"SW"},
+    {"q":-1,"r":-1,"type":"swamp"},
+    {
+      "q": 0,
+      "r": -1,
+      "type": "passage",
+      "noIn": ["E"],
+      "noOut": []
+    },
+    {"q":1,"r":-1,"type":"plus1"},
+    {"q":2,"r":-1,"type":"mover","dir":"W"},
+    {"q":-2,"r":0,"type":"finish"},
+    {"q":-1,"r":0,"type":"floor"},
+    {"q":0,"r":0,"type":"launcher","dir":"SW"},
+    {"q":1,"r":0,"type":"mover","dir":"SW"},
+    {"q":2,"r":0,"type":"swamp"},
+    {"q":-2,"r":1,"type":"blocker"},
+    {"q":-1,"r":1,"type":"blocker"},
+    {"q":0,"r":1,"type":"floor"},
+    {"q":1,"r":1,"type":"floor"},
+    {"q":-2,"r":2,"type":"plus1"},
+    {"q":-1,"r":2,"type":"plus1"},
+    {"q":0,"r":2,"type":"start"}
+  ],
+  "meta": {
+    "slot": 46,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 7,
+      "solutions": 1,
+      "shortest": ["NE","NE","NW","NW","SW","SW","W"]
+    }
+  }
+}

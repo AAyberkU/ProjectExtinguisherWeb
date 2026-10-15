@@ -31,6 +31,9 @@ export {
   type CompiledLevel,
 } from './compile';
 export {
+  carCells,
+  carParkedAt,
+  withCar,
   colorBit,
   doorOpen,
   hasMove,

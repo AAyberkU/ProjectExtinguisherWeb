@@ -1,8 +1,8 @@
 // Level validation matching the Puzzle Lab editor's validate() + analyze() checks (docs/rules.md).
 
-import { compileLevel, type CompiledLevel } from './compile';
+import { compileLevel, tileAt, type CompiledLevel } from './compile';
 import { onBoard } from './hex';
-import { moveCore, landOf, resolveArrival, type CoreState } from './rules';
+import { moveCore, landOf, resolveArrival, withCar, type CoreState } from './rules';
 import { minBudgetSearch, STATE_LIMIT } from './solver';
 import { DIRS, TILE_TYPES, isDir, type PuzzleLabLevel } from './types';
 
@@ -28,9 +28,12 @@ const at = (q: unknown, r: unknown): string => `(${String(q)}, ${String(r)})`;
 /** Cells the player can ever stand on or pass through (steps and +1s ignored), as the editor. */
 export function reachableCells(level: CompiledLevel): Uint8Array {
   const seen = new Uint8Array(level.cellCount);
-  const key = (s: CoreState): number => (s.sw * 2 + s.phase) * level.cellCount + s.pos;
-  const s0: CoreState = { pos: level.startIndex, steps: Infinity, mask: 0, sw: 0, phase: 0 };
-  const visited = new Set<number>([key(s0)]);
+  const key = (s: CoreState): number | string => {
+    const k = (s.sw * 2 + s.phase) * level.cellCount + s.pos;
+    return level.cars.length ? k + '|' + s.cars : k;
+  };
+  const s0: CoreState = { pos: level.startIndex, steps: Infinity, mask: 0, sw: 0, phase: 0, cars: level.carsHome };
+  const visited = new Set<number | string>([key(s0)]);
   const stack = [s0];
   seen[level.startIndex] = 1;
   while (stack.length) {
@@ -42,7 +45,7 @@ export function reachableCells(level: CompiledLevel): Uint8Array {
       for (const x of trail) seen[x] = 1;
       seen[m.target] = 1;
       if (m.arrival.won) continue;
-      const ns: CoreState = { pos: m.arrival.pos, steps: Infinity, mask: 0, sw: m.arrival.sw, phase: m.phase };
+      const ns: CoreState = { pos: m.arrival.pos, steps: Infinity, mask: 0, sw: m.arrival.sw, phase: m.phase, cars: m.arrival.cars };
       const k = key(ns);
       if (!visited.has(k)) {
         visited.add(k);
@@ -170,6 +173,8 @@ export function validateLevel(raw: unknown, options: ValidateOptions = {}): Vali
     if (t.swap !== undefined) {
       if (!(isInt(t.swap) && t.swap >= 1)) errors.push(`${where}: invalid swap pair id`);
       swapIds.set(t.swap, (swapIds.get(t.swap) ?? 0) + 1);
+      // A car is a thing on the board, not cell content: it cannot trade places (rule 15).
+      if (type === 'mover') errors.push(`${where}: a mover cannot be part of a swap pair`);
     }
   });
   for (const [pair, c] of portalPairs) if (c !== 2) errors.push(`Portal pair ${String(pair)}: ${c} portals, expected 2`);
@@ -190,25 +195,42 @@ export function validateLevel(raw: unknown, options: ValidateOptions = {}): Vali
   cells.forEach((c, i) => {
     if (c.type === 'launcher' && landOf(level, i, 0, 0) === i) warnings.push(`${at(c.q, c.r)}: launcher cannot launch anywhere`);
   });
-  // Mover / mixed loops, for every switch combination and both swap phases. One error per loop.
+  // Loops the static check cannot see: after a swap, with doors open, or with a parked car as a new
+  // wall (cars move once, so a loop is always made of launchers). Every switch combination and both
+  // swap phases; parked cars one at a time, on every cell its ray could reach. One error per loop.
   if (!cycles.length) {
     const inLoop = new Set<number>();
     const phases = level.hasSwap ? [0, 1] : [0];
+    const parks: Array<[string, number]> = [[level.carsHome, -1]];
+    const parkable = (type: string): boolean =>
+      type === 'floor' || type === 'start' || type === 'door' || type === 'plus1' || type === 'mover';
+    level.cars.forEach((home, k) => {
+      const di = cells[home].dirIndex;
+      if (di < 0) return;
+      for (let p = home, g = 0; p >= 0 && g <= level.cellCount; g++) {
+        parks.push([withCar(level.carsHome, k, p), p]);
+        p = level.neighbors[p][di];
+        if (p >= 0 && !(parkable(tileAt(level, p, 0).type) || parkable(tileAt(level, p, 1).type))) break;
+      }
+    });
     cells.forEach((c, i) => {
       if ((c.type !== 'mover' && c.type !== 'launcher') || inLoop.has(i)) return;
-      for (const phase of phases) {
-        for (let sw = 0; sw < 8; sw++) {
-          const trail: number[] = [];
-          const r = resolveArrival(level, i, 0, phase, sw, null, trail);
-          if (r.chainLimit) {
-            trail.forEach((x) => inLoop.add(x));
-            const open = [1, 2, 3].filter((col) => sw & (1 << (col - 1))).map((col) => 'ABC'[col - 1]);
-            errors.push(
-              `Slide loop: the mover/launcher chain from ${at(c.q, c.r)} returns to itself` +
-                (open.length ? ` (open doors: ${open.join(', ')})` : '') +
-                (phase ? ' (swap phase 1)' : ''),
-            );
-            return;
+      for (const [cars, parked] of c.type === 'launcher' ? parks : parks.slice(0, 1)) {
+        for (const phase of phases) {
+          for (let sw = 0; sw < 8; sw++) {
+            if (parked === i) continue;
+            const trail: number[] = [];
+            const r = resolveArrival(level, i, 0, phase, sw, cars, null, trail);
+            if (r.chainLimit) {
+              trail.forEach((x) => inLoop.add(x));
+              const open = [1, 2, 3].filter((col) => sw & (1 << (col - 1))).map((col) => 'ABC'[col - 1]);
+              errors.push(
+                `Slide loop: the mover/launcher chain from ${at(c.q, c.r)} returns to itself` +
+                  (open.length ? ` (open doors: ${open.join(', ')})` : '') +
+                  (parked >= 0 ? ` (parked car: ${at(cells[parked].q, cells[parked].r)})` : ''),
+              );
+              return;
+            }
           }
         }
       }

@@ -1,0 +1,39 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-52",
+  "name": "v3 · Merdivenin ikinci katı",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":1},
+  "tiles": [
+    {"q":0,"r":-2,"type":"finish"},
+    {"q":1,"r":-2,"type":"mover","dir":"SW"},
+    {"q":2,"r":-2,"type":"switch","color":1},
+    {"q":-1,"r":-1,"type":"floor"},
+    {"q":0,"r":-1,"type":"mover","dir":"W"},
+    {"q":1,"r":-1,"type":"launcher","dir":"SE"},
+    {"q":2,"r":-1,"type":"floor"},
+    {"q":-2,"r":0,"type":"door","color":1},
+    {"q":-1,"r":0,"type":"launcher","dir":"SW"},
+    {"q":0,"r":0,"type":"floor"},
+    {"q":1,"r":0,"type":"start"},
+    {"q":2,"r":0,"type":"launcher","dir":"NW"},
+    {"q":-2,"r":1,"type":"mover","dir":"E"},
+    {"q":-1,"r":1,"type":"floor"},
+    {"q":0,"r":1,"type":"refill","value":2},
+    {"q":1,"r":1,"type":"plus1"},
+    {"q":-2,"r":2,"type":"refill","value":3},
+    {"q":-1,"r":2,"type":"plus1"},
+    {"q":0,"r":2,"type":"plus1"}
+  ],
+  "meta": {
+    "slot": 52,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 1,
+      "solutions": 1,
+      "shortest": ["SW","W","SW","E","E","NE","NE","W","NE"]
+    }
+  }
+}

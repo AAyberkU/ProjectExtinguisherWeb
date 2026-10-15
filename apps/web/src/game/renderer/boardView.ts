@@ -2,11 +2,12 @@
 // play state and animated per engine event. Never rebuilt per move.
 
 import { Container, Graphics, Sprite } from 'pixi.js';
-import type { CompiledLevel, Dir, PlayState } from '../engine';
+import { carCells, withCar, type CompiledLevel, type Dir, type EngineEvent, type PlayState } from '../engine';
 import { easeInOutSine, easeOutBack, easeOutCubic, linear, type Animator } from './animator';
 import { hexCorners } from './glyphs';
 import { cellCenter, TILE_VISUAL_RADIUS, type Point } from './layout';
 import {
+  createCarSprite,
   createCellMarker,
   createPopText,
   createPlusGhost,
@@ -42,6 +43,8 @@ const HIGHLIGHT_COLOR = 0x00ff88;
 const SWAP_SOCKET_COLOR = 0x2a1050;
 const HIGHLIGHT_ALPHA = 0.85;
 const HIGHLIGHT_WIDTH = 2.5;
+/** A parked car the player has left is a wall: drawn a little darker so it reads as an obstacle. */
+const PARKED_CAR_TINT = 0xa8a0b8;
 
 /**
  * What the outcome effects (effects.ts) may animate. Every handle is restored by
@@ -85,6 +88,12 @@ export class BoardView {
   private readonly outcomeUnder = new Container();
   private readonly outcomeOver = new Container();
   private readonly tileLayer = new Container();
+  /**
+   * Cars that left their home tile (or parked for good on it); unused cars are part of their tile.
+   * Above the tile effects, so a car parked on a swap cell stays visible while the contents trade.
+   */
+  private readonly carLayer = new Container();
+  private readonly cars = new Map<number, Sprite>();
   private readonly hintLayer = new Container();
   private readonly fxLayer = new Container();
   private readonly highlight = new Graphics();
@@ -111,14 +120,15 @@ export class BoardView {
     this.outcomeUnder.label = 'Outcome Glow';
     this.outcomeOver.label = 'Outcome Effects';
     this.tileLayer.label = 'Tiles';
+    this.carLayer.label = 'Cars';
     this.hintLayer.label = 'Tutorial Hint';
     this.fxLayer.label = 'Tile Effects';
     this.highlight.label = 'Move Highlights';
     this.larryLayer.label = 'Larry';
     this.popLayer.label = 'Pops';
-    this.scene.addChild(this.tileLayer, this.hintLayer, this.fxLayer, this.outcomeUnder, this.highlight, this.larryLayer, this.popLayer);
+    this.scene.addChild(this.tileLayer, this.hintLayer, this.fxLayer, this.carLayer, this.outcomeUnder, this.highlight, this.larryLayer, this.popLayer);
     this.root.addChild(this.scene, this.outcomeOver);
-    this.visual = { phase: state.phase, mask: state.mask, sw: state.sw };
+    this.visual = { phase: state.phase, mask: state.mask, sw: state.sw, cars: state.cars };
     this.larryCell = state.pos;
 
     // Lower rows draw over the rows above them, as with the jam art.
@@ -156,6 +166,7 @@ export class BoardView {
     this.larry.scale.set(this.larryScale);
     this.larryLayer.addChild(this.larry);
     this.placeLarry(state.pos);
+    this.syncCars();
   }
 
   public destroy() {
@@ -182,10 +193,50 @@ export class BoardView {
 
   /** Snaps every tile and Larry to a state (undo, timeline end). */
   public showState(state: PlayState) {
-    this.visual = { phase: state.phase, mask: state.mask, sw: state.sw };
+    this.visual = { phase: state.phase, mask: state.mask, sw: state.sw, cars: state.cars };
     this.refreshTiles();
     this.placeLarry(state.pos);
+    this.syncCars();
     this.resetLarryLook();
+  }
+
+  // ---------- cars ----------
+
+  private carSprite(car: number): Sprite {
+    let sprite = this.cars.get(car);
+
+    if (sprite === undefined) {
+      sprite = createCarSprite(this.level.cells[this.level.cars[car]].dir);
+      this.cars.set(car, sprite);
+      this.carLayer.addChild(sprite);
+    }
+
+    return sprite;
+  }
+
+  /** Places every used car on its cell (unused cars are drawn by their home tile) and darkens the parked ones. */
+  private syncCars() {
+    for (const [index, { at, used }] of carCells(this.level, this.visual).entries()) {
+      if (!used) {
+        this.cars.get(index)?.destroy();
+        this.cars.delete(index);
+        continue;
+      }
+
+      const sprite = this.carSprite(index);
+      const { x, y } = this.tiles[at].home;
+      sprite.position.set(x, y);
+    }
+
+    this.tintCars();
+  }
+
+  /** The car Larry sits in looks normal; every other used car is parked for good. */
+  private tintCars() {
+    for (const [index, { at }] of carCells(this.level, this.visual).entries()) {
+      const sprite = this.cars.get(index);
+      if (sprite !== undefined) sprite.tint = at === this.larryCell ? 0xffffff : PARKED_CAR_TINT;
+    }
   }
 
   // ---------- tutorial hint ----------
@@ -358,6 +409,7 @@ export class BoardView {
     const total = lines * lineDelay + INTRO_FALL_MS;
 
     this.larry.alpha = 0;
+    this.carLayer.alpha = 0;
 
     for (const tile of this.tiles) {
       tile.container.alpha = 0;
@@ -385,6 +437,7 @@ export class BoardView {
 
     return this.animator.tween(INTRO_LARRY_MS, (t) => {
       this.larry.alpha = t;
+      this.carLayer.alpha = t;
     }, easeOutCubic);
   }
 
@@ -399,6 +452,7 @@ export class BoardView {
     const point = this.larryPoint(cell);
     this.larryCell = cell;
     this.larry.position.set(point.x, point.y);
+    this.tintCars();
   }
 
   private async arc(to: number, durationMs: number, height: number): Promise<boolean> {
@@ -421,24 +475,44 @@ export class BoardView {
     return this.arc(to, LAUNCH_MS, LAUNCH_HOP);
   }
 
-  public async slide(path: readonly number[]): Promise<boolean> {
-    const points = [this.larryPoint(this.larryCell), ...path.map((cell) => this.larryPoint(cell))];
-    const segments = points.length - 1;
+  /**
+   * A car ride: the home tile turns to floor, the car drives Larry along the path and parks; with a
+   * drop, Larry hops off onto the next tile.
+   */
+  public async ride(event: Extract<EngineEvent, { type: 'slide' }>): Promise<boolean> {
+    this.visual = { ...this.visual, cars: withCar(this.visual.cars, event.car, event.parkedAt) };
+    await this.refreshTiles();
 
-    if (segments <= 0) {
-      return true;
+    if (this.destroyed) return false;
+
+    const car = this.carSprite(event.car);
+    const cells = [event.from, ...event.path];
+    const segments = cells.length - 1;
+
+    car.tint = 0xffffff;
+    car.position.set(this.tiles[event.from].home.x, this.tiles[event.from].home.y);
+
+    let done = true;
+
+    if (segments > 0) {
+      const carPoints = cells.map((cell) => this.tiles[cell].home);
+      const larryPoints = cells.map((cell) => this.larryPoint(cell));
+
+      done = await this.animator.tween(segments * SLIDE_MS_PER_CELL, (t) => {
+        const position = t * segments;
+        const index = Math.min(segments - 1, Math.floor(position));
+        const local = position - index;
+        car.position.set(lerp(carPoints[index].x, carPoints[index + 1].x, local), lerp(carPoints[index].y, carPoints[index + 1].y, local));
+        this.larry.x = lerp(larryPoints[index].x, larryPoints[index + 1].x, local);
+        this.larry.y = lerp(larryPoints[index].y, larryPoints[index + 1].y, local);
+      }, linear);
+
+      if (this.destroyed) return false;
     }
 
-    const done = await this.animator.tween(segments * SLIDE_MS_PER_CELL, (t) => {
-      const position = t * segments;
-      const index = Math.min(segments - 1, Math.floor(position));
-      const local = position - index;
-      this.larry.x = lerp(points[index].x, points[index + 1].x, local);
-      this.larry.y = lerp(points[index].y, points[index + 1].y, local);
-    }, linear);
-    if (this.destroyed) return false;
-    this.placeLarry(path[path.length - 1]);
-    return done;
+    this.placeLarry(event.parkedAt);
+    this.syncCars();
+    return event.drop ? (await this.walk(event.to)) && done : done;
   }
 
   public async teleport(to: number): Promise<boolean> {

@@ -102,9 +102,9 @@
     "author": "Lumen (Claude)",
     "solution": {
       "solvable": true,
-      "minBudget": 16,
-      "solutions": 1,
-      "shortest": ["W","NE","NW","W","W","W","SW","SE","SE","SE","SW","SW","NE","NW","NE","E","SE"]
+      "minBudget": 14,
+      "solutions": 28,
+      "shortest": ["W","W","W","W","SW","SE","SW","NE","NE","NW","NE","E","E","E","SE"]
     }
   }
 }

@@ -1,0 +1,57 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-45",
+  "name": "v3 · Kapalı yüz",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":8},
+  "tiles": [
+    {"q":0,"r":-2,"type":"floor"},
+    {"q":1,"r":-2,"type":"plus1"},
+    {"q":2,"r":-2,"type":"start"},
+    {"q":-1,"r":-1,"type":"portal","pair":1},
+    {
+      "q": 0,
+      "r": -1,
+      "type": "passage",
+      "noIn": ["W","SW"],
+      "noOut": ["W","SW"]
+    },
+    {"q":1,"r":-1,"type":"launcher","dir":"NE"},
+    {
+      "q": 2,
+      "r": -1,
+      "type": "passage",
+      "noIn": ["W","SW","NW"],
+      "noOut": ["W","SW","SE"]
+    },
+    {"q":-2,"r":0,"type":"plus1"},
+    {"q":-1,"r":0,"type":"plus1"},
+    {"q":0,"r":0,"type":"floor"},
+    {"q":1,"r":0,"type":"portal","pair":1},
+    {"q":2,"r":0,"type":"swamp"},
+    {"q":-2,"r":1,"type":"launcher","dir":"NW"},
+    {"q":-1,"r":1,"type":"launcher","dir":"W"},
+    {"q":0,"r":1,"type":"launcher","dir":"NW"},
+    {
+      "q": 1,
+      "r": 1,
+      "type": "passage",
+      "noIn": ["NW"],
+      "noOut": ["NW"]
+    },
+    {"q":-2,"r":2,"type":"finish"},
+    {"q":-1,"r":2,"type":"swamp"},
+    {"q":0,"r":2,"type":"plus1"}
+  ],
+  "meta": {
+    "slot": 45,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 8,
+      "solutions": 1,
+      "shortest": ["W","W","SW","E","SW","SW","W","W"]
+    }
+  }
+}

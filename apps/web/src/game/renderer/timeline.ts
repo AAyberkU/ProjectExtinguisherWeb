@@ -20,7 +20,7 @@ function presentEvent(board: BoardView, event: EngineEvent): Promise<boolean> {
     case 'launch':
       return board.launch(event.to);
     case 'slide':
-      return board.slide(event.path.length > 0 ? event.path : [event.to]);
+      return board.ride(event);
     case 'teleport':
       return board.teleport(event.to);
     case 'plus1': {

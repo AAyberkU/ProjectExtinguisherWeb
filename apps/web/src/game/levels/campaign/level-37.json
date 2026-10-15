@@ -1,0 +1,39 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-37",
+  "name": "v3 · Uzaktaki kapı",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":6},
+  "tiles": [
+    {"q":0,"r":-2,"type":"finish"},
+    {"q":1,"r":-2,"type":"floor"},
+    {"q":2,"r":-2,"type":"door","color":1},
+    {"q":-1,"r":-1,"type":"blocker"},
+    {"q":0,"r":-1,"type":"door","color":1},
+    {"q":1,"r":-1,"type":"launcher","dir":"SE"},
+    {"q":2,"r":-1,"type":"plus1"},
+    {"q":-2,"r":0,"type":"switch","color":1},
+    {"q":-1,"r":0,"type":"mover","dir":"E"},
+    {"q":0,"r":0,"type":"floor"},
+    {"q":1,"r":0,"type":"floor"},
+    {"q":2,"r":0,"type":"floor"},
+    {"q":-2,"r":1,"type":"plus1"},
+    {"q":-1,"r":1,"type":"floor"},
+    {"q":0,"r":1,"type":"swamp"},
+    {"q":1,"r":1,"type":"plus1"},
+    {"q":-2,"r":2,"type":"plus1"},
+    {"q":-1,"r":2,"type":"floor"},
+    {"q":0,"r":2,"type":"start"}
+  ],
+  "meta": {
+    "slot": 37,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 6,
+      "solutions": 1,
+      "shortest": ["W","W","NW","NW","E","NW","NW","W","W"]
+    }
+  }
+}

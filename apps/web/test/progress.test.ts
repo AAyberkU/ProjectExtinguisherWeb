@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CAMPAIGN_IDS } from '../src/game/levels';
 import { continueIndex, hasProgress, isUnlocked, nextIndex } from '../src/game/progress';
 
 const ids = ['a', 'b', 'c', 'd'];
@@ -60,5 +61,23 @@ describe('nextIndex', () => {
   });
   it('is null after the last level', () => {
     expect(nextIndex(ids, 3)).toBeNull();
+  });
+});
+
+describe('saves from the temporary campaign (before v3, 2026-10-16)', () => {
+  // Its ids (c01-l01-v1, c01-l02 ... c10-l06) are not v3 ids, so an old save starts the v3 campaign fresh.
+  const oldIds = Array.from({ length: 60 }, (_, i) => {
+    const id = `c${String(Math.floor(i / 6) + 1).padStart(2, '0')}-l0${(i % 6) + 1}`;
+    return i === 0 ? `${id}-v1` : id;
+  });
+  const oldSave = new Set(oldIds);
+
+  it('shares no id with the current campaign', () => {
+    expect(CAMPAIGN_IDS.filter((id) => oldSave.has(id))).toEqual([]);
+  });
+  it('counts as no progress and unlocks only the first level', () => {
+    expect(hasProgress(CAMPAIGN_IDS, oldSave)).toBe(false);
+    expect(continueIndex(CAMPAIGN_IDS, oldSave)).toBe(0);
+    expect(CAMPAIGN_IDS.filter((_, i) => isUnlocked(CAMPAIGN_IDS, i, oldSave))).toEqual([CAMPAIGN_IDS[0]]);
   });
 });

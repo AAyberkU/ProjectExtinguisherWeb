@@ -6,14 +6,12 @@ const campaignRaw = import.meta.glob<string>(
   ['../src/game/levels/campaign/*.json', '!../src/game/levels/campaign/campaign.json'],
   { eager: true, query: '?raw', import: 'default' },
 );
-const poolRaw = import.meta.glob<string>('../levels/pool/*.json', { eager: true, query: '?raw', import: 'default' });
 
 const byName = (files: Record<string, string>): Map<string, string> =>
   new Map(Object.entries(files).map(([path, text]) => [path.split('/').pop() as string, text]));
 
-describe('temporary campaign', () => {
+describe('campaign (v3 set, pending review)', () => {
   const files = byName(campaignRaw);
-  const poolFiles = byName(poolRaw);
   const ids = campaign.chapters.flatMap((ch) => ch.levels);
 
   it('has 10 chapters of 6 levels with unique ids', () => {
@@ -30,11 +28,11 @@ describe('temporary campaign', () => {
     expect(files.size).toBe(60);
   });
 
-  it('files are byte-identical to the pool files and their ids match', () => {
-    for (const id of ids) {
-      const text = files.get(`${id}.json`);
-      expect(text, id).toBe(poolFiles.get(`${id}.json`));
-      expect((JSON.parse(text as string) as { id: string }).id).toBe(id);
-    }
+  it('orders levels by their editor slot and file ids match', () => {
+    ids.forEach((id, index) => {
+      const level = JSON.parse(files.get(`${id}.json`) as string) as { id: string; meta?: { slot?: number } };
+      expect(level.id).toBe(id);
+      expect(level.meta?.slot, id).toBe(index + 1);
+    });
   });
 });

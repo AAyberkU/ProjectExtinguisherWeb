@@ -70,11 +70,6 @@
   ],
   "meta": {
     "author": "Lumen (Claude)",
-    "solution": {
-      "solvable": true,
-      "minBudget": 7,
-      "solutions": 1,
-      "shortest": ["W","NW","NW","W","NW","NW","W","W","W"]
-    }
+    "solution": {"solvable":false,"minBudget":8,"solutions":null,"shortest":null}
   }
 }

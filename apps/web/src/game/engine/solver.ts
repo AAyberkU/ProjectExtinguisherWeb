@@ -9,9 +9,10 @@ export const STATE_LIMIT = 400000;
 const COUNT_CAP = 1e9;
 const MAX_BUDGET = 999;
 
-/** (cell, swap phase, +1 mask, switch bits) without steps. */
-function stateKey(level: CompiledLevel, s: CoreState): number {
-  return ((s.mask * 8 + s.sw) * 2 + s.phase) * level.cellCount + s.pos;
+/** (cell, swap phase, +1 mask, switch bits, cars) without steps. Numeric for levels without movers. */
+function stateKey(level: CompiledLevel, s: CoreState): number | string {
+  const k = ((s.mask * 8 + s.sw) * 2 + s.phase) * level.cellCount + s.pos;
+  return level.cars.length ? k + '|' + s.cars : k;
 }
 
 export type SearchResult = { path: Dir[]; moves: number } | { aborted: true } | null;
@@ -19,16 +20,16 @@ export type SearchResult = { path: Dir[]; moves: number } | { aborted: true } | 
 /**
  * Fewest-move win with `budget` (Infinity ignores steps), trying moves in solver order, so the
  * first path found equals the editor's stored `shortest`. For the same (cell, phase, +1s,
- * switches) only the best step count is kept. Returns `{ aborted: true }` above `limit` states.
+ * switches, cars) only the best step count is kept. Returns `{ aborted: true }` above `limit` states.
  */
 export function bfsSearch(level: CompiledLevel, budget: number = level.budget, limit: number = STATE_LIMIT): SearchResult {
   if (level.startIndex < 0 || level.finishIndex < 0) return null;
   if (budget !== Infinity && budget <= 0) return null;
-  const start: CoreState = { pos: level.startIndex, steps: budget, mask: 0, sw: 0, phase: 0 };
+  const start: CoreState = { pos: level.startIndex, steps: budget, mask: 0, sw: 0, phase: 0, cars: level.carsHome };
   const nodes: CoreState[] = [start];
   const parent: number[] = [-1];
   const pdir: number[] = [-1];
-  const best = new Map<number, number>([[stateKey(level, start), start.steps]]);
+  const best = new Map<number | string, number>([[stateKey(level, start), start.steps]]);
   const build = (idx: number, d: number): Dir[] => {
     const path: Dir[] = [DIRS[d]];
     for (let cur = idx; parent[cur] >= 0; cur = parent[cur]) path.push(DIRS[pdir[cur]]);
@@ -46,7 +47,7 @@ export function bfsSearch(level: CompiledLevel, budget: number = level.budget, l
         if (!m) continue;
         if (m.arrival.won) return { moves: depth + 1, path: build(idx, d) };
         if (m.steps <= 0) continue;
-        const ns: CoreState = { pos: m.arrival.pos, steps: m.steps, mask: m.arrival.mask, sw: m.arrival.sw, phase: m.phase };
+        const ns: CoreState = { pos: m.arrival.pos, steps: m.steps, mask: m.arrival.mask, sw: m.arrival.sw, phase: m.phase, cars: m.arrival.cars };
         const k = stateKey(level, ns);
         const b = best.get(k);
         if (b !== undefined && b >= ns.steps) continue;
@@ -121,7 +122,7 @@ export interface SolutionCount {
 
 /**
  * Counts distinct move sequences that win with `budget` without repeating a full state
- * (cell, steps, +1s, switches, phase), as the editor does. Only states from which a win is
+ * (cell, steps, +1s, switches, phase, cars), as the editor does. Only states from which a win is
  * reachable are walked; states on a loop are not memoised.
  */
 export function countSolutions(level: CompiledLevel, budget: number = level.budget): SolutionCount {
@@ -129,16 +130,16 @@ export function countSolutions(level: CompiledLevel, budget: number = level.budg
   if (level.startIndex < 0 || level.finishIndex < 0 || !(budget > 0)) {
     return { count: 0, looped: false, capped: false, aborted: false, states: 1 };
   }
-  // Full-state key including steps. Numeric when it fits in a double, otherwise a string.
+  // Full-state key including steps. Numeric when it fits in a double and there are no cars, otherwise a string.
   const radix = Math.max(budget, 99) + level.plusCount + 1;
   const maxKey = ((2 ** Math.min(level.plusCount, 31) * 8 + 7) * 2 + 1) * level.cellCount;
-  const numeric = maxKey * radix < Number.MAX_SAFE_INTEGER;
+  const numeric = level.cars.length === 0 && maxKey * radix < Number.MAX_SAFE_INTEGER;
   const sk = numeric
-    ? (s: CoreState): number | string => stateKey(level, s) * radix + s.steps
+    ? (s: CoreState): number | string => (stateKey(level, s) as number) * radix + s.steps
     : (s: CoreState): number | string => stateKey(level, s) + ',' + s.steps;
 
   // Forward exploration + reverse reachability: the set of states that can still win.
-  const s0: CoreState = { pos: level.startIndex, steps: budget, mask: 0, sw: 0, phase: 0 };
+  const s0: CoreState = { pos: level.startIndex, steps: budget, mask: 0, sw: 0, phase: 0, cars: level.carsHome };
   const ids = new Map<number | string, number>([[sk(s0), 0]]);
   const list: CoreState[] = [s0];
   const pred: number[][] = [[]];
@@ -154,7 +155,7 @@ export function countSolutions(level: CompiledLevel, budget: number = level.budg
         continue;
       }
       if (m.steps <= 0) continue;
-      const ns: CoreState = { pos: m.arrival.pos, steps: m.steps, mask: m.arrival.mask, sw: m.arrival.sw, phase: m.phase };
+      const ns: CoreState = { pos: m.arrival.pos, steps: m.steps, mask: m.arrival.mask, sw: m.arrival.sw, phase: m.phase, cars: m.arrival.cars };
       const k = sk(ns);
       let j = ids.get(k);
       if (j === undefined) {
@@ -213,7 +214,7 @@ export function countSolutions(level: CompiledLevel, budget: number = level.budg
       if (!m) continue;
       const c = m.arrival.won
         ? 1
-        : rec({ pos: m.arrival.pos, steps: m.steps, mask: m.arrival.mask, sw: m.arrival.sw, phase: m.phase }, depth + 1);
+        : rec({ pos: m.arrival.pos, steps: m.steps, mask: m.arrival.mask, sw: m.arrival.sw, phase: m.phase, cars: m.arrival.cars }, depth + 1);
       if (c > 0) total += c;
     }
     onPath.delete(k);

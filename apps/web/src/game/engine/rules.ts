@@ -10,6 +10,8 @@ export interface CoreState {
   mask: number;
   sw: number;
   phase: number;
+  /** Car positions, as `PlayState.cars`. */
+  cars: string;
 }
 
 export interface Arrival {
@@ -17,6 +19,7 @@ export interface Arrival {
   pos: number;
   mask: number;
   sw: number;
+  cars: string;
   /** Steps gained from plus1 tiles. */
   gain: number;
   /** Refill value when a refill fired, otherwise null. */
@@ -42,62 +45,70 @@ export function colorBit(color: number | undefined): number {
   return color === 1 || color === 2 || color === 3 ? 1 << (color - 1) : 0;
 }
 
-/** Closed for walking, sliding, and landing: a blocker, or a door whose colour is off. */
-export function isWallAt(level: CompiledLevel, i: number, phase: number, sw: number): boolean {
-  const t = tileAt(level, i, phase);
-  return t.type === 'blocker' || (t.type === 'door' && !(sw & colorBit(t.color)));
+// ---------- cars (rule 15: a mover is a car that carries the player once, then stays parked) ----------
+
+/** Cell car `k` is parked on, or -1 while it is home and unused. */
+export function carParkedAt(cars: string, k: number): number {
+  return cars.charCodeAt(k) - 1;
 }
 
-/** May the player walk or slide into cell j moving in direction index di? */
-export function canEnter(level: CompiledLevel, j: number, phase: number, sw: number, di: number): boolean {
-  if (j < 0 || isWallAt(level, j, phase, sw)) return false;
+/** `cars` with car `k` parked on `cell`. */
+export function withCar(cars: string, k: number, cell: number): string {
+  return cars.slice(0, k) + String.fromCharCode(cell + 1) + cars.slice(k + 1);
+}
+
+/** A used car is parked on cell i (a wall for walking, landing, and riding). */
+export function parkedOn(cars: string, i: number): boolean {
+  for (let k = 0; k < cars.length; k++) if (cars.charCodeAt(k) - 1 === i) return true;
+  return false;
+}
+
+/** The mover tile `cid` (an authored cell) still has its car at home. */
+export function carHome(level: CompiledLevel, cars: string, cid: number): boolean {
+  const k = level.carOf[cid];
+  return k < 0 || cars.charCodeAt(k) === 0;
+}
+
+/** Closed for walking, riding, and landing: a blocker, a door whose colour is off, a parked car. */
+export function isWallAt(level: CompiledLevel, i: number, phase: number, sw: number, cars: string): boolean {
+  const t = tileAt(level, i, phase);
+  return t.type === 'blocker' || (t.type === 'door' && !(sw & colorBit(t.color))) || parkedOn(cars, i);
+}
+
+/** May the player walk or ride into cell j moving in direction index di? */
+export function canEnter(level: CompiledLevel, j: number, phase: number, sw: number, di: number, cars: string): boolean {
+  if (j < 0 || isWallAt(level, j, phase, sw, cars)) return false;
   const t = tileAt(level, j, phase);
   return !(t.type === 'passage' && t.noIn.includes(DIRS[(di + 3) % 6]));
 }
 
-/** Launcher landing from cell i: 2 cells, else 1, else stay. Flies over walls and passage sides. */
-export function landOf(level: CompiledLevel, i: number, phase: number, sw: number): number {
+/** Launcher landing from cell i: 2 cells, else 1, else stay. Flies over walls, parked cars, and passage sides. */
+export function landOf(level: CompiledLevel, i: number, phase: number, sw: number, cars: string = level.carsHome): number {
   const di = tileAt(level, i, phase).dirIndex;
   if (di < 0) return i;
   const j2 = level.neighbors2[i][di];
-  if (j2 >= 0 && !isWallAt(level, j2, phase, sw)) return j2;
+  if (j2 >= 0 && !isWallAt(level, j2, phase, sw, cars)) return j2;
   const j1 = level.neighbors[i][di];
-  if (j1 >= 0 && !isWallAt(level, j1, phase, sw)) return j1;
+  if (j1 >= 0 && !isWallAt(level, j1, phase, sw, cars)) return j1;
   return i;
 }
 
-/**
- * Mover slide from cell i over floor-like cells (floor, start, open door, collected plus1).
- * Stops before a cell that cannot be entered, or on the first non-floor-like cell.
- * `path` collects every cell passed, the stop cell included.
- */
-export function slideOf(
-  level: CompiledLevel,
-  i: number,
-  phase: number,
-  sw: number,
-  mask: number,
-  path: number[] | null,
-): number {
-  const di = tileAt(level, i, phase).dirIndex;
-  if (di < 0) return i;
-  let cur = i;
-  for (let guard = 0; guard < level.cellCount + 1; guard++) {
-    const nx = level.neighbors[cur][di];
-    if (!canEnter(level, nx, phase, sw, di)) return cur;
-    cur = nx;
-    if (path) path.push(cur);
-    const src = contentIndex(level, cur, phase);
-    const ty = level.cells[src].type;
-    const spent = ty === 'plus1' && (mask & level.plusBit[src]) !== 0;
-    if (!(ty === 'floor' || ty === 'start' || ty === 'door' || spent)) return cur;
-  }
-  return cur;
+/** What a car drives over without stopping: floor, start, open door, collected plus1, an emptied mover home. */
+function floorLike(level: CompiledLevel, i: number, phase: number, mask: number, cars: string): boolean {
+  const cid = contentIndex(level, i, phase);
+  const ty = level.cells[cid].type;
+  return (
+    ty === 'floor' ||
+    ty === 'start' ||
+    ty === 'door' ||
+    (ty === 'plus1' && (mask & level.plusBit[cid]) !== 0) ||
+    (ty === 'mover' && !carHome(level, cars, cid))
+  );
 }
 
 /**
- * The arrival chain on `pos`. Only the final cell of a launch or slide acts.
- * `events` receives renderer events, `trail` every cell touched (pos, landings, slid cells).
+ * The arrival chain on `pos`. Only the final cell of a launch or ride acts.
+ * `events` receives renderer events, `trail` every cell touched (pos, landings, cells driven onto).
  */
 export function resolveArrival(
   level: CompiledLevel,
@@ -105,6 +116,7 @@ export function resolveArrival(
   mask: number,
   phase: number,
   sw: number,
+  cars: string,
   events: EngineEvent[] | null,
   trail: number[] | null,
 ): Arrival {
@@ -158,29 +170,57 @@ export function resolveArrival(
       if (trail) trail.push(pos);
       break; // the arrival portal does not fire
     }
-    if (ty === 'launcher' || ty === 'mover') {
-      const path: number[] | null = ty === 'mover' && (events || trail) ? [] : null;
-      const to = ty === 'launcher' ? landOf(level, pos, phase, sw) : slideOf(level, pos, phase, sw, mask, path);
+    if (ty === 'launcher') {
+      const to = landOf(level, pos, phase, sw, cars);
       if (to === pos) break;
       if (chain >= MAX_CHAIN) {
         chainLimit = true;
         break;
       }
-      const dir = c.dir as Dir;
-      if (events) {
-        if (ty === 'launcher') events.push({ type: 'launch', from: pos, to, dir });
-        else events.push({ type: 'slide', from: pos, to, dir, path: path ?? [to] });
-      }
-      if (trail) {
-        if (path) trail.push(...path);
-        else trail.push(to);
-      }
+      if (events) events.push({ type: 'launch', from: pos, to, dir: c.dir as Dir });
+      if (trail) trail.push(to);
       pos = to;
+      continue;
+    }
+    if (ty === 'mover') {
+      const k = level.carOf[cid];
+      const di = c.dirIndex;
+      if (k < 0 || di < 0 || !carHome(level, cars, cid)) break; // its car has left: plain floor
+      if (chain >= MAX_CHAIN) {
+        chainLimit = true;
+        break;
+      }
+      // The car carries the player over floor and stops before the first other cell.
+      let cur = pos;
+      let drop = -1;
+      const path: number[] = [];
+      for (let guard = 0; guard <= level.cellCount; guard++) {
+        const nx = level.neighbors[cur][di];
+        if (!canEnter(level, nx, phase, sw, di, cars)) break; // edge, wall, parked car, closed side
+        if (!floorLike(level, nx, phase, mask, cars)) {
+          drop = nx; // a tile that acts
+          break;
+        }
+        cur = nx;
+        path.push(cur);
+      }
+      cars = withCar(cars, k, cur); // parked for good (on its home if it could not move)
+      if (trail) trail.push(...path);
+      if (drop < 0) {
+        // The player stays in the car; the next move steps out and the car is a wall from then on.
+        if (events) events.push({ type: 'slide', from: pos, to: cur, dir: c.dir as Dir, path, car: k, parkedAt: cur, drop: false });
+        pos = cur;
+        break;
+      }
+      // The car parks and the player is put down on the next tile, which acts.
+      if (events) events.push({ type: 'slide', from: pos, to: drop, dir: c.dir as Dir, path, car: k, parkedAt: cur, drop: true });
+      pos = drop;
+      if (trail) trail.push(pos);
       continue;
     }
     break;
   }
-  return { pos, mask, sw, gain, setTo, won, chainLimit };
+  return { pos, mask, sw, cars, gain, setTo, won, chainLimit };
 }
 
 /**
@@ -199,7 +239,7 @@ export function moveCore(
   const here = tileAt(level, s.pos, phase);
   if (here.type === 'passage' && here.noOut.includes(DIRS[di])) return null;
   const target = level.neighbors[s.pos][di];
-  if (!canEnter(level, target, phase, s.sw, di)) return null;
+  if (!canEnter(level, target, phase, s.sw, di, s.cars)) return null;
   const cost = tileAt(level, target, phase).type === 'swamp' ? 2 : 1;
   if (events) {
     if (level.hasSwap) {
@@ -211,7 +251,7 @@ export function moveCore(
     }
     events.push({ type: 'walk', from: s.pos, to: target, dir: DIRS[di], cost });
   }
-  const arrival = resolveArrival(level, target, s.mask, phase, s.sw, events, trail);
+  const arrival = resolveArrival(level, target, s.mask, phase, s.sw, s.cars, events, trail);
   let steps = s.steps === Infinity ? Infinity : s.steps - cost + arrival.gain;
   if (arrival.setTo !== null && s.steps !== Infinity) steps = arrival.setTo;
   return { target, phase, cost, arrival, steps: Math.max(0, steps) };
@@ -219,14 +259,23 @@ export function moveCore(
 
 /** Whether any geometrically legal move exists (step costs ignored). */
 export function hasMove(level: CompiledLevel, s: CoreState): boolean {
-  const free: CoreState = { pos: s.pos, steps: Infinity, mask: s.mask, sw: s.sw, phase: s.phase };
+  const free: CoreState = { pos: s.pos, steps: Infinity, mask: s.mask, sw: s.sw, phase: s.phase, cars: s.cars };
   for (let d = 0; d < 6; d++) if (moveCore(level, free, d)) return true;
   return false;
 }
 
 /** Start state. Lost at once when the budget is 0 or the start has no legal move. */
 export function initialState(level: CompiledLevel, budget: number = level.budget): PlayState {
-  const st: PlayState = { pos: level.startIndex, steps: budget, mask: 0, sw: 0, phase: 0, status: 'playing', moveCount: 0 };
+  const st: PlayState = {
+    pos: level.startIndex,
+    steps: budget,
+    mask: 0,
+    sw: 0,
+    phase: 0,
+    cars: level.carsHome,
+    status: 'playing',
+    moveCount: 0,
+  };
   if (budget <= 0) {
     st.status = 'lost';
     st.lossReason = 'out-of-steps';
@@ -253,6 +302,7 @@ export function step(level: CompiledLevel, state: PlayState, dir: Dir): StepResu
     mask: a.mask,
     sw: a.sw,
     phase: m.phase as 0 | 1,
+    cars: a.cars,
     status: 'playing',
     moveCount: state.moveCount + 1,
   };
@@ -301,9 +351,9 @@ export function replay(
 
 // ---------- renderer helpers ----------
 
-/** The cell currently acts as a wall (blocker, or closed door). */
-export function isWall(level: CompiledLevel, state: Pick<PlayState, 'phase' | 'sw'>, cellIndex: number): boolean {
-  return isWallAt(level, cellIndex, state.phase, state.sw);
+/** The cell currently acts as a wall (blocker, closed door, or parked car). */
+export function isWall(level: CompiledLevel, state: Pick<PlayState, 'phase' | 'sw' | 'cars'>, cellIndex: number): boolean {
+  return isWallAt(level, cellIndex, state.phase, state.sw, state.cars);
 }
 
 /** The cell currently shows a door whose colour is switched on. */
@@ -322,4 +372,12 @@ export function switchPressed(level: CompiledLevel, state: Pick<PlayState, 'phas
 export function plusCollected(level: CompiledLevel, state: Pick<PlayState, 'phase' | 'mask'>, cellIndex: number): boolean {
   const src = contentIndex(level, cellIndex, state.phase);
   return level.cells[src].type === 'plus1' && (state.mask & level.plusBit[src]) !== 0;
+}
+
+/** Where every car is drawn: its home while unused, else the cell it is parked on. */
+export function carCells(level: CompiledLevel, state: Pick<PlayState, 'cars'>): Array<{ home: number; at: number; used: boolean }> {
+  return level.cars.map((home, k) => {
+    const at = carParkedAt(state.cars, k);
+    return { home, at: at < 0 ? home : at, used: at >= 0 };
+  });
 }

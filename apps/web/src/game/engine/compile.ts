@@ -53,6 +53,12 @@ export interface CompiledLevel {
   /** Portal partner of each authored portal cell, or -1. */
   readonly portalPartner: readonly number[];
   readonly portalPairs: ReadonlyArray<readonly [number, number]>;
+  /** Home cell of each car (every mover is a car, rule 15), in cell order. */
+  readonly cars: readonly number[];
+  /** Car index of each authored mover cell, or -1. */
+  readonly carOf: readonly number[];
+  /** `PlayState.cars` with every car home and unused. */
+  readonly carsHome: string;
   /** plus1 bit of each authored cell (0 for non-plus1 cells and for plus1 tiles beyond 31). */
   readonly plusBit: readonly number[];
   readonly plusCount: number;
@@ -131,6 +137,14 @@ export function compileLevel(level: PuzzleLabLevel): CompiledLevel {
     portalPairs.push([ids[0], ids[1]]);
   }
 
+  const cars: number[] = [];
+  const carOf = new Array<number>(n).fill(-1);
+  cells.forEach((c, i) => {
+    if (c.type !== 'mover') return;
+    carOf[i] = cars.length;
+    cars.push(i);
+  });
+
   const startIndex = cells.findIndex((c) => c.type === 'start');
   if (startIndex < 0) throw new Error(`Level "${level.id}" has no start tile`);
 
@@ -149,6 +163,9 @@ export function compileLevel(level: PuzzleLabLevel): CompiledLevel {
     hasSwap: swapPairs.length > 0,
     portalPartner,
     portalPairs,
+    cars,
+    carOf,
+    carsHome: String.fromCharCode(0).repeat(cars.length),
     plusBit,
     plusCount,
     startIndex,

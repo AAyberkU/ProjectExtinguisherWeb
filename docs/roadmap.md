@@ -35,7 +35,12 @@ the Puzzle Lab editor; this repository integrates them into the game.
 - [x] Retire the jam ruleset and jam levels 1-5.
 - [x] GitHub Actions CI (typecheck, tests, `level:check`).
 - [x] End-to-end browser run wins all 60 campaign levels with their stored solutions.
-- [ ] Replace the temporary campaign with the Puzzle Lab Final export when it exists.
+- [ ] Replace the temporary campaign with the Puzzle Lab Final export when it exists. (2026-10-16:
+  replaced by Uğur's v3 set, pending review in the editor.)
+- [x] Movers are cars (editor rule 15, 2026-10-13) in the engine, solver, validation, and renderer;
+  oracle re-run on v3 and the pool (2026-10-16).
+- [ ] Even board sizes, as the editor allows since 2026-10-13 (`docs/bugs.md`); needed before the
+  Final export if it uses them.
 
 ## 2. Menus and save (done, merged 2026-10-11)
 
@@ -123,10 +128,12 @@ Rail approach). The full screen and HUD spec is in `docs/game.md` (Screens and H
 | 2026-10-10 | Code polish animations are a roadmap item tied to art integration; their prerequisites (persistent tiles, event-driven presentation) are part of step 1. |
 | 2026-10-10 | Temporary campaign: the base alternative of each slot (approved `c01-l01-v1` for the first slot) until the Final export. The 180-level pool lives in the repository as test fixtures. |
 | 2026-10-10 | Controls follow the editor: W/E/A/D/Z/X (plus Left/Right arrows), Backspace undo, R restart; tapping a neighbour also moves. One loss panel with a reason line (out of steps or stuck). |
-| 2026-10-10 | GitHub Actions runs typecheck, tests, and `level:check` on every push; it reports and never blocks. |
+| 2026-10-10 | GitHub Actions runs typecheck, tests, and `level:check` on every push; it reports and never blocks. (2026-10-16: `level:check` checks the campaign by default; the pool is checked when passed explicitly and pinned by `npm test`.) |
 | 2026-10-10 | HUD level label is only `Level N` (campaign order, no chapter or name). Every board fills the same screen area regardless of size; tile art built at 512 px for sharpness. Steps-counter placement (GDD: large, top-right, number only) and undo/restart buttons after a win are agreed but deferred. |
 | 2026-10-10 | Step 2 scope: three screens (main menu, level select, game); no settings screen and no pause menu; music and SFX on/off buttons in the HUD (Echo Rail style). HUD: left level, Undo, Restart; centre a large steps counter (deliberately differs from the GDD's top-right); right Music, SFX, Menu. The Menu button and `Esc` open level select, which also has a Main Menu button. Win and loss panels are replaced by animations; win waits for a "next" arrow tap (no auto-advance), loss never auto-restarts, and Undo and Restart work after both. Level select shows all 60 levels on two pages with locked levels visible. Tutorial is a very simple, non-blocking tile glow with one line of text, on trial. Credits keep their current content for now. UI art split: the artist draws static pieces, code does every animation and placeholder. Sound cues are decided later. |
 | 2026-10-10 | No player-facing progress reset (no settings screen to hold it). Undo also works after a win. Tutorial hints are derived from the campaign data: the first level where a mechanic appears shows it (level 1 also explains the goal). M, V, and Esc work on every screen. |
 | 2026-10-11 | First art batch: one floor tile (seeded rotation), one wall kind, swamp over the floor, duck and car rotated to the 6 directions, portal pairs and the pressed switch made in code until drawn, crayon only on sides closed both ways (one-way sides keep code arrows). The asset build crops art (aligned sets with one shared box) and keeps the artist's relative scale. |
 | 2026-10-11 | Keyboard movement removed (unintuitive): moves are taps or clicks only. `Z` undoes (Backspace no longer does); `R`, `M`, `V`, `Esc`, Enter/Space unchanged. |
 | 2026-10-10 | Uğur's GDD (rules 1-20) adopted as a source next to the editor code; copy in `docs/reference/`. The v1 and GPT sets used empty cells as walls on purpose; "full floor" levels come from the v2 set. Progress saves only completed level ids with linear unlock; no score or stars. |
+| 2026-10-16 | Campaign switched to Uğur's v3 set (60 levels, submitted 2026-10-14, pending approval in the editor) in place of the temporary pool pick, on branch `levels-v3`. Files used as exported; `campaign.json` status `pending-review`. Saves need no migration (v3 ids are new, so old saves start fresh). |
+| 2026-10-16 | Movers follow the editor's car rule (rule 15, Uğur, 2026-10-13): a car carries the player once, then stays parked as a wall. Adopted because the game must reproduce the current editor rules (Rules Fidelity), not as a new design choice. The 8 pool files whose analysis changed were re-exported through the editor's own export path; the rest are unchanged. Parked cars are the mover art darkened in code until there is art. |

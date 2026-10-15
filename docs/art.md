@@ -158,7 +158,8 @@ Delivery rules:
 
 Two layers of animation, both driven only by engine events (rules never wait on animation):
 
-1. **Mechanic motion** (done in step 1): walk hop 160 ms, launch arc 240 ms, slide 90 ms per cell,
+1. **Mechanic motion** (done in step 1): walk hop 160 ms, launch arc 240 ms, car ride 90 ms per cell
+   (the car drives with Larry and stays parked; parked cars are darkened in code, 2026-10-16),
    teleport 220 ms, swap exchange 180 ms, pickups 260 ms, door and switch fades 200 ms, level intro
    (tiles drop by diagonal lines, then Larry appears). Constants live in
    `apps/web/src/game/renderer/boardView.ts`.

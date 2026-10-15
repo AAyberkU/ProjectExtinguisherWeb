@@ -1,0 +1,39 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-26",
+  "name": "v3 · Gezgin fırlatıcı",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":4},
+  "tiles": [
+    {"q":0,"r":-2,"type":"start"},
+    {"q":1,"r":-2,"type":"plus1"},
+    {"q":2,"r":-2,"type":"blocker"},
+    {"q":-1,"r":-1,"type":"swamp"},
+    {"q":0,"r":-1,"type":"launcher","dir":"NE"},
+    {"q":1,"r":-1,"type":"launcher","dir":"NW"},
+    {"q":2,"r":-1,"type":"plus1"},
+    {"q":-2,"r":0,"type":"launcher","dir":"E","swap":1},
+    {"q":-1,"r":0,"type":"floor"},
+    {"q":0,"r":0,"type":"floor","swap":1},
+    {"q":1,"r":0,"type":"floor"},
+    {"q":2,"r":0,"type":"plus1"},
+    {"q":-2,"r":1,"type":"floor"},
+    {"q":-1,"r":1,"type":"plus1"},
+    {"q":0,"r":1,"type":"floor"},
+    {"q":1,"r":1,"type":"finish"},
+    {"q":-2,"r":2,"type":"mover","dir":"NE"},
+    {"q":-1,"r":2,"type":"floor"},
+    {"q":0,"r":2,"type":"floor"}
+  ],
+  "meta": {
+    "slot": 26,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 4,
+      "solutions": 1,
+      "shortest": ["SW","SE","E","SW"]
+    }
+  }
+}

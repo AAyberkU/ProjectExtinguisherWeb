@@ -124,6 +124,11 @@ export interface PlayState {
   /** Pressed switch colour bits (colour c = bit 1 << (c - 1)). */
   sw: number;
   phase: 0 | 1;
+  /**
+   * Where each car is (`CompiledLevel.cars` order), as the editor stores it: one character per car,
+   * char code 0 = home and unused, otherwise 1 + the cell it is parked on. Empty without movers.
+   */
+  cars: string;
   status: PlayStatus;
   lossReason?: LossReason;
   moveCount: number;
@@ -133,7 +138,13 @@ export type EngineEvent =
   | { type: 'swap'; phase: 0 | 1; pairs: Array<[number, number]> }
   | { type: 'walk'; from: number; to: number; dir: Dir; cost: number }
   | { type: 'launch'; from: number; to: number; dir: Dir }
-  | { type: 'slide'; from: number; to: number; dir: Dir; path: number[] }
+  /**
+   * A car ride (rule 15): car `car` drives the player from `from` over `path` (the cells it drove
+   * onto, in order) and parks on `parkedAt` (`from` when it could not move). With `drop`, the
+   * player is put down on `to`, the next tile, whose arrival chain continues; otherwise the player
+   * stays in the car (`to` = `parkedAt`).
+   */
+  | { type: 'slide'; from: number; to: number; dir: Dir; path: number[]; car: number; parkedAt: number; drop: boolean }
   | { type: 'teleport'; from: number; to: number }
   | { type: 'plus1'; cell: number }
   | { type: 'refill'; cell: number; value: number }

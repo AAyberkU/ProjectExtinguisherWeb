@@ -2,12 +2,15 @@
 
 Current state and work log. The plan is in `docs/roadmap.md`; read this file first in every session.
 
-## Status (2026-10-11)
+## Status (2026-10-16)
 
 - The project is moving from the jam web port to the full product (about 60 levels, Coolmath first,
   Steam later). See `docs/roadmap.md`.
 - **Roadmap step 1 is done and merged to `main`** after the user's play test: the game runs the
-  Puzzle Lab hex-steps rules on a temporary 60-level campaign with a rewritten renderer.
+  Puzzle Lab hex-steps rules with a rewritten renderer.
+- **Campaign (branch `levels-v3`, 2026-10-16):** Uğur's v3 set (60 levels, submitted for review in
+  the editor on 2026-10-14, not approved) replaced the temporary campaign. Movers now follow the
+  editor's car rule (rule 15, 2026-10-13): a car carries the player once, then stays parked as a wall.
 - The jam rules and the 5 jam levels are gone. Placeholder art is still the rotated jam art plus
   code-drawn glyphs.
 - A pool of 180 candidate levels lives in `apps/web/levels/pool/` (none final; selection happens in
@@ -15,10 +18,32 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
 - **Roadmap step 2 is done and merged to `main`** after the user's play test: main menu, level
   select, saved progress, the new HUD with music and SFX toggles, tap-only moves, win and loss
   animations instead of panels, and the tutorial hint trial.
-- **Next:** roadmap step 3 (landscape and portrait layouts).
+- **Next:** the user's play test of the v3 campaign and the cars; then roadmap step 3 (landscape and
+  portrait layouts).
 
-## Recent work (2026-10-10 to 2026-10-11)
+## Recent work (2026-10-10 to 2026-10-16)
 
+- v3 campaign (2026-10-16, branch `levels-v3`): the 60 v3 files replace the temporary campaign as
+  exported (ids `level-01`-`level-60`, chapter order from `meta.slot`; byte-identical to the editor's
+  Export, an extra trailing blank line from the first copy was removed); `campaign.json` status
+  `pending-review`; the old campaign files stay in the pool. Campaign test now checks slot order
+  instead of pool copies; the oracle's "ends on 0 steps" check skips refill levels (level 55 ends on
+  1 in the editor too); a test covers old saves (their ids are not v3 ids, so v3 starts fresh).
+  Tutorial hints still land on each chapter's first level. First result: 14 mover levels failed the
+  oracle (50/60 won end to end) because the editor had changed the mover rule.
+- Cars (2026-10-16): movers follow the editor's rule 15. The car state is part of the play state and
+  the solver key; the home cell becomes floor; a parked car is a wall that launchers fly over; a ride
+  either keeps the player in the car or parks and drops them onto the next acting tile; movers cannot
+  be swap tiles; loop validation tries each car parked on its ray. The renderer drives the car with
+  Larry, keeps used cars on their own layer (parked ones darker), and draws an emptied home as floor;
+  undo and restart restore them. 8 pool files were re-exported through the editor's export path
+  (`docs/levels.md`); the hint line now says "Cars carry you once, then park as walls".
+  Verification: 346 tests pass; `level:check` campaign 60/60 ok (it now checks only the campaign by
+  default; `levels/pool` reports the 6 levels the editor now rejects); a differential check against the editor's core (240 pool and v3 levels plus
+  10,000 random variants, about 2 million compared steps; 6,632 of the levels have movers) found no
+  mismatch; end-to-end run 60/60 on the dev server and 60/60 on the production build (fresh save,
+  linear flow with the next badge); undo after rides is pixel-identical to reaching the same state
+  directly.
 - First final art: Larry from the artist (2026-10-11), delivered on an A4 page; the asset pipeline
   now crops stand-alone images (characters) to their visible pixels before resizing.
 - First art batch integrated (2026-10-11): floor, start, finish, swamp, wall, +1, launcher, mover,
@@ -121,7 +146,7 @@ Earlier the same day:
 1. Roadmap step 3: landscape and portrait layouts (`docs/roadmap.md`).
 2. Send the artist the artist checklist in `docs/art.md`; report the loop-validation gap
    (`docs/rules.md`) to Uğur and ask for the GDD's rule fixtures.
-3. Replace the temporary campaign when the editor's Final export exists (`docs/levels.md`).
+3. Replace v3 with the editor's Final export when it exists (`docs/levels.md`).
 
 ## Notes
 

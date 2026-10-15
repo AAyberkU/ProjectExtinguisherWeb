@@ -1,0 +1,39 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-55",
+  "name": "v3 · Yanıp sönen şalter",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":8},
+  "tiles": [
+    {"q":0,"r":-2,"type":"door","color":2},
+    {"q":1,"r":-2,"type":"portal","pair":1},
+    {"q":2,"r":-2,"type":"finish"},
+    {"q":-1,"r":-1,"type":"plus1"},
+    {"q":0,"r":-1,"type":"door","color":1},
+    {"q":1,"r":-1,"type":"launcher","dir":"SW"},
+    {"q":2,"r":-1,"type":"refill","swap":1,"value":2},
+    {"q":-2,"r":0,"type":"start"},
+    {"q":-1,"r":0,"type":"swamp"},
+    {"q":0,"r":0,"type":"plus1"},
+    {"q":1,"r":0,"type":"launcher","dir":"SW"},
+    {"q":2,"r":0,"type":"mover","dir":"NE"},
+    {"q":-2,"r":1,"type":"floor"},
+    {"q":-1,"r":1,"type":"switch","swap":1,"color":2},
+    {"q":0,"r":1,"type":"blocker"},
+    {"q":1,"r":1,"type":"portal","pair":1},
+    {"q":-2,"r":2,"type":"switch","color":1},
+    {"q":-1,"r":2,"type":"refill","value":4},
+    {"q":0,"r":2,"type":"blocker"}
+  ],
+  "meta": {
+    "slot": 55,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 8,
+      "solutions": 1,
+      "shortest": ["SE","E","NW","NW","NE","E","NE","NW","NW"]
+    }
+  }
+}

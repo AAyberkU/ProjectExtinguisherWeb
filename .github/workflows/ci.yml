@@ -33,4 +33,4 @@ jobs:
         run: npm test # Every level must reproduce its stored solution, minBudget, and solution count.
 
       - name: Validate levels
-        run: npm run level:check # The editor's validation rules on every level file.
+        run: npm run level:check # The editor's validation rules on every campaign level (the pool is covered by npm test).

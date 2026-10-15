@@ -71,11 +71,6 @@
   "meta": {
     "slot": 27,
     "author": "Lumen v2 (Claude)",
-    "solution": {
-      "solvable": true,
-      "minBudget": 5,
-      "solutions": 1,
-      "shortest": ["SE","E","E","SE","SE","E"]
-    }
+    "solution": {"solvable":false,"minBudget":null,"solutions":null,"shortest":null}
   }
 }

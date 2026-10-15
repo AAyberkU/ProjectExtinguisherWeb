@@ -9,15 +9,36 @@
 - **Portrait layout:** the board fits portrait screens, but the HUD keeps its landscape arrangement and
   big boards leave large empty areas above and below. Roadmap step 3.
 - **Large boards:** 91-cell levels are small on phones in portrait with every wall drawn.
-- **Loop validation gap (editor and engine):** a mover/launcher chain can still hit the 32-link limit
-  at runtime in rare layouts (collected `+1` between facing movers, or movers swapped onto floor
-  cells). No pool level is affected. See `docs/rules.md`; to report to Uğur.
+- **Save ids of the v3 set:** progress is saved by level id. v3 ids (`level-01` to `level-60`) share
+  nothing with the old temporary campaign's ids, so an old save simply starts v3 fresh (no crash;
+  stale ids are ignored; music, SFX, and seen hints carry over). But the ids follow the slot, so a
+  later export that keeps `level-NN` ids with different content would keep old ticks on new
+  levels. Decide on a save reset (version bump) when the Final export lands if its levels change.
+- **Favicon:** browsers request `/favicon.ico`, which does not exist (one 404 in the console).
+- **Loop validation gap (editor and engine):** since cars move once, only launcher chains can loop;
+  one can still hit the 32-link limit at runtime in rare layouts (two parked cars together, or
+  launchers that only meet after a swap). No pool or campaign level reaches it (every reachable state
+  checked, 2026-10-16). See `docs/rules.md`; to report to Uğur.
+- **Pool levels broken by the car rule:** 6 pool levels are invalid under the editor's rule 15 (4
+  have a mover in a swap pair, 2 need more steps than their budget) and 2 now have a loose budget
+  and many solutions (`docs/levels.md`). `npm run level:check -- levels/pool` therefore reports 8
+  errors; the default check covers only the campaign, and `npm test` pins the pool's expected editor
+  verdicts. They are candidates only and never shipped.
+- **Even board sizes (found 2026-10-16, before the Final export):** the editor allows even grid sizes
+  since 2026-10-13 ("Genişlik çift de olabilir", Uğur; `hexHW`/`hexInside` in its core: h =
+  floor((size - 1) / 2), w = floor(size / 2), a cell is inside when |r| <= h, -h <= q <= w, and
+  -h <= q + r <= w). Our engine rejects them (`validate.ts` "odd integer"; `hex.ts` `onBoard`,
+  `boardCoords`, and `boardCellCount` assume odd sizes; `docs/rules.md`). No v3 level uses one; port
+  it (engine, renderer fit, oracle) before the Final export.
+- **Parked car look:** a parked car is the mover art darkened in code; it reads as an obstacle but
+  is close to an unused car. Art for a parked car would help.
 - **Missing rule fixtures:** the GDD's fixture files (`levels/fixtures/*.json`) are not in our tests
   yet.
 - **"Stuck" loss** is unreachable in every current campaign level, so its animation is only covered
   by a hand-made test level.
 - **Tutorial hint text** covers part of the tile row above (or below) the glowing tile on dense
-  boards (taps still reach the board), and the glow pulses again each time it reappears.
+  boards (taps still reach the board), and the glow pulses again each time it reappears. On phones
+  in portrait it hides most of a row (v3 level 37 screenshot, 2026-10-16).
 - **Level 1 shows two hints in a row** (the goal, then +1), because +1 first appears there.
 - **Intro input lock:** input is ignored during the level intro (up to about 0.6 s on 91-cell
   boards). Letting a key press skip the intro would be a small improvement.
@@ -41,6 +62,11 @@
 
 ## Fixed
 
+- Movers as cars (2026-10-16): the editor changed movers on 2026-10-13 (rule 15) and our engine still
+  slid the old way, so 14 v3 campaign levels failed the oracle (10 could not be won with their stored
+  solution). Engine, solver, validation, and renderer now follow the editor's car rule; the oracle
+  passes for all 60 v3 levels, a differential check against the editor's core found no mismatch in
+  about 10,000 levels, and the end-to-end run wins 60/60.
 - Browser zoom (2026-10-11): zooming in moved the board towards the bottom-right and taps missed.
   Zoom keeps CSS size x pixel ratio constant, so Pixi skipped its resize and kept the old screen
   and canvas size; `StageController.syncSize` now replays the resize, and pixel-ratio-only changes

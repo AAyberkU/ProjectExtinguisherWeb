@@ -4,6 +4,7 @@
 
 import { ColorMatrixFilter, Container, Sprite, Text, Texture } from 'pixi.js';
 import {
+  carParkedAt,
   cellContent,
   doorOpen,
   plusCollected,
@@ -18,7 +19,7 @@ import { createGlyph, createSwapMarker, DIR_ANGLE_DEG, type GlyphTile } from './
 import { TILE_SPRITE_HEIGHT, TILE_VISUAL_RADIUS } from './layout';
 
 /** The parts of the play state that change how tiles look. */
-export type VisualState = Pick<PlayState, 'phase' | 'mask' | 'sw'>;
+export type VisualState = Pick<PlayState, 'phase' | 'mask' | 'sw' | 'cars'>;
 
 const RAD = Math.PI / 180;
 const FLOOR_TEXTURE = 'tile_floor';
@@ -86,6 +87,8 @@ export interface TileLook {
   collected: boolean;
   doorOpen: boolean;
   switchPressed: boolean;
+  /** A mover whose car has left (or parked for good): the cell shows floor and the car is drawn on its own. */
+  carGone: boolean;
   /** Seeded floor turn (0 to FLOOR_TURNS - 1). */
   floorTurn: number;
 }
@@ -95,16 +98,19 @@ export function tileLook(level: CompiledLevel, cell: number, state: VisualState)
   const collected = content.type === 'plus1' && plusCollected(level, state, cell);
   const open = doorOpen(level, state, cell);
   const pressed = switchPressed(level, state, cell);
+  const car = content.type === 'mover' ? level.carOf[content.source] : -1;
+  const carGone = car >= 0 && carParkedAt(state.cars, car) >= 0;
   // Seeded by the authored cell of the content (not the board cell showing it), so a swapped tile
   // keeps its look while it travels.
   const source = level.cells[content.source];
 
   return {
-    key: `${content.source}:${collected ? 1 : 0}${open ? 1 : 0}${pressed ? 1 : 0}`,
+    key: `${content.source}:${collected ? 1 : 0}${open ? 1 : 0}${pressed ? 1 : 0}${carGone ? 1 : 0}`,
     content,
     collected,
     doorOpen: open,
     switchPressed: pressed,
+    carGone,
     floorTurn: hashString(`${level.id}:${source.q},${source.r}`) % FLOOR_TURNS,
   };
 }
@@ -169,7 +175,7 @@ function objectSprite(look: TileLook): Sprite | null {
   const { content } = look;
   const alias = OBJECT_TEXTURES[content.type];
 
-  if (alias === undefined || (content.type === 'plus1' && look.collected)) {
+  if (alias === undefined || (content.type === 'plus1' && look.collected) || look.carGone) {
     return null;
   }
 
@@ -301,6 +307,13 @@ export function createTileBase(look: TileLook, resolution: number): Container {
   }
 
   return base;
+}
+
+/** A car (mover art) facing `dir`, centred at (0, 0): a car that left its home or parked there for good. */
+export function createCarSprite(dir: Dir | undefined): Sprite {
+  const sprite = artSprite(OBJECT_TEXTURES.mover ?? 'obj_mover');
+  sprite.rotation = headingRotation(dir, MOVER_ART_HEADING_DEG);
+  return sprite;
 }
 
 /** The +1 object alone (no floor), for the pickup ghost. */

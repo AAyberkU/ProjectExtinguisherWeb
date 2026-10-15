@@ -1,6 +1,8 @@
 // Validates Puzzle Lab levels with the editor's rules and checks solver consistency.
 // Usage (cwd apps/web): npm run level:check -- [files or folders...]
-// Default: levels/pool and src/game/levels/campaign. Exit code 1 when any error is found.
+// Default: src/game/levels/campaign (the shipped levels and campaign.json). The pool is checked only
+// when passed explicitly (levels/pool); its expected editor verdicts are covered by npm test.
+// Exit code 1 when any error is found.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
@@ -13,7 +15,7 @@ import {
   type PuzzleLabLevel,
 } from '../src/game/engine/index';
 
-const DEFAULT_PATHS = ['levels/pool', 'src/game/levels/campaign'];
+const DEFAULT_PATHS = ['src/game/levels/campaign'];
 const CAMPAIGN_FILE = 'campaign.json';
 
 interface Row {

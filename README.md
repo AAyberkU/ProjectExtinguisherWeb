@@ -9,8 +9,8 @@ being built into a full release of about 60 levels for Coolmath Games, with Stea
 
 ## Status
 
-The game runs the hex-steps rules on a temporary 60-level campaign picked from the level designer's
-pool, with placeholder art, a main menu, level select, saved progress, and win and loss animations.
+The game runs the hex-steps rules on the level designer's v3 set (60 levels, pending review),
+with placeholder art, a main menu, level select, saved progress, and win and loss animations.
 Next up are separate landscape and portrait layouts. See
 `docs/progress.md` and `docs/roadmap.md`.
 

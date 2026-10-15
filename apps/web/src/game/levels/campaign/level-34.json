@@ -1,0 +1,39 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-34",
+  "name": "v3 · Dört fırlatışlık taksi",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":4},
+  "tiles": [
+    {"q":0,"r":-2,"type":"floor"},
+    {"q":1,"r":-2,"type":"portal","pair":1},
+    {"q":2,"r":-2,"type":"plus1"},
+    {"q":-1,"r":-1,"type":"floor"},
+    {"q":0,"r":-1,"type":"start"},
+    {"q":1,"r":-1,"type":"launcher","dir":"W"},
+    {"q":2,"r":-1,"type":"floor"},
+    {"q":-2,"r":0,"type":"floor"},
+    {"q":-1,"r":0,"type":"launcher","dir":"E"},
+    {"q":0,"r":0,"type":"floor"},
+    {"q":1,"r":0,"type":"launcher","dir":"SE"},
+    {"q":2,"r":0,"type":"finish"},
+    {"q":-2,"r":1,"type":"portal","pair":1},
+    {"q":-1,"r":1,"type":"mover","dir":"SE"},
+    {"q":0,"r":1,"type":"plus1"},
+    {"q":1,"r":1,"type":"launcher","dir":"W"},
+    {"q":-2,"r":2,"type":"floor"},
+    {"q":-1,"r":2,"type":"plus1"},
+    {"q":0,"r":2,"type":"plus1"}
+  ],
+  "meta": {
+    "slot": 34,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 4,
+      "solutions": 1,
+      "shortest": ["SW","W","NW","E","SE","SE"]
+    }
+  }
+}

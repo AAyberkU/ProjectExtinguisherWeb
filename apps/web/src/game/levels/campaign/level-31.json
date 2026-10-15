@@ -1,0 +1,39 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-31",
+  "name": "v3 · Öbür uçtan gel",
+  "grid": {"size":5,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":6},
+  "tiles": [
+    {"q":0,"r":-2,"type":"launcher","dir":"SW"},
+    {"q":1,"r":-2,"type":"swamp"},
+    {"q":2,"r":-2,"type":"plus1"},
+    {"q":-1,"r":-1,"type":"floor"},
+    {"q":0,"r":-1,"type":"floor"},
+    {"q":1,"r":-1,"type":"mover","dir":"SE"},
+    {"q":2,"r":-1,"type":"portal","pair":1},
+    {"q":-2,"r":0,"type":"plus1"},
+    {"q":-1,"r":0,"type":"floor"},
+    {"q":0,"r":0,"type":"swamp"},
+    {"q":1,"r":0,"type":"mover","dir":"SW"},
+    {"q":2,"r":0,"type":"blocker"},
+    {"q":-2,"r":1,"type":"floor"},
+    {"q":-1,"r":1,"type":"plus1"},
+    {"q":0,"r":1,"type":"launcher","dir":"W"},
+    {"q":1,"r":1,"type":"finish"},
+    {"q":-2,"r":2,"type":"start"},
+    {"q":-1,"r":2,"type":"launcher","dir":"W"},
+    {"q":0,"r":2,"type":"portal","pair":1}
+  ],
+  "meta": {
+    "slot": 31,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 6,
+      "solutions": 1,
+      "shortest": ["NE","NW","NE","NE","E","SE","NE"]
+    }
+  }
+}

@@ -37,7 +37,7 @@ export const HINT_TEXT: Readonly<Record<TutorialKind, string>> = {
   plus1: '+1 tiles give you one extra step',
   launcher: 'Launchers fling you 2 tiles, even over walls',
   swamp: 'Swamps cost 2 steps to walk into',
-  mover: 'Movers slide you until something stops you',
+  mover: 'Cars carry you once, then park as walls',
   swap: 'Marked tiles trade places with every move',
   portal: 'Portals send you to their twin',
   switch: 'Switches open doors of the same color',

@@ -4,6 +4,7 @@ import {
   DIR_VECTORS,
   axialToPixel,
   boardRadius,
+  carParkedAt,
   cellContent,
   doorOpen,
   initialState,
@@ -195,18 +196,39 @@ describe('launcher', () => {
   });
 });
 
-describe('mover', () => {
+describe('mover (car, rule 15)', () => {
   const row = (cells: Record<string, unknown>) =>
     build({ '-3,0': 'start', '-2,0': { type: 'mover', dir: 'E' }, '-1,0': 'floor', '0,0': 'floor', '-3,1': 'finish', ...cells } as never, {
       size: 7,
     });
 
-  it('slides over floor and stops before a wall', () => {
+  it('carries the player over floor and stays parked with the player in it', () => {
     const L = row({});
+    expect(initialState(L).cars).toBe(L.carsHome);
     const { state, events } = play(L, 'E');
     expect(state.pos).toBe(at(L, 0, 0));
     expect(state.steps).toBe(4);
-    expect(events[0][1]).toEqual({ type: 'slide', from: at(L, -2, 0), to: at(L, 0, 0), dir: 'E', path: [at(L, -1, 0), at(L, 0, 0)] });
+    expect(carParkedAt(state.cars, 0)).toBe(at(L, 0, 0));
+    expect(events[0][1]).toEqual({
+      type: 'slide',
+      from: at(L, -2, 0),
+      to: at(L, 0, 0),
+      dir: 'E',
+      path: [at(L, -1, 0), at(L, 0, 0)],
+      car: 0,
+      parkedAt: at(L, 0, 0),
+      drop: false,
+    });
+  });
+
+  it('leaves its home as floor and is a wall once the player steps out', () => {
+    const L = row({});
+    const { state } = play(L, 'E W W');
+    // The home cell no longer rides: the player walked onto it and stays there.
+    expect(state.pos).toBe(at(L, -2, 0));
+    expect(isWall(L, state, at(L, 0, 0))).toBe(true);
+    expect(isWall(L, state, at(L, -2, 0))).toBe(false);
+    expect(legalMoves(L, play(L, 'E W').state).map((m) => m.dir)).not.toContain('E');
   });
 
   it('stops before a closed door and a passage that blocks entry', () => {
@@ -215,16 +237,28 @@ describe('mover', () => {
     expect(play(p, 'E').state.pos).toBe(at(p, 0, 0));
   });
 
-  it('stops on a non-floor tile: an open passage side, a swamp at no extra cost', () => {
+  it('parks before a tile that acts and drops the player onto it (a swamp at no extra cost)', () => {
     const p = row({ '1,0': { type: 'passage', noIn: ['E'] }, '2,0': 'floor' });
-    expect(play(p, 'E').state.pos).toBe(at(p, 1, 0));
+    const passage = play(p, 'E');
+    expect(passage.state.pos).toBe(at(p, 1, 0));
+    expect(carParkedAt(passage.state.cars, 0)).toBe(at(p, 0, 0));
+    expect(passage.events[0][1]).toMatchObject({ type: 'slide', to: at(p, 1, 0), parkedAt: at(p, 0, 0), drop: true });
     const s = row({ '0,0': 'swamp', '1,0': 'floor' });
     const r = play(s, 'E').state;
     expect(r.pos).toBe(at(s, 0, 0));
     expect(r.steps).toBe(4);
+    expect(carParkedAt(r.cars, 0)).toBe(at(s, -1, 0));
   });
 
-  it('collects an uncollected plus1 it stops on, and slides over a collected one', () => {
+  it('parks on its home when it cannot move; the home is a wall afterwards', () => {
+    const L = build({ '-1,0': 'start', '0,0': { type: 'mover', dir: 'E' }, '0,1': 'floor', '-1,1': 'floor', '2,-2': 'finish' });
+    const { state, events } = play(L, 'E SW');
+    expect(events[0][1]).toEqual({ type: 'slide', from: at(L, 0, 0), to: at(L, 0, 0), dir: 'E', path: [], car: 0, parkedAt: at(L, 0, 0), drop: false });
+    expect(state.pos).toBe(at(L, -1, 1));
+    expect(isWall(L, state, at(L, 0, 0))).toBe(true);
+  });
+
+  it('drops onto an uncollected plus1 and collects it, and drives over a collected one', () => {
     const L = build(
       {
         '0,-1': 'start',
@@ -237,16 +271,55 @@ describe('mover', () => {
       },
       { size: 7 },
     );
-    // Not collected: the slide stops on it and collects it.
     const first = play(L, 'SW W');
     expect(first.state.pos).toBe(at(L, 0, 0));
     expect(first.state.steps).toBe(4);
     expect(types(first.events[1])).toEqual(['walk', 'slide', 'plus1', 'steps']);
-    // Collected first: it behaves as floor and the slide passes over it.
     const second = play(L, 'SE W W');
     expect(second.state.pos).toBe(at(L, 2, 0));
-    expect(second.events[2][1]).toMatchObject({ type: 'slide', path: [at(L, -1, 0), at(L, 0, 0), at(L, 1, 0), at(L, 2, 0)] });
+    expect(second.events[2][1]).toMatchObject({ type: 'slide', path: [at(L, -1, 0), at(L, 0, 0), at(L, 1, 0), at(L, 2, 0)], drop: false });
     expect(plusCollected(L, second.state, at(L, 0, 0))).toBe(true);
+  });
+
+  it('a drop continues the chain, and a launcher flies over a parked car but cannot land on it', () => {
+    const L = build({
+      '-2,0': 'start',
+      '-1,0': { type: 'mover', dir: 'E' },
+      '0,0': { type: 'launcher', dir: 'NE' },
+      '1,-1': 'floor',
+      '2,-2': 'floor',
+      '-2,1': 'floor',
+      '-1,1': 'floor',
+      '0,1': 'finish',
+    });
+    // The car cannot move (the launcher is next), so it parks on its home and drops the player onto the launcher.
+    const { state, events } = play(L, 'E');
+    expect(types(events[0])).toEqual(['walk', 'slide', 'launch', 'steps']);
+    expect(carParkedAt(state.cars, 0)).toBe(at(L, -1, 0));
+    expect(state.pos).toBe(at(L, 2, -2));
+    // Out of the car at (0, 0), into the SE launcher: it flies over the parked car and lands on (0, 1).
+    const fly = build({
+      '-2,0': 'start',
+      '-1,0': { type: 'mover', dir: 'E' },
+      '0,0': 'floor',
+      '0,-1': { type: 'launcher', dir: 'SE' },
+      '0,1': 'floor',
+      '-1,1': 'floor',
+      '2,-2': 'finish',
+    });
+    const over = play(fly, 'E NW');
+    expect(over.events[1].find((e) => e.type === 'launch')).toEqual({ type: 'launch', from: at(fly, 0, -1), to: at(fly, 0, 1), dir: 'SE' });
+    // With the landing cell taken by the car, the launch falls back to one cell.
+    const short = build({
+      '-2,0': 'start',
+      '-1,0': { type: 'mover', dir: 'E' },
+      '0,0': 'floor',
+      '0,-1': 'floor',
+      '0,-2': { type: 'launcher', dir: 'SE' },
+      '1,-2': 'floor',
+      '2,-2': 'finish',
+    });
+    expect(play(short, 'E NW NW').events[2].find((e) => e.type === 'launch')).toMatchObject({ to: at(short, 0, -1) });
   });
 });
 

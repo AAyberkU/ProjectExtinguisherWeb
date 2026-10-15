@@ -58,7 +58,15 @@ conversion. On-screen meaning: `E` right, `SE` down-right, `SW` down-left, `W` l
   `GPT` (`-v1-2` ids), `Lumen (Claude)` (`-v1` ids), and `Lumen v2 (Claude)` (base ids).
 - Only `c01-l01-v1` is marked approved ("Son sürümde kullanılacak"). No alternative is final; whole
   slots may be replaced with new levels.
-- All 180 are structurally valid, solvable, have exactly one solution, and use budget = `minBudget`.
+- When received, all 180 were valid, solvable, had exactly one solution, and used budget = `minBudget`.
+- **Re-exported for the car rule (2026-10-16):** movers became cars in the editor on 2026-10-13
+  (rule 15), which changed the analysis of 8 pool levels. Their files were regenerated through the
+  editor's own export path (`PL.stringify(PL.exportLevel(level, PL.analyze({ ...level, id: 'x' })))`
+  with the editor core fetched on 2026-10-16), equivalent to a fresh Export; only `meta.solution` changed.
+  Regenerated the same way, the other 172 files are byte-identical (line endings normalized), so
+  they were left alone. Now invalid: `c05-l03`, `c05-l03-v1-2`, `c05-l05-v1-2`, and `c10-l06-v1` (a
+  mover in a swap pair), `c04-l05-v1` and `c07-l02` (need 8 and 6 steps, budgets 7 and 5). Now a
+  loose budget with many solutions: `c06-l05-v1` (17) and `c10-l02-v1` (28).
 - Board sizes: 5 (12 levels), 7 (50), 9 (82), 11 (36). Alternatives of one slot often use different
   sizes.
 - Steps 2-18 (median 6); shortest solutions 3-24 moves (median 7).
@@ -80,6 +88,28 @@ Chapter plan (each chapter introduces one mechanic, chapter 10 mixes them):
 
 All mechanics are planned for the game. If one is cancelled, a replacement mechanic takes its slot.
 
+## v3 set (authored 2026-10-14, the current campaign)
+
+- Uğur authored a complete new 60-level set in the editor on 2026-10-14 (names start with `v3 · `)
+  and submitted all of it for review (editor state `pending`, not approved; `meta` has no
+  `approved`). Exported with the editor's own export code, byte-identical to its Export button.
+- Ids are `level-01` to `level-60`; `meta.slot` equals the id number, so chapter `cNN` holds slots
+  `6(NN-1)+1` to `6NN` in order. The campaign test checks that `meta.slot` matches the position.
+- Editor analysis: no errors or warnings, exactly one solution each, `params.steps = minBudget`.
+  Boards are size 5 (36 levels) and 7 (24); budgets 1-10. In refill levels the stored solution
+  can end with steps left (level 55 ends on 1; the editor's replay agrees).
+- Mechanics follow the chapter plan above: each first appears on its chapter's first level (level 1
+  `plus1`, 7 `launcher`, 13 `swamp`, 19 `mover`, 25 `swap`, 31 `portal`, 37 `switch`/`door`, 43
+  `passage`, 49 `refill`), and later chapters reuse earlier mechanics. `swap` is a tile field, not a
+  tile type: 16 levels use it (25-30, 35, 38, 44, 53-57, 59, 60).
+- The editor also holds an alternative for slot 23 ("Level 23 alternatif — Taksiye atla") with the
+  same id `level-23`. It is not used; the campaign has the main `level-23` ("v3 · Basamak araba").
+- **Cars:** the set was made after the editor's mover rule changed (2026-10-13, a mover is a car that
+  carries the player once and then stays parked as a wall; `docs/rules.md`). The engine follows it
+  since 2026-10-16; before that, 14 of the 60 levels failed the oracle.
+- Not kept as separate fixtures: the campaign folder is the set, byte for byte, and is already
+  oracle-tested; Git history keeps it if a later export replaces it.
+
 ## Edge blockers are walls (decided 2026-10-10)
 
 History (from Uğur, 2026-10-10):
@@ -96,7 +126,7 @@ History (from Uğur, 2026-10-10):
   no padding blockers, every blocker has a purpose. The data agrees: only 17 of v2's 50 blockers touch
   the board edge (in 9 levels), against about 95% of the blockers in the other two sets.
 - Conclusion: v1 and GPT levels keep their blockers; a level that should be "full floor" is picked
-  from v2. The temporary campaign already uses v2 for every slot except the approved `c01-l01-v1`.
+  from v2. The former temporary campaign used v2 for every slot except the approved `c01-l01-v1`.
 
 Decision: keep the data as exported; blockers are walls. The game reads tile types from data, so any
 editor change arrives with a new export and is re-verified by the oracle tests. All blockers are drawn
@@ -115,22 +145,28 @@ editor change arrives with a new export and is re-verified by the oracle tests. 
 
 ## In-game pipeline
 
-- **Pool** `apps/web/levels/pool/`: all 180 pool levels, byte-for-byte as exported. Used as oracle
-  test fixtures and as the source for picking levels. Not bundled into the game.
+- **Pool** `apps/web/levels/pool/`: all 180 pool levels, byte-for-byte as exported (8 re-exported for
+  the car rule, see above). Used as oracle test fixtures and as the source for picking levels. Not
+  bundled into the game.
 - **Campaign** `apps/web/src/game/levels/campaign/`: the levels the game ships (copies of exported
   files, never edited) plus `campaign.json` (chapters and order). `campaign.ts` loads them with
   `import.meta.glob`, compiles them with the engine, and exposes the ordered list.
-- **Current campaign is temporary** (`campaign.json` status `temporary`): the base alternative
-  (`Lumen v2`) of every slot, except `c01-l01`, which uses the approved `c01-l01-v1`.
+- **Current campaign: Uğur's v3 set, pending review** (`campaign.json` status `pending-review`, since
+  2026-10-16; see "v3 set" below). It is not the approved Final export. Until 2026-10-16 the
+  campaign was a temporary pick from the pool (the `Lumen v2` base alternative of every slot, plus
+  the approved `c01-l01-v1`); those files are still in the pool.
 - **When the Final export arrives:** replace the files in `campaign/` with the export and rewrite
   `campaign.json` from its slot data (`meta.slot`; the export may need a small script if it lacks an
   order), then run `npm run level:check` and `npm test`.
-- **`npm run level:check -- [files or folders]`** (default: pool and campaign): the editor's validation
-  errors and warnings, solver consistency (solvable within steps, solution count, `minBudget` versus
-  steps), a check that `meta.solution` matches the computed values, file name equals level id, and
-  `campaign.json` integrity. Exit code 1 on any error.
-- **`npm test`**: oracle tests on every pool and campaign level, focused rule tests, validation tests,
-  and campaign integrity. GitHub Actions runs typecheck, tests, and `level:check` on every push.
+- **`npm run level:check -- [files or folders]`** (default: the campaign folder; pass `levels/pool`
+  to check the pool, which reports the 6 levels the editor rejects since the car rule): the editor's
+  validation errors and warnings, solver consistency (solvable within steps, solution count,
+  `minBudget` versus steps), a check that `meta.solution` matches the computed values, file name
+  equals level id, and `campaign.json` integrity. Exit code 1 on any error.
+- **`npm test`**: oracle tests on every pool and campaign level (levels the editor rejects must carry
+  its empty analysis), focused rule tests, validation tests (the pool's expected editor verdicts),
+  and campaign integrity. GitHub Actions runs typecheck, tests, and `level:check` (campaign) on every
+  push.
 - **Developer access:** in dev builds only, `window.extinguisherDebug` offers `goTo(n)`,
   `loadLevel(json)`, `stats()`, and `cellScreenPoint(q, r)`. It is absent from production builds.
 - The jam levels and the jam ruleset were removed on 2026-10-10.

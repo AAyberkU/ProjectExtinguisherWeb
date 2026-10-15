@@ -1,115 +1,115 @@
 {
-  "status": "temporary",
-  "note": "Temporary pick until the Puzzle Lab Final export exists: the base alternative of every slot, except c01-l01 which uses the approved c01-l01-v1. Replace the level files in this folder and this order with the Final export.",
+  "status": "pending-review",
+  "note": "Uğur's v3 set from the Puzzle Lab editor (authored and submitted for review 2026-10-14, editor state pending, not yet approved): all 60 levels in slot order. Not the approved Final export; replace the level files in this folder and this order when the Final export exists.",
   "chapters": [
     {
       "id": "c01",
       "levels": [
-        "c01-l01-v1",
-        "c01-l02",
-        "c01-l03",
-        "c01-l04",
-        "c01-l05",
-        "c01-l06"
+        "level-01",
+        "level-02",
+        "level-03",
+        "level-04",
+        "level-05",
+        "level-06"
       ]
     },
     {
       "id": "c02",
       "levels": [
-        "c02-l01",
-        "c02-l02",
-        "c02-l03",
-        "c02-l04",
-        "c02-l05",
-        "c02-l06"
+        "level-07",
+        "level-08",
+        "level-09",
+        "level-10",
+        "level-11",
+        "level-12"
       ]
     },
     {
       "id": "c03",
       "levels": [
-        "c03-l01",
-        "c03-l02",
-        "c03-l03",
-        "c03-l04",
-        "c03-l05",
-        "c03-l06"
+        "level-13",
+        "level-14",
+        "level-15",
+        "level-16",
+        "level-17",
+        "level-18"
       ]
     },
     {
       "id": "c04",
       "levels": [
-        "c04-l01",
-        "c04-l02",
-        "c04-l03",
-        "c04-l04",
-        "c04-l05",
-        "c04-l06"
+        "level-19",
+        "level-20",
+        "level-21",
+        "level-22",
+        "level-23",
+        "level-24"
       ]
     },
     {
       "id": "c05",
       "levels": [
-        "c05-l01",
-        "c05-l02",
-        "c05-l03",
-        "c05-l04",
-        "c05-l05",
-        "c05-l06"
+        "level-25",
+        "level-26",
+        "level-27",
+        "level-28",
+        "level-29",
+        "level-30"
       ]
     },
     {
       "id": "c06",
       "levels": [
-        "c06-l01",
-        "c06-l02",
-        "c06-l03",
-        "c06-l04",
-        "c06-l05",
-        "c06-l06"
+        "level-31",
+        "level-32",
+        "level-33",
+        "level-34",
+        "level-35",
+        "level-36"
       ]
     },
     {
       "id": "c07",
       "levels": [
-        "c07-l01",
-        "c07-l02",
-        "c07-l03",
-        "c07-l04",
-        "c07-l05",
-        "c07-l06"
+        "level-37",
+        "level-38",
+        "level-39",
+        "level-40",
+        "level-41",
+        "level-42"
       ]
     },
     {
       "id": "c08",
       "levels": [
-        "c08-l01",
-        "c08-l02",
-        "c08-l03",
-        "c08-l04",
-        "c08-l05",
-        "c08-l06"
+        "level-43",
+        "level-44",
+        "level-45",
+        "level-46",
+        "level-47",
+        "level-48"
       ]
     },
     {
       "id": "c09",
       "levels": [
-        "c09-l01",
-        "c09-l02",
-        "c09-l03",
-        "c09-l04",
-        "c09-l05",
-        "c09-l06"
+        "level-49",
+        "level-50",
+        "level-51",
+        "level-52",
+        "level-53",
+        "level-54"
       ]
     },
     {
       "id": "c10",
       "levels": [
-        "c10-l01",
-        "c10-l02",
-        "c10-l03",
-        "c10-l04",
-        "c10-l05",
-        "c10-l06"
+        "level-55",
+        "level-56",
+        "level-57",
+        "level-58",
+        "level-59",
+        "level-60"
       ]
     }
   ]

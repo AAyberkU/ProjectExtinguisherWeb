@@ -71,11 +71,6 @@
   "meta": {
     "slot": 29,
     "author": "GPT",
-    "solution": {
-      "solvable": true,
-      "minBudget": 10,
-      "solutions": 1,
-      "shortest": ["SE","NE","E","E","E","E","NE","NW"]
-    }
+    "solution": {"solvable":false,"minBudget":null,"solutions":null,"shortest":null}
   }
 }

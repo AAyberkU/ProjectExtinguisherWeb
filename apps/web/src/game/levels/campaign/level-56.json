@@ -1,0 +1,67 @@
+{
+  "format": "puzzle-lab/level@1",
+  "game": "hex-steps",
+  "id": "level-56",
+  "name": "v3 · Uzak portal",
+  "grid": {"size":7,"type":"hex","coords":"axial","orientation":"pointy"},
+  "params": {"steps":8},
+  "tiles": [
+    {"q":0,"r":-3,"type":"floor"},
+    {"q":1,"r":-3,"type":"floor"},
+    {"q":2,"r":-3,"type":"floor"},
+    {"q":3,"r":-3,"type":"floor"},
+    {"q":-1,"r":-2,"type":"floor"},
+    {"q":0,"r":-2,"type":"floor"},
+    {"q":1,"r":-2,"type":"floor"},
+    {"q":2,"r":-2,"type":"floor"},
+    {"q":3,"r":-2,"type":"floor"},
+    {"q":-2,"r":-1,"type":"floor"},
+    {"q":-1,"r":-1,"type":"mover","dir":"E"},
+    {"q":0,"r":-1,"type":"launcher","dir":"SE"},
+    {"q":1,"r":-1,"type":"switch","swap":2,"color":1},
+    {"q":2,"r":-1,"type":"finish"},
+    {"q":3,"r":-1,"type":"floor"},
+    {"q":-3,"r":0,"type":"floor"},
+    {
+      "q": -2,
+      "r": 0,
+      "type": "passage",
+      "noIn": ["SW"]
+    },
+    {"q":-1,"r":0,"type":"refill","value":2},
+    {"q":0,"r":0,"type":"plus1"},
+    {"q":1,"r":0,"type":"door","swap":2,"color":1},
+    {"q":2,"r":0,"type":"blocker","swap":1},
+    {"q":3,"r":0,"type":"floor"},
+    {"q":-3,"r":1,"type":"portal","pair":1},
+    {"q":-2,"r":1,"type":"mover","dir":"NW"},
+    {"q":-1,"r":1,"type":"floor"},
+    {"q":0,"r":1,"type":"mover","dir":"SW"},
+    {"q":1,"r":1,"type":"floor"},
+    {"q":2,"r":1,"type":"portal","pair":1},
+    {"q":-3,"r":2,"type":"launcher","dir":"E","swap":1},
+    {"q":-2,"r":2,"type":"launcher","dir":"SW"},
+    {"q":-1,"r":2,"type":"mover","dir":"E"},
+    {"q":0,"r":2,"type":"refill","value":2},
+    {"q":1,"r":2,"type":"swamp"},
+    {"q":-3,"r":3,"type":"start"},
+    {"q":-2,"r":3,"type":"floor"},
+    {
+      "q": -1,
+      "r": 3,
+      "type": "passage",
+      "noOut": ["NW"]
+    },
+    {"q":0,"r":3,"type":"floor"}
+  ],
+  "meta": {
+    "slot": 56,
+    "author": "Uğur",
+    "solution": {
+      "solvable": true,
+      "minBudget": 8,
+      "solutions": 1,
+      "shortest": ["E","E","E","NE","NE","E","E","E","E","NE"]
+    }
+  }
+}

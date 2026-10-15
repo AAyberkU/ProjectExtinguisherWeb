@@ -102,6 +102,7 @@ for (const section of sections) {
       collected: false,
       doorOpen: false,
       switchPressed: false,
+      carGone: false,
       floorTurn: i % 6,
       ...item.look,
     };
