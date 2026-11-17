@@ -21,7 +21,14 @@ Current state and work log. The plan is in `docs/roadmap.md`; read this file fir
 - **Next:** the user's play test of the v3 campaign and the cars; then roadmap step 3 (landscape and
   portrait layouts).
 
-## Recent work (2026-10-10 to 2026-10-16)
+## Recent work (2026-10-10 to 2026-11-15)
+
+- Second art batch (2026-11-15, branch `art-batch-2`, a trial for the user's look): the artist's
+  2026-11-07 batch replaces the blocker (flat "A" block), +1 (blue), duck, and car; adds portal pair
+  2; switches become symbol buttons (heart, circle, star) with a drawn pressed state; doors become
+  jack-in-the-box (closed box = wall for now; see the open question in `docs/art.md`). The asset
+  build now centres objects on their opaque body (painted shadows) and drops stray low-alpha pixels.
+  The switch tutorial line now says symbol instead of colour. 346 tests and typecheck pass.
 
 - v3 campaign (2026-10-16, branch `levels-v3`): the 60 v3 files replace the temporary campaign as
   exported (ids `level-01`-`level-60`, chapter order from `meta.slot`; byte-identical to the editor's

@@ -24,6 +24,10 @@
   fills its texture. Images that replace or stack on each other are cropped together with one
   shared box so they stay aligned: the `alignedSets` table in `build-assets.mjs` lists them (today
   `obj_door_*` and `obj_switch_*`). Floor, start, and finish are cropped to the solid hex body.
+- Objects (`images/objects`, since 2026-11-15) ignore pixels at alpha 40 or below when cropping
+  (drops stray strokes) and are cropped symmetrically around their body, the part above alpha
+  200, so a painted semi-transparent shadow does not pull the drawing off the cell centre. Door
+  sets centre on the closed state.
 - Board art (`images/tiles`, `images/objects`, table `BOARD_ART`) keeps the artist's relative
   scale: one factor comes from the floor (its hex width becomes 512 px @2x, about 0.515 for the A4
   pages) and applies to every page-sized drawing; start and finish are fitted to exactly the floor's
@@ -48,22 +52,24 @@
 
 ## Naming
 
-Aliases (the artist's first batch, 2026-10-11; Puzzle Lab vocabulary). Full tiles live in
-`art-source/images/tiles/`, things drawn on top of the floor in `art-source/images/objects/`.
-Colours: `a` blue, `b` pink, `c` green (editor colours 1, 2, 3).
+Aliases (the artist's first batch, 2026-10-11, and second batch, 2026-11-07, integrated on branch
+`art-batch-2` as a trial; Puzzle Lab vocabulary). Full tiles live in `art-source/images/tiles/`,
+things drawn on top of the floor in `art-source/images/objects/`. Editor colours 1, 2, 3 map to
+`a`, `b`, `c`; since the second batch switches and doors are told apart by symbol, not colour:
+`a` heart, `b` circle, `c` star (mapping chosen by the integrator).
 
 | Alias | Use | Delivered as |
 | --- | --- | --- |
 | `tile_floor` | Every floor cell; seeded 60° rotations give variety | `duztile.png` |
 | `tile_start`, `tile_finish` | Start and finish (full tiles) | `Baslangictile.png`, `bitistile.png` |
 | `tile_swamp` | Semi-transparent slime drawn over the floor | `Slimetile.png` |
-| `obj_blocker` | Wall: one kind only, on the floor | `Blocker.png` |
-| `obj_plus1` | +1 on the floor; removed when collected | `Artibir.png` |
+| `obj_blocker` | Wall: one kind only, on the floor (flat "A" block, painted shadow) | `Kutu.png` |
+| `obj_plus1` | +1 on the floor (blue); removed when collected | `Artibir.png` |
 | `obj_launcher` | Duck, rotated to the launcher's direction (drawn heading about 237°, NW) | `ordek.png` |
 | `obj_mover` | Car, rotated to the mover's direction (drawn heading about 238°, NW) | `Araba.png` |
-| `obj_portal` | Portal; pairs 2 and 3 are hue-shifted in code (0/120/240°) | `Portal.png` |
-| `obj_switch_<a\|b\|c>` | Switch; the pressed state is code (squashed to 62%, darker) | `Buton<mavi\|pembe\|yesil>.png` |
-| `obj_door_<a\|b\|c>_<closed\|open>` | Door states | `Kapi...` files |
+| `obj_portal`, `obj_portal_2` | Portal pairs 1 and 2; pair 3 is pair 1 hue-turned 240° in code | `Portal.png`, `Portal2.png` |
+| `obj_switch_<a\|b\|c>_<up\|down>` | Switch raised (painted shadow) and pressed; the press swaps the texture with a small squash | `Butonkapali<symbol>.png`, `Butonacik<symbol>.png` |
+| `obj_door_<a\|b\|c>_<closed\|open>` | Door as a jack-in-the-box: closed box with the symbol; open box with the jester (one drawing without a symbol, copied to all three) | `Jackkapali<symbol>.png`, `Jackacik.png` |
 | `obj_passage_wall` | Crayon along each passage side closed both ways | `Pastelengel.png` |
 | `larry` | Player character | `Larry.png` |
 | `background` | Full-screen background (jam art) | |
@@ -105,10 +111,12 @@ Delivery rules:
 - [x] Launcher (one duck, rotated in code to the 6 directions).
 - [x] Swamp (semi-transparent; drawn over the floor for now, the artist may revisit).
 - [x] Mover (one car, rotated in code to the 6 directions).
-- [ ] Portal: delivered once; pairs are hue-shifted in code for now. Real colourways per pair (up to
-  3 pairs in one level) would look better.
-- [ ] Switch, 3 colours: up states delivered; the pressed state is code for now (drawn would be better).
-- [x] Door, 3 colours, closed and open. (The blue one has low contrast on the purple floor.)
+- [ ] Portal: pairs 1 and 2 delivered (2026-11-07); pair 3 is still hue-shifted in code.
+- [x] Switch, 3 symbols, raised and pressed (2026-11-07).
+- [ ] Door as a jack-in-the-box, 3 symbols (2026-11-07). Open question: the trial uses the closed box
+  as the wall and the popped jester as open; the suggested reading is the reverse (a popped jester
+  reads as an obstacle), which needs the open state drawn once per symbol. The closed box also
+  looks close to the switch (both blue with a yellow symbol).
 - [ ] Passage: closed side delivered (crayon); one-way side still needs one arrow drawing (code arrow
   for now).
 - [ ] Refill: a plain base; the number (1-99) is drawn in code on top.

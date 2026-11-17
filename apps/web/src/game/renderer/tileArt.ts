@@ -37,7 +37,10 @@ const OBJECT_TEXTURES: Partial<Record<TileType, string>> = {
   door: 'obj_door',
 };
 const PASSAGE_WALL_TEXTURE = 'obj_passage_wall';
-/** Editor colours 1-3 map to the art's a (blue), b (pink), and c (green). */
+/**
+ * Editor colours 1-3 map to the art's a, b, and c. Since the second art batch (2026-11-07) the
+ * pieces are told apart by symbol, not colour: a heart, b circle, c star (switches and doors).
+ */
 const COLOR_SUFFIXES = ['a', 'b', 'c'];
 const SWITCH_BUTTON_LABEL = 'Switch Button';
 
@@ -53,14 +56,21 @@ const LAUNCHER_ART_HEADING_DEG = 237;
 const MOVER_ART_HEADING_DEG = 238;
 
 /**
- * Portal pairs: hue turns of the rainbow toy, so pair 1 keeps its red centre and pairs 2 and 3 get
- * a green and a blue one. Both ends of a pair look the same; pair ids above 3 repeat the cycle.
+ * Portal pairs: pairs 1 and 2 have their own drawings; pair 3 is pair 1 hue-turned (a blue centre)
+ * until it gets one. Both ends of a pair look the same; pair ids above 3 repeat the cycle.
  */
-const PORTAL_PAIR_HUES = [0, 120, 240];
+const PORTAL_PAIRS: { alias: string; hue: number }[] = [
+  { alias: 'obj_portal', hue: 0 },
+  { alias: 'obj_portal_2', hue: 0 },
+  { alias: 'obj_portal', hue: 240 },
+];
 
-/** Pressed switch, made in code: the button squashes into its base and darkens. */
-const SWITCH_PRESSED_SCALE_Y = 0.62;
-const SWITCH_PRESSED_SHADE = 0.7;
+/**
+ * Switch states are drawn (`_up` raised with a shadow, `_down` pressed). The press tween swaps the
+ * texture halfway and squashes the button a little around the swap.
+ */
+const SWITCH_PRESS_SQUASH = 0.12;
+const switchTextures = new WeakMap<Sprite, { up: string; down: string }>();
 
 /** Distance between a passage crayon and the tile edge, as a share of the tile's apothem. */
 const PASSAGE_WALL_INSET = 0.1;
@@ -137,9 +147,11 @@ function headingRotation(dir: Dir | undefined, artHeading: number): number {
 
 const portalFilters = new Map<number, ColorMatrixFilter>();
 
-function portalFilter(pair: number | undefined): ColorMatrixFilter | null {
-  const hue = PORTAL_PAIR_HUES[(Math.max(1, pair ?? 1) - 1) % PORTAL_PAIR_HUES.length];
+function portalPair(pair: number | undefined) {
+  return PORTAL_PAIRS[(Math.max(1, pair ?? 1) - 1) % PORTAL_PAIRS.length];
+}
 
+function portalFilter(hue: number): ColorMatrixFilter | null {
   if (hue === 0) {
     return null;
   }
@@ -159,10 +171,14 @@ function portalFilter(pair: number | undefined): ColorMatrixFilter | null {
 /** Sets how far a switch button is pressed in (0 up, 1 pressed); the press animation tweens it. */
 export function setSwitchPress(button: Sprite, amount: number) {
   const scale = artScale();
-  const shade = Math.round(255 * (1 - (1 - SWITCH_PRESSED_SHADE) * amount));
+  const textures = switchTextures.get(button);
 
-  button.scale.set(scale, scale * (1 - (1 - SWITCH_PRESSED_SCALE_Y) * amount));
-  button.tint = (shade << 16) | (shade << 8) | shade;
+  if (textures !== undefined) {
+    button.texture = Texture.from(amount >= 0.5 ? textures.down : textures.up);
+  }
+
+  // Squash peaks at the swap and is gone at rest (0 and 1); the tween's overshoot stretches slightly.
+  button.scale.set(scale, scale * (1 - SWITCH_PRESS_SQUASH * Math.sin(Math.PI * amount)));
 }
 
 /** The switch button of a tile base built by `createTileBase`, or null. */
@@ -193,17 +209,17 @@ function objectSprite(look: TileLook): Sprite | null {
       return sprite;
     }
     case 'portal': {
-      const sprite = artSprite(alias);
-      const filter = portalFilter(content.pair);
+      const pair = portalPair(content.pair);
+      const sprite = artSprite(pair.alias);
+      const filter = portalFilter(pair.hue);
       if (filter !== null) sprite.filters = [filter];
       return sprite;
     }
     case 'switch': {
-      // Anchored at the bottom so a press squashes the button down into its base.
-      const sprite = artSprite(`${alias}_${color}`);
+      const textures = { up: `${alias}_${color}_up`, down: `${alias}_${color}_down` };
+      const sprite = artSprite(textures.up);
       sprite.label = SWITCH_BUTTON_LABEL;
-      sprite.anchor.set(0.5, 1);
-      sprite.y = (sprite.texture.height * artScale()) / 2;
+      switchTextures.set(sprite, textures);
       setSwitchPress(sprite, look.switchPressed ? 1 : 0);
       return sprite;
     }

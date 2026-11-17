@@ -40,7 +40,7 @@ export const HINT_TEXT: Readonly<Record<TutorialKind, string>> = {
   mover: 'Cars carry you once, then park as walls',
   swap: 'Marked tiles trade places with every move',
   portal: 'Portals send you to their twin',
-  switch: 'Switches open doors of the same color',
+  switch: 'Switches open boxes with the same symbol',
   passage: 'Passages only let you through open sides',
   refill: 'Refills set your steps to their number',
 };

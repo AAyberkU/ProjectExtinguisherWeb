@@ -31,7 +31,7 @@ const GAME_ATLAS = 'game{m}/atlas{tps}';
 // sized by BOARD_ART instead.
 const IMAGE_GROUPS = [
   { source: 'images/tiles', staging: GAME_ATLAS, board: true },
-  { source: 'images/objects', staging: GAME_ATLAS, board: true },
+  { source: 'images/objects', staging: GAME_ATLAS, board: true, centreOnBody: true },
   { source: 'images/characters', staging: GAME_ATLAS, resize: { height: 384 }, trim: true },
   { source: 'images/backgrounds', staging: 'ui{m}/backgrounds{nomip}', resize: { width: 1920 } },
 ];
@@ -50,10 +50,18 @@ const BOARD_ART = {
   // The floor and full tiles are cropped to their hex body (pixels above this alpha), which drops
   // the faint brush haze and stray strokes around the hex so the hexes tile exactly.
   hexBodyAlpha: 40,
-  // Aligned sets: images that replace or stack on each other (door states, switch colours). All
-  // files whose names match one pattern are cropped to the union of their visible boxes, so the
-  // set stays aligned after cropping.
-  alignedSets: [/^obj_door_/, /^obj_switch_/],
+  // Objects (centreOnBody groups) ignore pixels at or below this alpha when cropping, which drops
+  // faint stray strokes far from the drawing.
+  objectAlpha: 40,
+  // An object's body is its nearly opaque part (above this alpha): the drawing without its
+  // semi-transparent painted shadow. Objects are cropped symmetrically around the body's centre,
+  // so the renderer's centre anchor puts the body, not the body plus shadow, on the cell centre.
+  bodyAlpha: 200,
+  // Aligned sets: images that replace or stack on each other (door states, switch states). All
+  // files whose names match `pattern` are cropped to one shared box, so the set stays aligned after
+  // cropping. The box is centred on the bodies of the members matching `centreOn` (all members
+  // when absent): the closed door is a box, while the open door adds a lid and a jack above it.
+  alignedSets: [{ pattern: /^obj_door_/, centreOn: /_closed$/ }, { pattern: /^obj_switch_/ }],
   // Delivered on a different canvas, so the shared scale does not apply: @2x size chosen by eye.
   ownSize: { obj_plus1: { width: 300 } },
 };
@@ -99,6 +107,20 @@ async function visibleBox(file, minAlpha = 0) {
   return right < 0 ? null : { left, top, width: right - left + 1, height: bottom - top + 1 };
 }
 
+function boxCentre(box) {
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+}
+
+/** The smallest box centred on `centre` that contains `box` (it may extend past the image). */
+function centredBox(box, centre) {
+  const halfWidth = Math.max(centre.x - box.left, box.left + box.width - centre.x);
+  const halfHeight = Math.max(centre.y - box.top, box.top + box.height - centre.y);
+  const left = Math.floor(centre.x - halfWidth);
+  const top = Math.floor(centre.y - halfHeight);
+
+  return { left, top, width: Math.ceil(centre.x + halfWidth) - left, height: Math.ceil(centre.y + halfHeight) - top };
+}
+
 function unionBox(a, b) {
   const left = Math.min(a.left, b.left);
   const top = Math.min(a.top, b.top);
@@ -109,9 +131,31 @@ function unionBox(a, b) {
 }
 
 async function writeImage(file, box, resize, output) {
-  const image = box === null ? sharp(file) : sharp(file).extract(box);
+  if (box === null) {
+    await sharp(file).resize(resize).png().toFile(output);
+    return;
+  }
 
-  await image.resize(resize).png().toFile(output);
+  // A centred box may reach past the image edges: crop the part inside and pad the rest with
+  // transparency, then resize (sharp would otherwise pad after resizing).
+  const { width, height } = await sharp(file).metadata();
+  const left = Math.max(0, box.left);
+  const top = Math.max(0, box.top);
+  const right = Math.min(width, box.left + box.width);
+  const bottom = Math.min(height, box.top + box.height);
+  const cropped = await sharp(file)
+    .extract({ left, top, width: right - left, height: bottom - top })
+    .extend({
+      left: left - box.left,
+      top: top - box.top,
+      right: box.left + box.width - right,
+      bottom: box.top + box.height - bottom,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
+
+  await sharp(cropped).resize(resize).png().toFile(output);
 }
 
 async function prepareBoardArt(groups) {
@@ -127,18 +171,31 @@ async function prepareBoardArt(groups) {
       const file = path.join(sourceDir, name);
       const alias = path.parse(name).name;
       const hexTile = alias === BOARD_ART.reference || BOARD_ART.fullTiles.has(alias);
-      const box = await visibleBox(file, hexTile ? BOARD_ART.hexBodyAlpha : 0);
+      const object = group.centreOnBody && !hexTile;
+      const box = await visibleBox(file, hexTile ? BOARD_ART.hexBodyAlpha : object ? BOARD_ART.objectAlpha : 0);
+      const body = object && box !== null ? ((await visibleBox(file, BOARD_ART.bodyAlpha)) ?? box) : null;
 
-      items.push({ alias, file, hexTile, box, output: path.join(stagingDir, `${alias}.png`) });
+      items.push({ alias, file, hexTile, box, body, output: path.join(stagingDir, `${alias}.png`) });
     }
   }
 
-  for (const pattern of BOARD_ART.alignedSets) {
+  const union = (boxes) => boxes.reduce((all, box) => (all === null ? box : unionBox(all, box)), null);
+
+  for (const { pattern, centreOn } of BOARD_ART.alignedSets) {
     const members = items.filter((item) => pattern.test(item.alias) && item.box !== null);
-    const shared = members.reduce((box, item) => (box === null ? item.box : unionBox(box, item.box)), null);
+    const shared = union(members.map((item) => item.box));
+    const anchors = members.filter((item) => item.body !== null && (!centreOn || centreOn.test(item.alias)));
+    const body = union(anchors.map((item) => item.body));
 
     for (const item of members) {
       item.box = shared;
+      item.body = body;
+    }
+  }
+
+  for (const item of items) {
+    if (item.body !== null && item.box !== null) {
+      item.box = centredBox(item.box, boxCentre(item.body));
     }
   }
 
