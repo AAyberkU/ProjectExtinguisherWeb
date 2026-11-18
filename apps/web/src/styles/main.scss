@@ -166,3 +166,23 @@ select {
   height: 100%;
   touch-action: none;
 }
+
+// Work-in-progress builds only (WIP_BUILD): a corner badge over every screen. It never takes input.
+.wip-badge {
+  position: fixed;
+  z-index: 50;
+  bottom: max(0.6rem, env(safe-area-inset-bottom));
+  left: max(0.6rem, env(safe-area-inset-left));
+  padding: 0.2em 0.6em;
+  border: 2px solid #2b0d4f;
+  border-radius: 0.5em;
+  background: #ffd84d;
+  color: #2b0d4f;
+  font-family: var(--game-font-family);
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  opacity: 0.85;
+  pointer-events: none;
+  user-select: none;
+}

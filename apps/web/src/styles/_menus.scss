@@ -55,6 +55,21 @@
     text-shadow: 0 4px 0 #e238a6, 0 8px 24px rgba(0, 0, 0, 0.45);
   }
 
+  // Work-in-progress builds only (WIP_BUILD): a small tag under the title.
+  .menu-wip-tag {
+    margin: calc(-1 * clamp(0.8rem, 4.5vh, 2.6rem)) 0 clamp(1.2rem, 5vh, 3rem);
+    padding: 0.25em 0.9em;
+    border: 3px solid var(--menu-ink);
+    border-radius: 999px;
+    background: #ffd84d;
+    color: #2b0d4f;
+    font-size: clamp(0.85rem, 2.2vh, 1.15rem);
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transform: rotate(-3deg);
+  }
+
   .menu-logo--image {
     min-height: clamp(6rem, 22vh, 14rem);
     color: transparent;

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { WIP_BUILD } from './wip';
 
 export type MainMenuProps = Readonly<{
   hasProgress: boolean;
@@ -13,6 +14,7 @@ export function MainMenu({ hasProgress, onPlay, onLevelSelect }: MainMenuProps) 
     <section className="main-menu" aria-label="Main menu">
       {/* Placeholder title; the artist's logo replaces it through --menu-logo-image and .menu-logo--image (_menus.scss). */}
       <h1 className="menu-logo">Project Extinguisher</h1>
+      {WIP_BUILD ? <p className="menu-wip-tag">Work in progress</p> : null}
       <nav className="menu-buttons">
         <button className="menu-button menu-play" type="button" data-action="play" onClick={onPlay}>
           {hasProgress ? 'Continue' : 'Play'}

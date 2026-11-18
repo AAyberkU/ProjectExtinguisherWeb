@@ -11,6 +11,7 @@ import { GameScreen, type GameScreenHandle } from './ui/GameScreen';
 import { hasModifier, isEditableTarget } from './ui/keys';
 import { LevelSelect, type LevelSelectEntry } from './ui/LevelSelect';
 import { MainMenu } from './ui/MainMenu';
+import { WIP_BUILD } from './ui/wip';
 
 type GameShellStyle = CSSProperties & Readonly<{
   '--game-background-image'?: string;
@@ -404,6 +405,12 @@ export function App() {
 
       {phase === 'menu' ? (
         <MainMenu hasProgress={hasProgress(CAMPAIGN_IDS, completed)} onPlay={handlePlay} onLevelSelect={openLevelSelect} />
+      ) : null}
+
+      {WIP_BUILD ? (
+        <div className="wip-badge" aria-hidden="true">
+          WIP
+        </div>
       ) : null}
 
       {levelSelect !== null ? (
